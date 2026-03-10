@@ -1,27 +1,64 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import { useState } from "react";
+import { useTheme } from "@/hooks/useTheme";
+import { useCart } from "@/hooks/useCart";
+import { CartDrawer } from "@/components/CartDrawer";
+import Landing from "./pages/Landing";
+import Marketplace from "./pages/Marketplace";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const { dark, toggle } = useTheme();
+  const cart = useCart();
+  const [cartOpen, setCartOpen] = useState(false);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Landing
+                  dark={dark}
+                  toggleTheme={toggle}
+                  cartCount={cart.count}
+                  onCartOpen={() => setCartOpen(true)}
+                />
+              }
+            />
+            <Route
+              path="/marketplace"
+              element={
+                <Marketplace
+                  dark={dark}
+                  toggleTheme={toggle}
+                  cartCount={cart.count}
+                  onCartOpen={() => setCartOpen(true)}
+                  isInCart={cart.isInCart}
+                  addToCart={cart.addToCart}
+                />
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <CartDrawer
+            open={cartOpen}
+            onClose={() => setCartOpen(false)}
+            items={cart.items}
+            removeFromCart={cart.removeFromCart}
+            clearCart={cart.clearCart}
+            total={cart.total}
+          />
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

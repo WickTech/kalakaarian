@@ -51,7 +51,7 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
       {/* Header */}
       <header className="border-b border-border flex items-center justify-between px-4 py-2 shrink-0">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/")} className="p-1 border border-border hover:border-terminal">
+          <button onClick={() => navigate("/landing")} className="p-1 border border-border hover:border-terminal">
             <ArrowLeft className="w-4 h-4" />
           </button>
           <h1 className="font-mono text-sm uppercase tracking-[0.3em] font-bold">

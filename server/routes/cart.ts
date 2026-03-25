@@ -19,7 +19,6 @@ router.post(
   auth,
   [
     body('influencerId').notEmpty().withMessage('Influencer ID is required'),
-    body('price').isNumeric().withMessage('Price must be a number'),
   ],
   validate,
   addToCart

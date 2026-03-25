@@ -9,9 +9,10 @@ export interface CartItemResponse {
 }
 
 export interface CartResponse {
-  items: CartItemResponse[];
-  total: number;
-  itemCount: number;
+  cart: {
+    items: CartItemResponse[];
+    total: number;
+  };
 }
 
 export const cartAPI = {
@@ -21,21 +22,21 @@ export const cartAPI = {
   },
 
   addToCart: async (influencerId: string): Promise<CartResponse> => {
-    const response = await api.post<CartResponse>("/cart", { influencerId });
+    const response = await api.post<CartResponse>("/cart/add", { influencerId });
     return response.data;
   },
 
-  removeFromCart: async (itemId: string): Promise<CartResponse> => {
-    const response = await api.delete<CartResponse>(`/cart/${itemId}`);
+  removeFromCart: async (influencerId: string): Promise<CartResponse> => {
+    const response = await api.delete<CartResponse>(`/cart/remove/${influencerId}`);
     return response.data;
   },
 
   clearCart: async (): Promise<void> => {
-    await api.delete("/cart");
+    await api.delete("/cart/clear");
   },
 
-  updateQuantity: async (itemId: string, quantity: number): Promise<CartResponse> => {
-    const response = await api.patch<CartResponse>(`/cart/${itemId}`, { quantity });
+  updateQuantity: async (influencerId: string, quantity: number): Promise<CartResponse> => {
+    const response = await api.put<CartResponse>(`/cart/update/${influencerId}`, { quantity });
     return response.data;
   },
 };

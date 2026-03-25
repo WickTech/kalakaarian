@@ -4,99 +4,145 @@ A Direct-to-Consumer (D2C) influencer marketplace connecting brands with micro-i
 
 ## Tech Stack
 
-- **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui
-- **Backend:** Node.js + Express + TypeScript
-- **Database:** MongoDB + Mongoose
-- **Auth:** JWT + bcrypt
-- **Container:** Docker + Docker Compose
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui |
+| Backend | Node.js + Express + TypeScript |
+| Database | MongoDB + Mongoose |
+| Auth | JWT + bcrypt |
+| Container | Docker + Docker Compose |
+
+## Deployment
+
+| Service | Platform | Cost |
+|---------|----------|------|
+| Frontend | [Vercel](./docs/VERCEL.md) | Free |
+| Backend | [Railway](./docs/RAILWAY.md) | $0-5/mo |
+| Database | [MongoDB Atlas](./docs/MONGODB.md) | Free (M0) |
+
+**Total MVP Cost:** $0/month (within free tiers)
 
 ## Project Structure
 
 ```
 kalakaarian/
-├── src/                 # React frontend
-├── server/              # Express API backend
-├── models/              # Mongoose database models
-├── infra/               # Infrastructure configs (nginx)
-├── docs/                # Documentation
-└── docker-compose.yml    # Container orchestration
+├── src/                     # React frontend
+│   ├── api/                 # API calls (axios)
+│   ├── contexts/            # React contexts (Auth)
+│   ├── hooks/               # Custom hooks
+│   ├── components/          # UI components
+│   └── pages/               # Page components
+├── server/                   # Express API backend
+│   ├── config/              # Configuration
+│   ├── controllers/         # Route handlers
+│   ├── middleware/          # Auth, validation, errors
+│   ├── models/              # Mongoose models
+│   ├── routes/              # API routes
+│   └── utils/               # Helpers
+├── models/                   # Shared database schemas
+├── infra/                   # Infrastructure (nginx)
+├── docs/                    # Documentation
+└── docker-compose.yml       # Local development
 ```
 
 ## Quick Start
 
-### Prerequisites
-- Docker Desktop installed
-- Node.js 20+ (for local development)
+### 1. Clone & Install
 
-### Using Docker (Recommended)
-
-1. Clone the repository
-2. Create `.env` from `.env.example`:
-   ```bash
-   cp .env.example .env
-   ```
-3. Start all services:
-   ```bash
-   docker-compose up -d
-   ```
-4. Access the app:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
-   - MongoDB: localhost:27017
-
-### Local Development
-
-**Frontend:**
 ```bash
+git clone https://github.com/WickTech/kalakaarian.git
+cd kalakaarian
 npm install
+```
+
+### 2. Configure Environment
+
+```bash
+cp .env.example .env
+# Edit .env with your values
+```
+
+### 3. Start Development
+
+**Option A: Docker (Recommended)**
+```bash
+docker-compose up -d
+```
+
+**Option B: Local**
+```bash
+# Terminal 1: Backend
+cd server && npm install && npm run dev
+
+# Terminal 2: Frontend
 npm run dev
 ```
 
-**Backend:**
-```bash
-cd server
-npm install
-npm run dev
-```
+### 4. Access
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend | http://localhost:5000 |
+| MongoDB | localhost:27017 |
+
+## Deployment Guide
+
+1. **[MongoDB Atlas Setup](./docs/MONGODB.md)** - Create free database
+2. **[Railway Backend Deploy](./docs/RAILWAY.md)** - Deploy Express API
+3. **[Vercel Frontend Deploy](./docs/VERCEL.md)** - Deploy React app
 
 ## Features
 
+### MVP Features
 - [x] User registration (Brand/Influencer)
 - [x] Login with JWT authentication
 - [x] Influencer marketplace with filters
 - [x] Campaign creation & management
 - [x] Proposal submission workflow
+- [x] Cart system
+
+### Future Features
 - [ ] Escrow payment system
 - [ ] Real-time messaging
 - [ ] Analytics dashboard
+- [ ] Social media integrations
 
 ## API Endpoints
 
+### Authentication
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | /api/auth/register | Register user |
-| POST | /api/auth/login | Login |
-| GET | /api/auth/profile | Get user profile |
-| GET | /api/influencers | List influencers |
-| GET | /api/influencers/:id | Get influencer |
-| POST | /api/campaigns | Create campaign |
-| GET | /api/campaigns | List campaigns |
-| POST | /api/cart | Manage cart |
-| GET | /api/cart | Get cart |
+| POST | `/api/auth/register` | Register user |
+| POST | `/api/auth/login` | Login |
+| GET | `/api/auth/profile` | Get user profile |
 
-See [docs/API.md](./docs/API.md) for full API documentation.
+### Influencers
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/influencers` | List influencers |
+| GET | `/api/influencers/:id` | Get influencer |
+
+### Campaigns
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/campaigns` | List campaigns |
+| POST | `/api/campaigns` | Create campaign |
+| GET | `/api/campaigns/:id` | Get campaign |
+| PUT | `/api/campaigns/:id` | Update campaign |
+
+### Cart
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/cart` | Get cart |
+| POST | `/api/cart/add` | Add to cart |
+| DELETE | `/api/cart/remove/:id` | Remove from cart |
+
+See [docs/API.md](./docs/API.md) for full documentation.
 
 ## Environment Variables
 
-```env
-# Backend
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/kalakariaan
-JWT_SECRET=your-secret-key
-
-# Frontend
-VITE_API_URL=http://localhost:5000/api
-```
+See [.env.example](./.env.example) for all variables.
 
 ## Contributing
 

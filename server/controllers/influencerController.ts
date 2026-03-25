@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import InfluencerProfile from '../models/InfluencerProfile';
-import User from '../models/User';
+import { InfluencerProfile } from '../models/InfluencerProfile';
+import { User } from '../models/User';
 
 export const getInfluencers = async (req: Request, res: Response): Promise<void> => {
   // TODO: List influencers with filters

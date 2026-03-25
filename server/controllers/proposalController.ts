@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Proposal from '../models/Proposal';
+import { Proposal } from '../models/Proposal';
 import { AuthRequest } from '../middleware/auth';
 
 export const getProposals = async (req: AuthRequest, res: Response): Promise<void> => {

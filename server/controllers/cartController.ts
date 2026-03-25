@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import Cart from '../models/Cart';
+import { Cart } from '../models/Cart';
 import { AuthRequest } from '../middleware/auth';
 
 export const getCart = async (req: AuthRequest, res: Response): Promise<void> => {

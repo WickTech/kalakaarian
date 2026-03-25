@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import User from '../models/User';
-import InfluencerProfile from '../models/InfluencerProfile';
-import BrandProfile from '../models/BrandProfile';
+import { User } from '../models/User';
+import { InfluencerProfile } from '../models/InfluencerProfile';
+import { BrandProfile } from '../models/BrandProfile';
 import { generateToken } from '../utils/jwt';
 import { AuthRequest } from '../middleware/auth';
 

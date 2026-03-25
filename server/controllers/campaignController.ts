@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import Campaign from '../models/Campaign';
-import Proposal from '../models/Proposal';
+import { Campaign } from '../models/Campaign';
+import { Proposal } from '../models/Proposal';
 import { AuthRequest } from '../middleware/auth';
 
 export const getCampaigns = async (req: AuthRequest, res: Response): Promise<void> => {

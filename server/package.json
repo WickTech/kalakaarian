@@ -7,7 +7,9 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "dev": "ts-node src/app.ts",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "seed": "ts-node src/scripts/seed.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

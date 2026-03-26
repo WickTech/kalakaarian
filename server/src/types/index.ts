@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 export interface IUser {
   email: string;
-  password: string;
+  password?: string;
+  googleId?: string;
   role: 'brand' | 'influencer';
   name: string;
   createdAt?: Date;
@@ -13,7 +14,14 @@ export interface IInfluencerProfile {
   userId: mongoose.Types.ObjectId;
   bio: string;
   city: string;
-  genre: string[];
+  niches: string[];
+  socialHandles: {
+    instagram?: string;
+    youtube?: string;
+    tiktok?: string;
+    twitter?: string;
+  };
+  followerCount: number;
   platform: ('instagram' | 'youtube' | 'tiktok' | 'twitter')[];
   tier: 'nano' | 'micro' | 'mid' | 'macro' | 'mega';
   followers: {
@@ -49,6 +57,7 @@ export interface ICampaign {
   brandId: mongoose.Types.ObjectId;
   title: string;
   description: string;
+  deliverables: string;
   genre: string[];
   platform: string[];
   budget: number;
@@ -63,7 +72,8 @@ export interface IProposal {
   campaignId: mongoose.Types.ObjectId;
   influencerId: mongoose.Types.ObjectId;
   message: string;
-  price: number;
+  bidAmount: number;
+  timeline?: string;
   status: 'pending' | 'accepted' | 'rejected' | 'negotiating';
   createdAt?: Date;
   updatedAt?: Date;

@@ -7,11 +7,14 @@ import {
   updateProposal,
   deleteProposal,
   respondToProposal,
+  getMyProposals,
 } from '../controllers/proposalController';
 import { auth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
 const router = Router();
+
+router.get('/my', auth, getMyProposals);
 
 router.get('/', auth, getProposals);
 

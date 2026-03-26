@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
-import { register, login, getProfile, updateProfile } from '../controllers/authController';
+import { register, login, getProfile, updateProfile, googleLogin } from '../controllers/authController';
 import { auth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
@@ -26,6 +26,15 @@ router.post(
   ],
   validate,
   login
+);
+
+router.post(
+  '/google',
+  [
+    body('code').notEmpty().withMessage('Authorization code is required'),
+  ],
+  validate,
+  googleLogin
 );
 
 router.get('/profile', auth, getProfile);

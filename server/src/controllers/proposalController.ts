@@ -42,6 +42,30 @@ export const getProposals = async (req: AuthRequest, res: Response): Promise<voi
   }
 };
 
+export const getMyProposals = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'influencer') {
+      res.status(403).json({ message: 'Only influencers can view their proposals' });
+      return;
+    }
+
+    const { status, campaignId } = req.query;
+
+    const query: any = { influencerId: req.user.userId };
+    if (status) query.status = status;
+    if (campaignId) query.campaignId = campaignId;
+
+    const proposals = await Proposal.find(query)
+      .populate('campaignId', 'title budget status')
+      .sort({ createdAt: -1 });
+
+    res.json({ proposals });
+  } catch (error) {
+    console.error('Get my proposals error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const getProposalById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user) {
@@ -134,7 +158,7 @@ export const updateProposal = async (req: AuthRequest, res: Response): Promise<v
     }
 
     const { id } = req.params;
-    const { message, price } = req.body;
+    const { message, bidAmount, timeline } = req.body;
 
     const proposal = await Proposal.findOne({ _id: id, influencerId: req.user.userId });
     if (!proposal) {
@@ -148,7 +172,8 @@ export const updateProposal = async (req: AuthRequest, res: Response): Promise<v
     }
 
     if (message) proposal.message = message;
-    if (price) proposal.price = price;
+    if (bidAmount) proposal.bidAmount = bidAmount;
+    if (timeline) proposal.timeline = timeline;
 
     await proposal.save();
     await proposal.populate('influencerId', 'name email');

@@ -9,11 +9,14 @@ import {
   submitProposal,
   getProposals,
   updateProposalStatus,
+  getOpenCampaigns,
 } from '../controllers/campaignController';
-import { auth } from '../middleware/auth';
+import { auth, optionalAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
 const router = Router();
+
+router.get('/open', optionalAuth, getOpenCampaigns);
 
 router.get('/', auth, getCampaigns);
 

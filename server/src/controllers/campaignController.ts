@@ -49,6 +49,45 @@ export const getCampaigns = async (req: AuthRequest, res: Response): Promise<voi
   }
 };
 
+export const getOpenCampaigns = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { genre, platform, budgetMin, budgetMax, page = 1, limit = 20 } = req.query;
+
+    const query: any = { status: 'open' };
+
+    if (genre) query.genre = { $in: Array.isArray(genre) ? genre : [genre] };
+    if (platform) query.platform = { $in: Array.isArray(platform) ? platform : [platform] };
+    if (budgetMin || budgetMax) {
+      query.budget = {};
+      if (budgetMin) query.budget.$gte = Number(budgetMin);
+      if (budgetMax) query.budget.$lte = Number(budgetMax);
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const campaigns = await Campaign.find(query)
+      .populate('brandId', 'name email')
+      .skip(skip)
+      .limit(Number(limit))
+      .sort({ createdAt: -1 });
+
+    const total = await Campaign.countDocuments(query);
+
+    res.json({
+      campaigns,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        pages: Math.ceil(total / Number(limit)),
+      },
+    });
+  } catch (error) {
+    console.error('Get open campaigns error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const getCampaignById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;

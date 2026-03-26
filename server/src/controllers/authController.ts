@@ -6,6 +6,44 @@ import BrandProfile from '../models/BrandProfile';
 import { generateToken } from '../utils/jwt';
 import { AuthRequest } from '../middleware/auth';
 
+interface GoogleTokens {
+  access_token: string;
+  expires_in: number;
+  scope: string;
+  token_type: string;
+}
+
+interface GoogleUserInfo {
+  id: string;
+  email: string;
+  name: string;
+  picture?: string;
+}
+
+const getGoogleUserInfo = async (code: string): Promise<GoogleUserInfo> => {
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALLBACK_URL } = process.env;
+  
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: GOOGLE_CLIENT_ID!,
+      client_secret: GOOGLE_CLIENT_SECRET!,
+      redirect_uri: GOOGLE_CALLBACK_URL!,
+      grant_type: 'authorization_code',
+    }),
+  });
+
+  const tokens = await tokenResponse.json() as GoogleTokens;
+
+  const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+  });
+
+  return userResponse.json() as Promise<GoogleUserInfo>;
+};
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password, name, role, companyName, industry, city, genre, platform, tier } = req.body;
@@ -69,6 +107,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    if (!user.password) {
+      res.status(400).json({ message: 'Please login with Google' });
+      return;
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       res.status(400).json({ message: 'Invalid credentials' });
@@ -89,6 +132,72 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const googleLogin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { code, role, companyName, industry, city, genre, platform, tier } = req.body;
+
+    if (!code) {
+      res.status(400).json({ message: 'Authorization code is required' });
+      return;
+    }
+
+    const googleUser = await getGoogleUserInfo(code);
+
+    let user = await User.findOne({ email: googleUser.email });
+
+    if (user && !user.googleId) {
+      user.googleId = googleUser.id;
+      await user.save();
+    }
+
+    if (!user) {
+      if (!role) {
+        res.status(400).json({ message: 'Role is required for new users' });
+        return;
+      }
+
+      user = await User.create({
+        email: googleUser.email,
+        name: googleUser.name,
+        googleId: googleUser.id,
+        role,
+      });
+
+      if (role === 'brand') {
+        await BrandProfile.create({
+          userId: user._id,
+          companyName: companyName || googleUser.name,
+          industry: industry || '',
+        });
+      } else if (role === 'influencer') {
+        await InfluencerProfile.create({
+          userId: user._id,
+          city: city || '',
+          genre: genre || [],
+          platform: platform || [],
+          tier: tier || 'micro',
+        });
+      }
+    }
+
+    const token = generateToken(user._id.toString(), user.role);
+
+    res.json({
+      message: 'Google login successful',
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

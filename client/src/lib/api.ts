@@ -228,7 +228,7 @@ export const api = {
   googleLogin: async (googleToken: string): Promise<LoginResponse> => {
     return request<LoginResponse>("/api/auth/google", {
       method: "POST",
-      body: JSON.stringify({ token: googleToken }),
+      body: JSON.stringify({ jwtToken: googleToken }),
     });
   },
 };

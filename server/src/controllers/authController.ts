@@ -138,14 +138,30 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
 export const googleLogin = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { code, role, companyName, industry, city, genre, platform, tier } = req.body;
+    const { token: jwtToken, code, role, companyName, industry, city, genre, platform, tier } = req.body;
 
-    if (!code) {
-      res.status(400).json({ message: 'Authorization code is required' });
+    let googleUser: GoogleUserInfo;
+
+    // Handle JWT credential from Google OAuth (frontend uses this)
+    if (jwtToken) {
+      // Decode JWT to get user info (no verification needed for basic info)
+      const base64Url = jwtToken.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(Buffer.from(base64, 'base64').toString());
+      
+      googleUser = {
+        id: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        picture: payload.picture,
+      };
+    } else if (code) {
+      // Handle OAuth authorization code
+      googleUser = await getGoogleUserInfo(code);
+    } else {
+      res.status(400).json({ message: 'Token or code is required' });
       return;
     }
-
-    const googleUser = await getGoogleUserInfo(code);
 
     let user = await User.findOne({ email: googleUser.email });
 

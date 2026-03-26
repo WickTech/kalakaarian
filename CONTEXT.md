@@ -2,6 +2,8 @@
 
 **Last Updated:** 2026-03-26
 
+---
+
 ## Project Overview
 
 **Kalakariaan** is a D2C Influencer Marketplace connecting brands with micro-influencers for authentic marketing campaigns.
@@ -24,6 +26,8 @@ Role Selection (Brand / Influencer)
 └────────────────────┴────────────────────┘
 ```
 
+---
+
 ## Tech Stack
 
 - **Frontend:** React 18 + TypeScript + Vite + Tailwind CSS
@@ -32,201 +36,169 @@ Role Selection (Brand / Influencer)
 - **Auth:** Google OAuth 2.0 + JWT
 - **Deployment:** Vercel (frontend) + Railway (backend)
 
+---
+
 ## Project Structure (Monorepo)
 
 ```
-/kalakaarian
+/home/rishi/github/kalakaarian/
 ├── client/              # Frontend (Vite + React)
-│   └── src/
-│       ├── pages/       # All page components
-│       ├── components/  # Reusable components
-│       ├── hooks/       # Custom hooks
-│       └── lib/         # Utilities & API client
 ├── server/              # Backend (Express)
-│   └── src/
-│       ├── controllers/ # Route handlers
-│       ├── models/      # Mongoose models
-│       ├── routes/      # API routes
-│       └── middleware/ # Auth, validation
-├── packages/
-│   └── models/          # Shared TypeScript types
-└── docs/               # Documentation
+├── packages/models/     # Shared TypeScript types
+├── docs/                # Documentation
+└── .env.example         # Environment variables template
 ```
+
+**GitHub Repo:** https://github.com/WickTech/Kalakaarian
+
+---
 
 ## Current Status
 
-| Component | Status |
-|-----------|--------|
-| Frontend | 🟡 Landing page + Auth UI, needs Google OAuth |
-| Backend | 🟡 Basic auth, needs Google OAuth |
-| Database | ✅ Models ready |
-| Testing | 🔴 Needs setup |
-| Docs | 🟡 Needs update |
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Frontend | ✅ | Landing page works, Google OAuth UI added |
+| Backend | ✅ | Google OAuth endpoints added |
+| Google OAuth | 🔄 | Testing - credentials configured, awaiting verification |
+| Database | ✅ | Models ready with indexes |
+| Deployment | ✅ | Vercel + Railway |
 
 ---
 
-## Agent Responsibilities
+## Google OAuth Setup (Completed)
 
-### 🤖 Agent 1: FRONTEND
+### Step 1: Google Cloud Project
+- Created project: `kalakaarian`
 
-**Location:** `/client`
+### Step 2: OAuth Credentials
+- Created OAuth client ID
+- Configured consent screen (External)
+- Added authorized domains
+- Added redirect URIs:
+  - `https://kalakaarian-production.up.railway.app/api/auth/google/callback`
+  - `http://localhost:4000/api/auth/google/callback`
 
-**Responsibilities:**
-1. Landing Page redesign with product info
-2. Google OAuth login integration (Google Sign-In)
-3. Role selection flow after login
-4. Brand dashboard (browse influencers, create campaign)
-5. Influencer dashboard (view campaigns, submit proposals)
-6. Marketplace for brands to browse influencers
-
-**Files to modify:**
-- `client/src/pages/Landing.tsx`
-- `client/src/pages/LoginPage.tsx`
-- `client/src/pages/RoleSelectPage.tsx`
-- `client/src/pages/BrandDashboard.tsx`
-- `client/src/pages/InfluencerDashboard.tsx`
-- `client/src/hooks/useAuth.tsx`
-
----
-
-### 🤖 Agent 2: BACKEND
-
-**Location:** `/server`
-
-**Responsibilities:**
-1. Google OAuth 2.0 implementation
-2. JWT token generation for Google users
-3. Role-based API endpoints
-4. Campaign CRUD for brands
-5. Proposal endpoints for influencers
-6. Influencer search/filter APIs
-
-**Files to modify:**
-- `server/src/routes/auth.ts`
-- `server/src/controllers/authController.ts`
-- `server/src/controllers/campaignController.ts`
-- `server/src/controllers/proposalController.ts`
-- `server/src/controllers/influencerController.ts`
-
----
-
-### 🤖 Agent 3: DATABASE
-
-**Location:** `/server/src/models`
-
-**Responsibilities:**
-1. User model with Google ID
-2. BrandProfile and InfluencerProfile models
-3. Campaign model with status
-4. Proposal model
-5. Database indexes for performance
-6. Seed data for testing
-
-**Files to modify:**
-- `server/src/models/User.ts`
-- `server/src/models/BrandProfile.ts`
-- `server/src/models/InfluencerProfile.ts`
-- `server/src/models/Campaign.ts`
-- `server/src/models/Proposal.ts`
-
----
-
-### 🤖 Agent 4: INTEGRATIONS & DOCS
-
-**Location:** Root + `/docs`
-
-**Responsibilities:**
-1. Google Cloud Console setup guide
-2. Environment variables documentation
-3. API documentation (update)
-4. README with setup instructions
-5. OAuth callback handling
-
-**Files to modify:**
-- `.env.example`
-- `docs/API.md`
-- `README.md`
-
----
-
-### 🤖 Agent 5: TESTING & DEPLOYMENT
-
-**Location:** Root
-
-**Responsibilities:**
-1. Set up Vitest for unit tests
-2. Set up Playwright for E2E tests
-3. GitHub Actions CI/CD workflow
-4. Vercel deployment config
-5. Railway deployment config
-
-**Files to modify:**
-- `vitest.config.ts`
-- `playwright.config.ts`
-- `.github/workflows/`
-- `vercel.json`
-
----
-
-## API Endpoints (To Implement)
-
-### Auth 🔄 (Adding Google OAuth)
-- POST /api/auth/google - Google OAuth callback
-- POST /api/auth/register
-- POST /api/auth/login
-- GET /api/auth/profile
-
-### User Profiles
-- GET /api/profile - Get current user profile
-- PUT /api/profile - Update profile
-
-### Campaigns (Brand only)
-- GET /api/campaigns - List brand's campaigns
-- POST /api/campaigns - Create campaign
-- GET /api/campaigns/:id
-- PUT /api/campaigns/:id
-- DELETE /api/campaigns/:id
-
-### Campaigns (Public - Influencer)
-- GET /api/campaigns/open - List open campaigns
-
-### Proposals (Influencer)
-- POST /api/proposals - Submit proposal
-- GET /api/proposals/my - My proposals
-- PUT /api/proposals/:id - Update proposal
-
-### Proposals (Brand)
-- GET /api/campaigns/:id/proposals - Proposals for campaign
-- PUT /api/proposals/:id/respond - Accept/reject proposal
-
-### Influencers
-- GET /api/influencers - Search/filter influencers
-
----
-
-## Environment Variables
+### Step 3: Environment Variables
 
 **Backend (Railway):**
-- MONGODB_URI
-- JWT_SECRET
-- GOOGLE_CLIENT_ID
-- GOOGLE_CLIENT_SECRET
-- GOOGLE_CALLBACK_URL
-- PORT
+- `GOOGLE_CLIENT_ID` ✅
+- `GOOGLE_CLIENT_SECRET` ✅
+- `GOOGLE_CALLBACK_URL` ✅
+- `MONGODB_URI` ✅
+- `JWT_SECRET` ✅
 
 **Frontend (Vercel):**
-- VITE_API_URL (points to Railway backend)
-- VITE_GOOGLE_CLIENT_ID
+- `VITE_GOOGLE_CLIENT_ID` ✅
+- `VITE_API_URL` ✅
 
 ---
 
-## Key GitHub Repo
+## Next Steps
 
-**URL:** https://github.com/WickTech/Kalakaarian
+### Immediate
+1. **Test Google OAuth** - Wait for Google settings to propagate (up to few hours)
+2. **Verify login works** - Try signing in with Google
+3. **Handle role selection** - After login, user picks Brand or Influencer
 
-**Local Path:** `/home/rishi/github/kalakaarian`
+### Phase 2: Core Features
+1. **Brand Dashboard** - Browse influencers, create campaigns
+2. **Influencer Dashboard** - View campaigns, submit proposals
+3. **Campaign Management** - Full CRUD for brands
+4. **Proposal System** - Submit, accept, reject proposals
 
-**Deployment:**
-- Frontend: Vercel
-- Backend: Railway
-- Database: MongoDB (Railway)
+### Phase 3: Enhancements
+1. **Profile Management** - Edit brand/influencer profiles
+2. **Search & Filter** - Better influencer search
+3. **Messaging** - Chat between brand and influencer
+4. **Analytics** - Campaign performance tracking
+
+---
+
+## Environment Variables Reference
+
+### Backend (Railway)
+```
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+GOOGLE_CALLBACK_URL=https://kalakaarian-production.up.railway.app/api/auth/google/callback
+PORT=4000
+```
+
+### Frontend (Vercel)
+```
+VITE_API_URL=https://kalakaarian-production.up.railway.app
+VITE_GOOGLE_CLIENT_ID=your_client_id.apps.googleusercontent.com
+```
+
+---
+
+## API Endpoints
+
+### Auth
+- `POST /api/auth/google` - Google OAuth login
+- `POST /api/auth/register` - Email registration
+- `POST /api/auth/login` - Email login
+- `GET /api/auth/profile` - Get current user
+
+### Campaigns
+- `GET /api/campaigns` - List brand's campaigns (brand only)
+- `POST /api/campaigns` - Create campaign (brand only)
+- `GET /api/campaigns/open` - List open campaigns (influencer)
+- `GET /api/campaigns/:id` - Get campaign details
+- `PUT /api/campaigns/:id` - Update campaign
+- `DELETE /api/campaigns/:id` - Delete campaign
+
+### Proposals
+- `POST /api/proposals` - Submit proposal (influencer)
+- `GET /api/proposals/my` - My proposals (influencer)
+- `GET /api/campaigns/:id/proposals` - Proposals for campaign (brand)
+- `PUT /api/proposals/:id/respond` - Accept/reject (brand)
+
+### Influencers
+- `GET /api/influencers` - Search/filter influencers
+
+---
+
+## Key Files
+
+- **Frontend Entry:** `client/src/main.tsx`
+- **Backend Entry:** `server/src/app.ts`
+- **Auth Hook:** `client/src/hooks/useAuth.tsx`
+- **API Client:** `client/src/lib/api.ts`
+- **User Model:** `server/src/models/User.ts`
+
+---
+
+## Commands
+
+```bash
+# Navigate to project
+cd /home/rishi/github/kalakaarian
+
+# Install dependencies
+cd client && npm install
+
+# Run frontend locally
+cd client && npm run dev
+
+# Run backend locally
+cd server && npm run dev
+
+# Build frontend
+cd client && npm run build
+
+# Run tests
+npm test
+```
+
+---
+
+## Troubleshooting
+
+### Google OAuth Error: invalid_client
+- Check Client ID matches exactly in Vercel and Google Cloud Console
+- Wait 5 minutes to few hours for OAuth settings to propagate
+- Ensure authorized domains and redirect URIs are added
+- Add test user email in OAuth consent screen if in "Testing" mode

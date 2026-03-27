@@ -127,6 +127,12 @@ export interface RegisterData {
   tier?: string;
 }
 
+export interface LoginResponse {
+  message: string;
+  user: User;
+  token: string;
+}
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);

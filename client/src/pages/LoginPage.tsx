@@ -1,12 +1,12 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Building2, Star } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { api } from "@/lib/api";
 
 interface LoginFormData {
   email: string;
@@ -15,12 +15,14 @@ interface LoginFormData {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [mode, setMode] = useState<"login" | "signup-role">("login");
-  const [role, setRole] = useState<"brand" | "influencer" | null>(null);
   const [form, setForm] = useState<LoginFormData>({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+  const showGoogleLogin = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "your-google-client-id.apps.googleusercontent.com";
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -43,6 +45,19 @@ export default function LoginPage() {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      setError("");
+      setLoading(true);
+      await loginWithGoogle(credentialResponse.credential);
+      navigate("/dashboard");
+    } catch (err) {
+      setError("Google login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRoleSelect = (selectedRole: "brand" | "influencer") => {
     if (selectedRole === "brand") {
       navigate("/brand-register");
@@ -55,7 +70,11 @@ export default function LoginPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-700 via-fuchsia-600 to-pink-500 px-4 py-12">
         <div className="w-full max-w-5xl space-y-6">
-          <Link to="/login" className="inline-flex items-center gap-2 text-sm text-white/90 hover:text-white">
+          <Link 
+            to="#" 
+            onClick={() => setMode("login")}
+            className="inline-flex items-center gap-2 text-sm text-white/90 hover:text-white"
+          >
             <ArrowLeft className="h-4 w-4" />
             Back
           </Link>
@@ -122,22 +141,26 @@ export default function LoginPage() {
             <CardDescription>Sign in to continue to your dashboard</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-col items-center justify-center space-y-4 pt-2">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setError("Google login failed")}
-                useOneTap
-                theme="filled_blue"
-                shape="rectangular"
-                width="100%"
-              />
-            </div>
+            {showGoogleLogin && (
+              <>
+                <div className="flex flex-col items-center justify-center space-y-4 pt-2">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => setError("Google login failed")}
+                    useOneTap
+                    theme="filled_blue"
+                    shape="rectangular"
+                    width="100%"
+                  />
+                </div>
 
-            <div className="relative flex items-center py-2">
-              <div className="flex-grow border-t border-muted" />
-              <span className="mx-4 flex-shrink text-xs uppercase text-muted-foreground">Or continue with</span>
-              <div className="flex-grow border-t border-muted" />
-            </div>
+                <div className="relative flex items-center py-2">
+                  <div className="flex-grow border-t border-muted" />
+                  <span className="mx-4 flex-shrink text-xs uppercase text-muted-foreground">Or continue with</span>
+                  <div className="flex-grow border-t border-muted" />
+                </div>
+              </>
+            )}
 
             <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-2">

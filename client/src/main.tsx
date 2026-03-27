@@ -4,9 +4,14 @@ import App from "./App.tsx";
 import "./index.css";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const isValidClientId = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "your-google-client-id.apps.googleusercontent.com";
 
 createRoot(document.getElementById("root")!).render(
-  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+  isValidClientId ? (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <App />
+    </GoogleOAuthProvider>
+  ) : (
     <App />
-  </GoogleOAuthProvider>
+  )
 );

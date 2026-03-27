@@ -5,11 +5,15 @@ interface IUserDocument extends IUser, Document {}
 
 const userSchema = new Schema(
   {
-    email: { type: String, required: true, unique: true, index: true },
+    email: { type: String, unique: true, sparse: true, index: true },
+    username: { type: String, unique: true, sparse: true, index: true },
+    phone: { type: String, unique: true, sparse: true, index: true },
+    phoneVerified: { type: Boolean, default: false },
     password: { type: String },
     googleId: { type: String, unique: true, sparse: true, index: true },
     role: { type: String, enum: ['brand', 'influencer'], required: true, index: true },
     name: { type: String, required: true },
+    isPhoneLogin: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

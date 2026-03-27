@@ -6,6 +6,13 @@ import BrandProfile from '../models/BrandProfile';
 import { generateToken } from '../utils/jwt';
 import { AuthRequest } from '../middleware/auth';
 
+const OTP_EXPIRY = 10 * 60 * 1000;
+const otpStore = new Map<string, { otp: string; expiresAt: number }>();
+
+const generateOTP = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
 interface GoogleTokens {
   access_token: string;
   expires_in: number;
@@ -44,13 +51,117 @@ const getGoogleUserInfo = async (code: string): Promise<GoogleUserInfo> => {
   return userResponse.json() as Promise<GoogleUserInfo>;
 };
 
+export const sendOTP = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { phone } = req.body;
+    
+    if (!phone) {
+      res.status(400).json({ message: 'Phone number is required' });
+      return;
+    }
+
+    const normalizedPhone = phone.replace(/\D/g, '');
+    const otp = generateOTP();
+    const expiresAt = Date.now() + OTP_EXPIRY;
+
+    otpStore.set(normalizedPhone, { otp, expiresAt });
+    
+    console.log(`OTP for ${normalizedPhone}: ${otp}`);
+
+    res.json({ message: 'OTP sent successfully', phone: normalizedPhone.slice(-4).padStart(normalizedPhone.length, '*') });
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { phone, otp } = req.body;
+    
+    if (!phone || !otp) {
+      res.status(400).json({ message: 'Phone and OTP are required' });
+      return;
+    }
+
+    const normalizedPhone = phone.replace(/\D/g, '');
+    const storedData = otpStore.get(normalizedPhone);
+
+    if (!storedData) {
+      res.status(400).json({ message: 'OTP not found or expired' });
+      return;
+    }
+
+    if (Date.now() > storedData.expiresAt) {
+      otpStore.delete(normalizedPhone);
+      res.status(400).json({ message: 'OTP expired' });
+      return;
+    }
+
+    if (storedData.otp !== otp) {
+      res.status(400).json({ message: 'Invalid OTP' });
+      return;
+    }
+
+    otpStore.delete(normalizedPhone);
+
+    let user = await User.findOne({ phone: normalizedPhone });
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found. Please register first.' });
+      return;
+    }
+
+    user.phoneVerified = true;
+    await user.save();
+
+    const token = generateToken(user._id.toString(), user.role);
+
+    res.json({
+      message: 'OTP verified successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, name, role, companyName, industry, city, genre, platform, tier } = req.body;
+    const { email, username, phone, password, name, role, companyName, industry, city, genre, platform, tier } = req.body;
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      res.status(400).json({ message: 'User already exists' });
+    if (!email && !phone && !username) {
+      res.status(400).json({ message: 'Email, phone, or username is required' });
+      return;
+    }
+
+    if (!password || !name || !role) {
+      res.status(400).json({ message: 'Password, name, and role are required' });
+      return;
+    }
+
+    const existingByEmail = email ? await User.findOne({ email }) : null;
+    if (existingByEmail) {
+      res.status(400).json({ message: 'User with this email already exists' });
+      return;
+    }
+
+    const existingByUsername = username ? await User.findOne({ username }) : null;
+    if (existingByUsername) {
+      res.status(400).json({ message: 'Username already taken' });
+      return;
+    }
+
+    const existingByPhone = phone ? await User.findOne({ phone: phone.replace(/\D/g, '') }) : null;
+    if (existingByPhone) {
+      res.status(400).json({ message: 'User with this phone already exists' });
       return;
     }
 
@@ -58,9 +169,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const user = await User.create({
       email,
+      username,
+      phone: phone ? phone.replace(/\D/g, '') : undefined,
       password: hashedPassword,
       name,
       role,
+      phoneVerified: phone ? false : undefined,
     });
 
     if (role === 'brand') {
@@ -86,6 +200,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       user: {
         id: user._id,
         email: user.email,
+        username: user.username,
+        phone: user.phone,
         name: user.name,
         role: user.role,
       },
@@ -99,16 +215,52 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { email, username, password, phone, isPhoneLogin } = req.body;
 
-    const user = await User.findOne({ email });
+    if (isPhoneLogin && phone) {
+      const normalizedPhone = phone.replace(/\D/g, '');
+      const user = await User.findOne({ phone: normalizedPhone });
+      
+      if (!user) {
+        res.status(400).json({ message: 'User not found with this phone' });
+        return;
+      }
+
+      const otp = generateOTP();
+      const expiresAt = Date.now() + OTP_EXPIRY;
+      otpStore.set(normalizedPhone, { otp, expiresAt });
+      
+      console.log(`Login OTP for ${normalizedPhone}: ${otp}`);
+
+      res.json({ 
+        message: 'OTP sent for login',
+        phone: normalizedPhone.slice(-4).padStart(normalizedPhone.length, '*'),
+        isNewUser: false 
+      });
+      return;
+    }
+
+    if (!email && !username) {
+      res.status(400).json({ message: 'Email or username is required' });
+      return;
+    }
+
+    if (!password) {
+      res.status(400).json({ message: 'Password is required' });
+      return;
+    }
+
+    const user = email 
+      ? await User.findOne({ email })
+      : await User.findOne({ username });
+
     if (!user) {
       res.status(400).json({ message: 'Invalid credentials' });
       return;
     }
 
     if (!user.password) {
-      res.status(400).json({ message: 'Please login with Google' });
+      res.status(400).json({ message: 'Please login with Google or OTP' });
       return;
     }
 
@@ -125,6 +277,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       user: {
         id: user._id,
         email: user.email,
+        username: user.username,
         name: user.name,
         role: user.role,
       },

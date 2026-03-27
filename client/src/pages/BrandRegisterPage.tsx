@@ -7,12 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api";
 
 interface BrandRegisterFormData {
   companyName: string;
   contactName: string;
   email: string;
   phone: string;
+  password: string;
   industry: string;
 }
 
@@ -21,23 +24,27 @@ interface BrandRegisterErrors {
   contactName?: string;
   email?: string;
   phone?: string;
+  password?: string;
   industry?: string;
 }
 
 export default function BrandRegisterPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { register } = useAuth();
 
   const [form, setForm] = useState<BrandRegisterFormData>({
     companyName: "",
     contactName: "",
     email: "",
     phone: "",
+    password: "",
     industry: "",
   });
   const [errors, setErrors] = useState<BrandRegisterErrors>({});
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nextErrors: BrandRegisterErrors = {};
@@ -45,17 +52,33 @@ export default function BrandRegisterPage() {
     if (!form.contactName.trim()) nextErrors.contactName = "Contact Person Full Name is required.";
     if (!form.email.trim()) nextErrors.email = "Email ID is required.";
     if (!form.phone.trim()) nextErrors.phone = "Contact Number is required.";
+    if (!form.password.trim()) nextErrors.password = "Password is required.";
     if (!form.industry) nextErrors.industry = "Industry Type is required.";
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    toast({
-      title: "Submitted",
-      description: "Your brand profile has been submitted!",
-    });
-
-    navigate("/brand/campaign");
+    setLoading(true);
+    try {
+      await register({
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        name: form.contactName,
+        role: "brand",
+        companyName: form.companyName,
+        industry: form.industry,
+      });
+      navigate("/brand/dashboard");
+    } catch (err) {
+      toast({
+        title: "Registration Failed",
+        description: err instanceof Error ? err.message : "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -68,17 +91,12 @@ export default function BrandRegisterPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Brand Registration</CardTitle>
-            <CardDescription>Share your basic details to get started.</CardDescription>
+            <CardDescription>Create your account and brand profile to get started.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="companyName">Brand / Company Name *</Label>
-                <Input id="companyName" value={form.companyName} onChange={(event) => setForm((prev) => ({ ...prev, companyName: event.target.value }))} />
-                {errors.companyName && <p className="text-xs text-destructive">{errors.companyName}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contactName">Contact Person Full Name *</Label>
+                <Label htmlFor="contactName">Full Name *</Label>
                 <Input id="contactName" value={form.contactName} onChange={(event) => setForm((prev) => ({ ...prev, contactName: event.target.value }))} />
                 {errors.contactName && <p className="text-xs text-destructive">{errors.contactName}</p>}
               </div>
@@ -88,9 +106,19 @@ export default function BrandRegisterPage() {
                 {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Contact Number *</Label>
-                <Input id="phone" type="tel" value={form.phone} onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))} />
+                <Label htmlFor="phone">Phone Number *</Label>
+                <Input id="phone" type="tel" value={form.phone} onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))} placeholder="+91 9876543210" />
                 {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password *</Label>
+                <Input id="password" type="password" value={form.password} onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))} placeholder="Min 6 characters" />
+                {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Brand / Company Name *</Label>
+                <Input id="companyName" value={form.companyName} onChange={(event) => setForm((prev) => ({ ...prev, companyName: event.target.value }))} />
+                {errors.companyName && <p className="text-xs text-destructive">{errors.companyName}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Industry Type *</Label>
@@ -113,8 +141,8 @@ export default function BrandRegisterPage() {
                 {errors.industry && <p className="text-xs text-destructive">{errors.industry}</p>}
               </div>
 
-              <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-95">
-                Submit Brand Profile
+              <Button type="submit" className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-95" disabled={loading}>
+                {loading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
           </CardContent>

@@ -15,56 +15,52 @@ interface LandingProps {
 const features = [
   {
     icon: Users,
-    title: "Connect with Influencers",
-    description: "Access our curated network of nano, micro, macro, and celebrity influencers across all major platforms.",
+    title: "Creator Connectivity",
+    description: "Connect with N number of creators in a single click, with zero margins.",
   },
   {
     icon: Target,
-    title: "Targeted Campaigns",
-    description: "Create campaigns tailored to specific niches and reach the perfect audience for your brand.",
+    title: "Fast Campaign Delivery",
+    description: "Get your campaign ready within 24 hours with the lowest platform fee.",
   },
   {
     icon: TrendingUp,
-    title: "Track Performance",
-    description: "Real-time analytics and reporting to measure your campaign ROI and influencer performance.",
+    title: "Track & Navigate",
+    description: "Track your payments and navigate your campaigns with ease.",
   },
   {
-    icon: Shield,
-    title: "Verified Profiles",
-    description: "All influencers are verified with authentic engagement metrics and transparent pricing.",
+    icon: Sparkles,
+    title: "AI Profile Suggestions",
+    description: "Use AI to get 100% compatible creators matched to your target audience.",
   },
 ];
 
 const tiers = [
   {
     key: "nano",
-    label: "NANO",
-    range: "2K — 30K REACH",
-    cpm: "AVG CPM: ₹12",
+    label: "Nano Creator",
+    range: "2K - 25K Followers",
     desc: "INVENTORY: 30 ASSETS",
     color: "border-terminal",
   },
   {
     key: "micro",
-    label: "MICRO",
-    range: "31K — 250K REACH",
-    cpm: "AVG CPM: ₹8",
+    label: "Micro Creator",
+    range: "26K - 250K Followers",
     desc: "INVENTORY: 30 ASSETS",
     color: "border-terminal",
   },
   {
     key: "macro",
-    label: "MACRO",
-    range: "251K — 5M REACH",
-    cpm: "AVG CPM: ₹5",
+    label: "Macro Creator",
+    range: "251K - 3M Followers",
     desc: "INVENTORY: 30 ASSETS",
     color: "border-terminal",
   },
   {
     key: "celebrity",
-    label: "CELEBRITY",
-    range: "5M+ REACH",
-    cpm: "PRICING: CONTACT",
+    label: "Celebrity",
+    range: "3M+ Followers",
     desc: "INVENTORY: 10 ASSETS",
     color: "border-destructive",
   },
@@ -110,15 +106,15 @@ export default function Landing({ dark, toggleTheme, cartCount, onCartOpen }: La
         <div className="relative max-w-6xl mx-auto text-center space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm font-medium">
             <Sparkles className="h-4 w-4" />
-            India&apos;s Premier Influencer Marketplace
+            India&apos;s First AI-Powered Marketplace of Kalakaar (Creators)
           </div>
           
           <h1 className="text-4xl md:text-6xl font-black tracking-tight">
             <span className="bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">
-              Connect. Collaborate.
+              Influence. Impact.
             </span>
             <br />
-            <span className="text-foreground">Create Impact.</span>
+            <span className="text-foreground">Growth.</span>
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -143,7 +139,84 @@ export default function Landing({ dark, toggleTheme, cartCount, onCartOpen }: La
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Tier Grid - Second Section */}
+      <section className="py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold font-oswald tracking-tight mb-4">Explore Creators</h2>
+            <p className="text-muted-foreground">
+              Find the perfect influencer tier for your budget and campaign goals
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {tiers.map((tier) => (
+              <div
+                key={tier.key}
+                onClick={() => navigate(`/marketplace?tier=${tier.key}`)}
+                className="border-2 border-border rounded-xl p-8 cursor-pointer group hover:border-purple-500 transition-all relative bg-card"
+              >
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600/0 to-pink-600/0 group-hover:from-purple-600/5 group-hover:to-pink-600/5 transition-all" />
+                <span className="text-sm font-oswald font-medium text-muted-foreground mb-3 block">
+                  {tier.range}
+                </span>
+                <h3 className="text-3xl font-oswald font-bold mb-3 group-hover:text-purple-600 transition-colors">
+                  {tier.label}
+                </h3>
+                <p className="text-sm text-muted-foreground">{tier.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      <section className="py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold tracking-tight mb-4">Experience the Influencers</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Connect with creators who understand your vision and amplify your brand&apos;s message
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="border-2 hover:border-purple-500/50 transition-colors">
+              <CardContent className="pt-6">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center mb-4">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Diverse Categories</h3>
+                <p className="text-sm text-muted-foreground">
+                  Find influencers across fashion, tech, food, fitness, and more niches tailored to your brand
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-2 hover:border-purple-500/50 transition-colors">
+              <CardContent className="pt-6">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center mb-4">
+                  <Target className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Authentic Engagement</h3>
+                <p className="text-sm text-muted-foreground">
+                  Work with creators who have genuine connections with their audience for better results
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-2 hover:border-purple-500/50 transition-colors">
+              <CardContent className="pt-6">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center mb-4">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Measurable Impact</h3>
+                <p className="text-sm text-muted-foreground">
+                  Track campaign performance and ROI with detailed analytics and reporting tools
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Why Kalakaarian? Section */}
       <section className="py-16 px-4 bg-muted/30">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
@@ -169,55 +242,66 @@ export default function Landing({ dark, toggleTheme, cartCount, onCartOpen }: La
         </div>
       </section>
 
-      {/* Tier Grid */}
+      {/* Experience the Influencers Section */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold tracking-tight mb-4">Explore Influencer Tiers</h2>
-            <p className="text-muted-foreground">
-              Find the perfect influencer tier for your budget and campaign goals
+            <h2 className="text-3xl font-bold tracking-tight mb-4">Experience the Influencers</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Connect with creators who understand your vision and amplify your brand&apos;s message
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {tiers.map((tier) => (
-              <div
-                key={tier.key}
-                onClick={() => navigate(`/marketplace?tier=${tier.key}`)}
-                className="border-2 border-border rounded-xl p-6 cursor-pointer group hover:border-purple-500 transition-all relative bg-card"
-              >
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600/0 to-pink-600/0 group-hover:from-purple-600/5 group-hover:to-pink-600/5 transition-all" />
-                <span className="text-xs uppercase tracking-[0.5em] text-muted-foreground mb-2 block">
-                  {tier.range}
-                </span>
-                <h3 className="text-2xl font-bold mb-2 group-hover:text-purple-600 transition-colors">
-                  {tier.label}
-                </h3>
-                <p className="text-sm text-muted-foreground mb-1">{tier.cpm}</p>
-                <p className="text-xs text-muted-foreground">{tier.desc}</p>
-              </div>
-            ))}
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="border-2 hover:border-purple-500/50 transition-colors">
+              <CardContent className="pt-6">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center mb-4">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Diverse Categories</h3>
+                <p className="text-sm text-muted-foreground">
+                  Find influencers across fashion, tech, food, fitness, and more niches tailored to your brand
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-2 hover:border-purple-500/50 transition-colors">
+              <CardContent className="pt-6">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center mb-4">
+                  <Target className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Authentic Engagement</h3>
+                <p className="text-sm text-muted-foreground">
+                  Work with creators who have genuine connections with their audience for better results
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-2 hover:border-purple-500/50 transition-colors">
+              <CardContent className="pt-6">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center mb-4">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-lg mb-2">Measurable Impact</h3>
+                <p className="text-sm text-muted-foreground">
+                  Track campaign performance and ROI with detailed analytics and reporting tools
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Contact Us Section */}
       <section className="py-16 px-4 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600">
         <div className="max-w-4xl mx-auto text-center text-white">
-          <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Brand?</h2>
+          <h2 className="text-3xl font-bold mb-4">Contact Us</h2>
           <p className="text-white/90 mb-8 max-w-2xl mx-auto">
-            Join thousands of brands and influencers already growing their business on Kalakaarian
+            Have questions? We'd love to hear from you. Reach out to us and we'll get back to you soon.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/role-select">
               <Button size="lg" variant="secondary" className="gap-2">
-                Get Started Now
+                Get in Touch
                 <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link to="/marketplace">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 gap-2">
-                Browse Marketplace
               </Button>
             </Link>
           </div>

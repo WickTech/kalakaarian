@@ -1,11 +1,15 @@
 import mongoose from 'mongoose';
 
 export interface IUser {
-  email: string;
+  email?: string;
+  username?: string;
+  phone?: string;
+  phoneVerified?: boolean;
   password?: string;
   googleId?: string;
   role: 'brand' | 'influencer';
   name: string;
+  isPhoneLogin?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

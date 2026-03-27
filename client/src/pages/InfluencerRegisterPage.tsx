@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/useAuth";
 import { InfluencerNiche } from "@/data/mockInfluencers";
 
 const NICHE_OPTIONS: InfluencerNiche[] = [
@@ -25,6 +26,9 @@ const NICHE_OPTIONS: InfluencerNiche[] = [
 
 interface InfluencerRegisterFormData {
   fullName: string;
+  email: string;
+  phone: string;
+  password: string;
   bio: string;
   instagramHandle: string;
   youtubeUrl: string;
@@ -39,16 +43,25 @@ interface InfluencerRegisterFormData {
 
 interface InfluencerErrors {
   fullName?: string;
+  email?: string;
+  phone?: string;
+  password?: string;
   bio?: string;
   social?: string;
   niches?: string;
 }
 
 export default function InfluencerRegisterPage() {
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { register } = useAuth();
   const [errors, setErrors] = useState<InfluencerErrors>({});
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<InfluencerRegisterFormData>({
     fullName: "",
+    email: "",
+    phone: "",
+    password: "",
     bio: "",
     instagramHandle: "",
     youtubeUrl: "",
@@ -70,11 +83,14 @@ export default function InfluencerRegisterPage() {
     }));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nextErrors: InfluencerErrors = {};
     if (!form.fullName.trim()) nextErrors.fullName = "Full Name is required.";
+    if (!form.email.trim()) nextErrors.email = "Email is required.";
+    if (!form.phone.trim()) nextErrors.phone = "Phone number is required.";
+    if (!form.password.trim()) nextErrors.password = "Password is required.";
     if (!form.bio.trim()) nextErrors.bio = "Bio is required.";
     if (form.bio.length > 300) nextErrors.bio = "Bio cannot exceed 300 characters.";
     if (form.niches.length === 0) nextErrors.niches = "Please select at least one niche.";
@@ -85,25 +101,29 @@ export default function InfluencerRegisterPage() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    toast({
-      title: "Registration submitted",
-      description: "Your influencer profile has been saved successfully.",
-    });
-
-    setForm({
-      fullName: "",
-      bio: "",
-      instagramHandle: "",
-      youtubeUrl: "",
-      tiktokHandle: "",
-      twitterHandle: "",
-      niches: [],
-      instagramFollowers: "",
-      youtubeSubscribers: "",
-      tiktokFollowers: "",
-      engagementRate: "",
-    });
-    setErrors({});
+    setLoading(true);
+    try {
+      await register({
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        name: form.fullName,
+        role: "influencer",
+        genre: form.niches,
+        city: "",
+        platform: [],
+        tier: "micro",
+      });
+      navigate("/influencer/dashboard");
+    } catch (err) {
+      toast({
+        title: "Registration Failed",
+        description: err instanceof Error ? err.message : "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -117,24 +137,63 @@ export default function InfluencerRegisterPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl text-purple-700 dark:text-purple-300">Influencer Registration</CardTitle>
-            <CardDescription>Create your profile so brands can discover and collaborate with you.</CardDescription>
+            <CardDescription>Create your account and profile so brands can discover and collaborate with you.</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-7" onSubmit={handleSubmit}>
               <section className="space-y-3">
-                <h2 className="font-semibold">Personal Info</h2>
-                <div className="grid gap-2">
-                  <Label htmlFor="fullName">Full Name *</Label>
-                  <Input
-                    id="fullName"
-                    value={form.fullName}
-                    onChange={(event) => setForm((prev) => ({ ...prev, fullName: event.target.value }))}
-                    placeholder="Enter your full name"
-                  />
-                  {errors.fullName && <p className="text-xs text-destructive">{errors.fullName}</p>}
+                <h2 className="font-semibold">Account Details</h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="fullName">Full Name *</Label>
+                    <Input
+                      id="fullName"
+                      value={form.fullName}
+                      onChange={(event) => setForm((prev) => ({ ...prev, fullName: event.target.value }))}
+                      placeholder="Enter your full name"
+                    />
+                    {errors.fullName && <p className="text-xs text-destructive">{errors.fullName}</p>}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={form.email}
+                      onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+                      placeholder="you@example.com"
+                    />
+                    {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={form.phone}
+                      onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
+                      placeholder="+91 9876543210"
+                    />
+                    {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="password">Password *</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={form.password}
+                      onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+                      placeholder="Min 6 characters"
+                    />
+                    {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
+                  </div>
                 </div>
+              </section>
+
+              <section className="space-y-3">
+                <h2 className="font-semibold">Bio</h2>
                 <div className="grid gap-2">
-                  <Label htmlFor="bio">Bio *</Label>
+                  <Label htmlFor="bio">About You *</Label>
                   <Textarea
                     id="bio"
                     value={form.bio}
@@ -185,8 +244,8 @@ export default function InfluencerRegisterPage() {
                 </div>
               </section>
 
-              <Button type="submit" className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-95">
-                Submit Registration
+              <Button type="submit" className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-95" disabled={loading}>
+                {loading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
           </CardContent>

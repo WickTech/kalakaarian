@@ -2,7 +2,9 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "https://kalakaarian-produc
 
 export interface User {
   _id: string;
-  email: string;
+  email?: string;
+  username?: string;
+  phone?: string;
   role: "brand" | "influencer";
   name?: string;
   brandName?: string;
@@ -109,11 +111,18 @@ export interface LoginResponse {
 }
 
 export interface RegisterData {
-  email: string;
+  email?: string;
+  username?: string;
+  phone?: string;
   password: string;
   name: string;
   role: "brand" | "influencer";
-  brandName?: string;
+  companyName?: string;
+  industry?: string;
+  city?: string;
+  genre?: string[];
+  platform?: string[];
+  tier?: string;
 }
 
 class ApiError extends Error {
@@ -146,10 +155,31 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const api = {
-  login: async (email: string, password: string): Promise<LoginResponse> => {
+  login: async (emailOrUsername: string, password: string): Promise<LoginResponse> => {
     return request<LoginResponse>("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: emailOrUsername, password }),
+    });
+  },
+
+  loginWithPhone: async (phone: string): Promise<{ message: string; phone: string }> => {
+    return request<{ message: string; phone: string }>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ phone, isPhoneLogin: true }),
+    });
+  },
+
+  verifyPhoneOTP: async (phone: string, otp: string): Promise<LoginResponse> => {
+    return request<LoginResponse>("/api/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ phone, otp }),
+    });
+  },
+
+  sendOTP: async (phone: string): Promise<{ message: string; phone: string }> => {
+    return request<{ message: string; phone: string }>("/api/auth/send-otp", {
+      method: "POST",
+      body: JSON.stringify({ phone }),
     });
   },
 

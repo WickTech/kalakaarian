@@ -7,41 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { api, Campaign, Proposal } from "@/lib/api";
 
-const mockCampaign: Campaign = {
-  _id: "1",
-  brandId: "b1",
-  title: "Summer Fashion Collection Launch",
-  description:
-    "We're launching our new summer collection and looking for fashion influencers to create engaging content showcasing our latest designs. The campaign aims to reach young fashion-conscious audiences across India. We value authentic content that resonates with our brand values of sustainability and style.",
-  niche: "Fashion",
-  budget: 50000,
-  deadline: "2026-04-30",
-  status: "OPEN",
-  createdAt: "2026-03-01",
-  deliverables: "1 Instagram post + 3 stories\n1 dedicated Reel showcasing 3-5 outfits\nLink in bio directing to our summer collection page",
-  platform: "Instagram",
-  brandName: "StyleHub",
-};
-
-const mockProposal: Proposal | null = {
-  _id: "p1",
-  campaignId: "1",
-  influencerId: "i1",
-  campaignTitle: "Summer Fashion Collection Launch",
-  influencerName: "You",
-  status: "PENDING",
-  offeredAmount: 45000,
-  message: "I'm excited to collaborate with StyleHub! With my fashion-forward content and engaged audience, I can help showcase your summer collection effectively.",
-  timeline: "7 days",
-  createdAt: "2026-03-15",
-};
-
 export default function CampaignDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,9 +24,9 @@ export default function CampaignDetails() {
         ]);
         setCampaign(campaignData);
         setProposal(proposalData);
-      } catch (error) {
-        setCampaign(mockCampaign);
-        setProposal(mockProposal);
+      } catch (err) {
+        setError("Failed to load campaign");
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -72,7 +44,7 @@ export default function CampaignDetails() {
     );
   }
 
-  if (!campaign) {
+  if (error || !campaign) {
     return (
       <main className="min-h-screen bg-gradient-to-br from-purple-700 via-fuchsia-600 to-pink-500 px-4 py-8">
         <div className="mx-auto max-w-2xl">
@@ -84,7 +56,7 @@ export default function CampaignDetails() {
           </Link>
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">Campaign not found.</p>
+              <p className="text-muted-foreground">{error || "Campaign not found."}</p>
             </CardContent>
           </Card>
         </div>
@@ -92,16 +64,20 @@ export default function CampaignDetails() {
     );
   }
 
-  const statusColors = {
-    PENDING: "outline",
-    ACCEPTED: "default",
-    REJECTED: "secondary",
-  } as const;
+  const statusColors: Record<string, "outline" | "default" | "secondary" | "destructive"> = {
+    pending: "outline",
+    accepted: "default",
+    rejected: "destructive",
+  };
 
-  const statusIcons = {
-    PENDING: Clock,
-    ACCEPTED: CheckCircle,
-    REJECTED: XCircle,
+  const statusIcons: Record<string, typeof Clock> = {
+    pending: Clock,
+    accepted: CheckCircle,
+    rejected: XCircle,
+  };
+
+  const getStatusDisplay = (status: string) => {
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const StatusIcon = proposal ? statusIcons[proposal.status] : null;
@@ -123,7 +99,7 @@ export default function CampaignDetails() {
                 <CardTitle className="text-2xl">{campaign.title}</CardTitle>
                 <CardDescription className="text-base">{campaign.brandName}</CardDescription>
               </div>
-              <Badge variant="secondary">{campaign.niche}</Badge>
+              <Badge variant="secondary">{campaign.genre}</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -184,16 +160,12 @@ export default function CampaignDetails() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Offered Amount</p>
-                  <p className="text-xl font-bold">₹{proposal.offeredAmount.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground">Your Price</p>
+                  <p className="text-xl font-bold">₹{proposal.price.toLocaleString()}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Timeline</p>
-                  <p className="font-medium">{proposal.timeline}</p>
-                </div>
-                <Badge variant={statusColors[proposal.status]}>
+                <Badge variant={statusColors[proposal.status] || "secondary"}>
                   {StatusIcon && <StatusIcon className="mr-1 h-3 w-3" />}
-                  {proposal.status}
+                  {getStatusDisplay(proposal.status)}
                 </Badge>
               </div>
               {proposal.message && (

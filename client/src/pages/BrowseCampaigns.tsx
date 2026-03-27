@@ -5,102 +5,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, Campaign, CampaignFilters } from "@/lib/api";
 
-const niches = ["Fashion", "Tech", "Food", "Fitness", "Beauty", "Lifestyle", "Gaming", "Travel"];
-
-const mockCampaigns: Campaign[] = [
-  {
-    _id: "1",
-    brandId: "b1",
-    title: "Summer Fashion Collection Launch",
-    description: "We're launching our new summer collection and looking for fashion influencers to create engaging content showcasing our latest designs.",
-    niche: "Fashion",
-    budget: 50000,
-    deadline: "2026-04-30",
-    status: "OPEN",
-    createdAt: "2026-03-01",
-    deliverables: "1 Instagram post + 3 stories",
-    platform: "Instagram",
-    brandName: "StyleHub",
-  },
-  {
-    _id: "2",
-    brandId: "b2",
-    title: "Tech Product Review Campaign",
-    description: "Launching our new smart wearable device. Looking for tech influencers to create in-depth reviews and demonstration videos.",
-    niche: "Tech",
-    budget: 75000,
-    deadline: "2026-05-15",
-    status: "OPEN",
-    createdAt: "2026-03-10",
-    deliverables: "1 YouTube video + 2 Instagram posts",
-    platform: "YouTube",
-    brandName: "TechNova",
-  },
-  {
-    _id: "3",
-    brandId: "b3",
-    title: "Healthy Protein Supplements Promotion",
-    description: "Promoting our range of protein supplements targeting fitness enthusiasts and gym-goers.",
-    niche: "Fitness",
-    budget: 40000,
-    deadline: "2026-04-20",
-    status: "OPEN",
-    createdAt: "2026-03-05",
-    deliverables: "2 Instagram posts + 5 stories",
-    platform: "Instagram",
-    brandName: "FitFuel",
-  },
-  {
-    _id: "4",
-    brandId: "b4",
-    title: "Organic Skincare Product Launch",
-    description: "Introducing our new organic skincare line. Looking for beauty influencers who advocate natural products.",
-    niche: "Beauty",
-    budget: 60000,
-    deadline: "2026-05-01",
-    status: "OPEN",
-    createdAt: "2026-03-08",
-    deliverables: "1 Instagram reel + 2 stories",
-    platform: "Instagram",
-    brandName: "GlowNature",
-  },
-  {
-    _id: "5",
-    brandId: "b5",
-    title: "Travel Vlog Series Collaboration",
-    description: "Creating a travel vlog series showcasing hidden gems in India. Looking for travel content creators.",
-    niche: "Travel",
-    budget: 100000,
-    deadline: "2026-06-30",
-    status: "OPEN",
-    createdAt: "2026-03-12",
-    deliverables: "3 YouTube videos",
-    platform: "YouTube",
-    brandName: "Wanderlust India",
-  },
-];
+const genres = ["Fashion", "Tech", "Food", "Fitness", "Beauty", "Lifestyle", "Gaming", "Travel"];
 
 export default function BrowseCampaigns() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<CampaignFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchCampaigns = async () => {
+      setLoading(true);
       try {
         const data = await api.getOpenCampaigns(filters);
-        if (data && data.length > 0) {
-          setCampaigns(data);
-        } else {
-          setCampaigns(mockCampaigns);
-        }
-      } catch (error) {
-        setCampaigns(mockCampaigns);
+        setCampaigns(data);
+        setError(null);
+      } catch (err) {
+        setError("Failed to load campaigns");
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -112,7 +38,7 @@ export default function BrowseCampaigns() {
     if (searchTerm && !campaign.title.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
-    if (filters.niche && campaign.niche !== filters.niche) {
+    if (filters.niche && campaign.genre !== filters.niche) {
       return false;
     }
     if (filters.minBudget && campaign.budget < filters.minBudget) {
@@ -165,9 +91,9 @@ export default function BrowseCampaigns() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">All Niches</SelectItem>
-                    {niches.map((niche) => (
-                      <SelectItem key={niche} value={niche}>
-                        {niche}
+                    {genres.map((genre) => (
+                      <SelectItem key={genre} value={genre}>
+                        {genre}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -228,7 +154,7 @@ export default function BrowseCampaigns() {
                       <CardTitle className="text-lg">{campaign.title}</CardTitle>
                       <CardDescription>{campaign.brandName}</CardDescription>
                     </div>
-                    <Badge variant="secondary">{campaign.niche}</Badge>
+                    <Badge variant="secondary">{campaign.genre}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">

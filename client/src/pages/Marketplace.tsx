@@ -1,8 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronDown } from "lucide-react";
-import { allInfluencers } from "@/lib/data";
-import { Influencer } from "@/lib/store";
+import { ArrowLeft } from "lucide-react";
+import { api, InfluencerProfile } from "@/lib/api";
 import { InfluencerCard } from "@/components/InfluencerCard";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -12,7 +11,7 @@ interface MarketplaceProps {
   cartCount: number;
   onCartOpen: () => void;
   isInCart: (id: string) => boolean;
-  addToCart: (i: Influencer) => void;
+  addToCart: (i: any) => void;
 }
 
 const TIERS = ["nano", "micro", "macro", "celebrity"] as const;
@@ -31,17 +30,39 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
   const [genre, setGenre] = useState("All");
   const [sort, setSort] = useState<"high" | "low">("high");
   const [page, setPage] = useState(1);
+  const [influencers, setInfluencers] = useState<InfluencerProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInfluencers = async () => {
+      setLoading(true);
+      try {
+        const data = await api.searchInfluencers();
+        setInfluencers(data);
+      } catch (err) {
+        console.error("Failed to fetch influencers:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInfluencers();
+  }, []);
 
   const filtered = useMemo(() => {
-    let result = allInfluencers.filter((i) => i.platform === platform);
+    let result = influencers;
+    if (platform === "instagram") {
+      result = result.filter((i) => (i.followers?.instagram || 0) > 0);
+    } else {
+      result = result.filter((i) => (i.followers?.youtube || 0) > 0);
+    }
     if (tier !== "all") result = result.filter((i) => i.tier === tier);
     if (city !== "All") result = result.filter((i) => i.city === city);
-    if (genre !== "All") result = result.filter((i) => i.genre === genre);
+    if (genre !== "All") result = result.filter((i) => i.genres?.includes(genre));
     result.sort((a, b) =>
-      sort === "high" ? b.followers - a.followers : a.followers - b.followers
+      sort === "high" ? ((b.followers?.total || 0) - (a.followers?.total || 0)) : ((a.followers?.total || 0) - (b.followers?.total || 0))
     );
     return result;
-  }, [platform, tier, city, genre, sort]);
+  }, [influencers, platform, tier, city, genre, sort]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);

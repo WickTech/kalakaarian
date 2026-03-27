@@ -5,71 +5,54 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
+import { api, Campaign } from "@/lib/api";
 
-const mockCampaigns = [
-  {
-    _id: "1",
-    title: "Summer Fashion Collection",
-    description: "Promote our new summer collection",
-    niche: "Fashion",
-    budget: 50000,
-    deadline: "2026-06-30",
-    status: "OPEN" as const,
-    createdAt: "2026-03-01",
-  },
-  {
-    _id: "2",
-    title: "Tech Product Launch",
-    description: "Launch campaign for new smartphone",
-    niche: "Tech",
-    budget: 100000,
-    deadline: "2026-05-15",
-    status: "IN_PROGRESS" as const,
-    createdAt: "2026-02-10",
-  },
-  {
-    _id: "3",
-    title: "Fitness App Promotion",
-    description: "Promote our fitness app",
-    niche: "Fitness",
-    budget: 30000,
-    deadline: "2026-04-01",
-    status: "COMPLETED" as const,
-    createdAt: "2026-01-15",
-  },
-  {
-    _id: "4",
-    title: "Beauty Brand Campaign",
-    description: "Skincare product launch",
-    niche: "Beauty",
-    budget: 75000,
-    deadline: "2026-03-20",
-    status: "DRAFT" as const,
-    createdAt: "2026-03-20",
-  },
-];
+const statusColors: Record<string, "secondary" | "default" | "outline" | "destructive"> = {
+  draft: "secondary",
+  open: "default",
+  in_progress: "outline",
+  completed: "secondary",
+  cancelled: "destructive",
+};
 
-const statusColors = {
-  DRAFT: "secondary",
-  OPEN: "default",
-  IN_PROGRESS: "outline",
-  COMPLETED: "secondary",
-} as const;
-
-const statusIcons = {
-  DRAFT: FileText,
-  OPEN: Clock,
-  IN_PROGRESS: TrendingUp,
-  COMPLETED: CheckCircle,
+const statusIcons: Record<string, typeof FileText> = {
+  draft: FileText,
+  open: Clock,
+  in_progress: TrendingUp,
+  completed: CheckCircle,
 };
 
 export default function BrandDashboard() {
   const { user } = useAuth();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        const data = await api.getCampaigns();
+        setCampaigns(data);
+      } catch (err) {
+        setError("Failed to load campaigns");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCampaigns();
+  }, []);
 
   const stats = {
-    total: mockCampaigns.length,
-    active: mockCampaigns.filter((c) => c.status === "OPEN" || c.status === "IN_PROGRESS").length,
-    completed: mockCampaigns.filter((c) => c.status === "COMPLETED").length,
+    total: campaigns.length,
+    active: campaigns.filter((c) => c.status === "open" || c.status === "in_progress").length,
+    completed: campaigns.filter((c) => c.status === "completed").length,
+  };
+
+  const getStatusDisplay = (status: string) => {
+    if (status === "in_progress") return "In Progress";
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   return (
@@ -139,36 +122,49 @@ export default function BrandDashboard() {
             <CardDescription>Manage and track all your campaigns</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Campaign</TableHead>
-                  <TableHead>Niche</TableHead>
-                  <TableHead>Budget</TableHead>
-                  <TableHead>Deadline</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockCampaigns.map((campaign) => {
-                  const StatusIcon = statusIcons[campaign.status];
-                  return (
-                    <TableRow key={campaign._id}>
-                      <TableCell className="font-medium">{campaign.title}</TableCell>
-                      <TableCell>{campaign.niche}</TableCell>
-                      <TableCell>₹{campaign.budget.toLocaleString()}</TableCell>
-                      <TableCell>{new Date(campaign.deadline).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Badge variant={statusColors[campaign.status]}>
-                          <StatusIcon className="mr-1 h-3 w-3" />
-                          {campaign.status.replace("_", " ")}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-500">{error}</div>
+            ) : campaigns.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No campaigns yet. Create your first campaign!
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Campaign</TableHead>
+                    <TableHead>Genre</TableHead>
+                    <TableHead>Budget</TableHead>
+                    <TableHead>Deadline</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {campaigns.map((campaign) => {
+                    const statusKey = campaign.status as keyof typeof statusColors;
+                    const StatusIcon = statusIcons[statusKey] || FileText;
+                    return (
+                      <TableRow key={campaign._id}>
+                        <TableCell className="font-medium">{campaign.title}</TableCell>
+                        <TableCell>{campaign.genre}</TableCell>
+                        <TableCell>₹{campaign.budget.toLocaleString()}</TableCell>
+                        <TableCell>{new Date(campaign.deadline).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={statusColors[statusKey] || "secondary"}>
+                            <StatusIcon className="mr-1 h-3 w-3" />
+                            {getStatusDisplay(campaign.status)}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>

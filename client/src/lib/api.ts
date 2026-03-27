@@ -26,10 +26,10 @@ export interface Campaign {
   brandId: string;
   title: string;
   description: string;
-  niche: string;
+  genre: string;
   budget: number;
   deadline: string;
-  status: "DRAFT" | "OPEN" | "IN_PROGRESS" | "COMPLETED";
+  status: "draft" | "open" | "in_progress" | "completed" | "cancelled";
   createdAt: string;
   deliverables?: string;
   platform?: string;
@@ -43,9 +43,14 @@ export interface CampaignFilters {
 }
 
 export interface InfluencerProfile {
+  _id: string;
   name: string;
   bio: string;
-  niches: string[];
+  genres?: string[];
+  niches?: string[];
+  city?: string;
+  tier?: string;
+  platform?: string;
   instagramHandle?: string;
   youtubeHandle?: string;
   tiktokHandle?: string;
@@ -57,6 +62,7 @@ export interface InfluencerProfile {
     twitter?: number;
     total: number;
   };
+  price?: number;
 }
 
 export interface UpdateInfluencerProfileData {
@@ -91,23 +97,19 @@ export interface Proposal {
   influencerId: string;
   campaignTitle: string;
   influencerName: string;
-  status: "PENDING" | "ACCEPTED" | "REJECTED";
-  offeredAmount: number;
+  status: "pending" | "accepted" | "rejected";
+  price: number;
   message?: string;
-  timeline?: string;
   createdAt: string;
 }
 
-export interface SubmitProposalData {
-  campaignId: string;
-  offeredAmount: number;
-  message: string;
-  timeline: string;
-}
-
-export interface LoginResponse {
-  token: string;
-  user: User;
+export interface InfluencerSearchFilters {
+  tier?: string;
+  genre?: string;
+  platform?: string;
+  city?: string;
+  minFollowers?: number;
+  maxFollowers?: number;
 }
 
 export interface RegisterData {
@@ -191,30 +193,43 @@ export const api = {
   },
 
   getCurrentUser: async (): Promise<User> => {
-    return request<User>("/api/auth/me");
+    return request<User>("/api/auth/profile");
   },
 
   getBrandProfile: async (): Promise<BrandProfile> => {
-    return request<BrandProfile>("/api/brand/profile");
+    return request<BrandProfile>("/api/auth/profile");
   },
 
   getCampaigns: async (): Promise<Campaign[]> => {
-    return request<Campaign[]>("/api/brand/campaigns");
+    return request<Campaign[]>("/api/campaigns");
+  },
+
+  updateCampaign: async (id: string, data: Partial<Campaign>): Promise<Campaign> => {
+    return request<Campaign>(`/api/campaigns/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteCampaign: async (id: string): Promise<void> => {
+    return request<void>(`/api/campaigns/${id}`, {
+      method: "DELETE",
+    });
   },
 
   createCampaign: async (data: Partial<Campaign>): Promise<Campaign> => {
-    return request<Campaign>("/api/brand/campaigns", {
+    return request<Campaign>("/api/campaigns", {
       method: "POST",
       body: JSON.stringify(data),
     });
   },
 
   getInfluencerProfile: async (): Promise<InfluencerProfile> => {
-    return request<InfluencerProfile>("/api/influencer/profile");
+    return request<InfluencerProfile>("/api/influencers/profile");
   },
 
   getProposals: async (): Promise<Proposal[]> => {
-    return request<Proposal[]>("/api/influencer/proposals");
+    return request<Proposal[]>("/api/proposals/my");
   },
 
   getOpenCampaigns: async (filters?: CampaignFilters): Promise<Campaign[]> => {
@@ -230,26 +245,37 @@ export const api = {
     return request<Campaign>(`/api/campaigns/${id}`);
   },
 
-  submitProposal: async (data: SubmitProposalData): Promise<Proposal> => {
-    return request<Proposal>("/api/influencer/proposals", {
+  submitProposal: async (campaignId: string, message: string, price: number): Promise<Proposal> => {
+    return request<Proposal>(`/api/campaigns/${campaignId}/proposals`, {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify({ message, price }),
     });
   },
 
   getMyProposalForCampaign: async (campaignId: string): Promise<Proposal | null> => {
-    return request<Proposal>(`/api/influencer/proposals/campaign/${campaignId}`);
+    return request<Proposal>(`/api/campaigns/${campaignId}/proposals/my`);
+  },
+
+  getProposalsForCampaign: async (campaignId: string): Promise<Proposal[]> => {
+    return request<Proposal[]>(`/api/campaigns/${campaignId}/proposals`);
+  },
+
+  respondToProposal: async (proposalId: string, status: "accepted" | "rejected"): Promise<Proposal> => {
+    return request<Proposal>(`/api/proposals/${proposalId}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
   },
 
   updateInfluencerProfile: async (data: UpdateInfluencerProfileData): Promise<InfluencerProfile> => {
-    return request<InfluencerProfile>("/api/influencer/profile", {
+    return request<InfluencerProfile>("/api/influencers/profile", {
       method: "PUT",
       body: JSON.stringify(data),
     });
   },
 
   updateBrandProfile: async (data: UpdateBrandProfileData): Promise<BrandProfile> => {
-    return request<BrandProfile>("/api/brand/profile", {
+    return request<BrandProfile>("/api/auth/profile", {
       method: "PUT",
       body: JSON.stringify(data),
     });
@@ -260,6 +286,22 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ jwtToken: googleToken }),
     });
+  },
+
+  searchInfluencers: async (filters?: InfluencerSearchFilters): Promise<InfluencerProfile[]> => {
+    const params = new URLSearchParams();
+    if (filters?.tier) params.append("tier", filters.tier);
+    if (filters?.genre) params.append("genre", filters.genre);
+    if (filters?.platform) params.append("platform", filters.platform);
+    if (filters?.city) params.append("city", filters.city);
+    if (filters?.minFollowers) params.append("minFollowers", filters.minFollowers.toString());
+    if (filters?.maxFollowers) params.append("maxFollowers", filters.maxFollowers.toString());
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return request<InfluencerProfile[]>(`/api/influencers${query}`);
+  },
+
+  getInfluencerById: async (id: string): Promise<InfluencerProfile> => {
+    return request<InfluencerProfile>(`/api/influencers/${id}`);
   },
 };
 

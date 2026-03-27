@@ -1,85 +1,55 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, TrendingUp, DollarSign, CheckCircle, Clock, Edit, User } from "lucide-react";
+import { ArrowLeft, TrendingUp, DollarSign, CheckCircle, Edit, User } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
+import { api, Proposal, InfluencerProfile } from "@/lib/api";
 
-const mockProposals = [
-  {
-    _id: "1",
-    campaignId: "c1",
-    influencerId: "i1",
-    campaignTitle: "Summer Fashion Collection",
-    influencerName: "You",
-    status: "ACCEPTED" as const,
-    offeredAmount: 25000,
-    message: "Excited to collaborate!",
-    createdAt: "2026-03-15",
-  },
-  {
-    _id: "2",
-    campaignId: "c2",
-    influencerId: "i1",
-    campaignTitle: "Tech Product Launch",
-    influencerName: "You",
-    status: "PENDING" as const,
-    offeredAmount: 50000,
-    message: "Looking forward to this!",
-    createdAt: "2026-03-20",
-  },
-  {
-    _id: "3",
-    campaignId: "c3",
-    influencerId: "i1",
-    campaignTitle: "Fitness App Promotion",
-    influencerName: "You",
-    status: "REJECTED" as const,
-    offeredAmount: 15000,
-    createdAt: "2026-03-10",
-  },
-  {
-    _id: "4",
-    campaignId: "c4",
-    influencerId: "i1",
-    campaignTitle: "Beauty Brand Campaign",
-    influencerName: "You",
-    status: "ACCEPTED" as const,
-    offeredAmount: 35000,
-    message: "Love the brand!",
-    createdAt: "2026-03-05",
-  },
-];
+const statusColors: Record<string, "outline" | "default" | "secondary" | "destructive"> = {
+  pending: "outline",
+  accepted: "default",
+  rejected: "destructive",
+};
 
-const statusColors = {
-  PENDING: "outline",
-  ACCEPTED: "default",
-  REJECTED: "secondary",
-} as const;
-
-const mockProfile = {
-  name: "John Doe",
-  bio: "Fashion and lifestyle content creator",
-  niches: ["Fashion", "Lifestyle", "Travel"],
-  instagramHandle: "@johndoe",
-  youtubeHandle: "@johndoe",
-  followers: {
-    instagram: 150000,
-    youtube: 75000,
-    total: 225000,
-  },
+const getStatusDisplay = (status: string) => {
+  return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
 export default function InfluencerDashboard() {
   const { user } = useAuth();
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [profile, setProfile] = useState<InfluencerProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [proposalsData, profileData] = await Promise.all([
+          api.getProposals().catch(() => []),
+          api.getInfluencerProfile().catch(() => null),
+        ]);
+        setProposals(proposalsData);
+        setProfile(profileData);
+      } catch (err) {
+        setError("Failed to load data");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const stats = {
-    total: mockProposals.length,
-    accepted: mockProposals.filter((p) => p.status === "ACCEPTED").length,
-    earnings: mockProposals
-      .filter((p) => p.status === "ACCEPTED")
-      .reduce((sum, p) => sum + p.offeredAmount, 0),
+    total: proposals.length,
+    accepted: proposals.filter((p) => p.status === "accepted").length,
+    earnings: proposals
+      .filter((p) => p.status === "accepted")
+      .reduce((sum, p) => sum + p.price, 0),
   };
 
   return (
@@ -121,37 +91,49 @@ export default function InfluencerDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <p className="font-medium">{mockProfile.name}</p>
-                <p className="text-sm text-muted-foreground">{mockProfile.bio}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium">Niches</p>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {mockProfile.niches.map((niche) => (
-                    <Badge key={niche} variant="secondary">
-                      {niche}
-                    </Badge>
-                  ))}
+              {loading ? (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-700"></div>
                 </div>
-              </div>
-              <div>
-                <p className="text-sm font-medium">Followers</p>
-                <div className="mt-1 grid grid-cols-3 gap-2 text-center text-sm">
+              ) : profile ? (
+                <>
                   <div>
-                    <p className="font-bold">{mockProfile.followers.instagram.toLocaleString()}</p>
-                    <p className="text-xs text-muted-foreground">Instagram</p>
+                    <p className="font-medium">{profile.name}</p>
+                    <p className="text-sm text-muted-foreground">{profile.bio}</p>
                   </div>
                   <div>
-                    <p className="font-bold">{mockProfile.followers.youtube.toLocaleString()}</p>
-                    <p className="text-xs text-muted-foreground">YouTube</p>
+                    <p className="text-sm font-medium">Niches</p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {profile.niches.map((niche) => (
+                        <Badge key={niche} variant="secondary">
+                          {niche}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                   <div>
-                    <p className="font-bold">{mockProfile.followers.total.toLocaleString()}</p>
-                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="text-sm font-medium">Followers</p>
+                    <div className="mt-1 grid grid-cols-3 gap-2 text-center text-sm">
+                      <div>
+                        <p className="font-bold">{profile.followers.instagram.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Instagram</p>
+                      </div>
+                      <div>
+                        <p className="font-bold">{profile.followers.youtube.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">YouTube</p>
+                      </div>
+                      <div>
+                        <p className="font-bold">{profile.followers.total.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Total</p>
+                      </div>
+                    </div>
                   </div>
+                </>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  <p>No profile data. Complete your profile to get started.</p>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -192,30 +174,40 @@ export default function InfluencerDashboard() {
             <CardDescription>Track the status of your campaign proposals</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Campaign</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Applied</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockProposals.map((proposal) => (
-                  <TableRow key={proposal._id}>
-                    <TableCell className="font-medium">{proposal.campaignTitle}</TableCell>
-                    <TableCell>₹{proposal.offeredAmount.toLocaleString()}</TableCell>
-                    <TableCell>{new Date(proposal.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <Badge variant={statusColors[proposal.status]}>
-                        {proposal.status}
-                      </Badge>
-                    </TableCell>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
+              </div>
+            ) : proposals.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No proposals yet. Browse campaigns to apply!</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Campaign</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Applied</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {proposals.map((proposal) => (
+                    <TableRow key={proposal._id}>
+                      <TableCell className="font-medium">{proposal.campaignTitle}</TableCell>
+                      <TableCell>₹{proposal.price.toLocaleString()}</TableCell>
+                      <TableCell>{new Date(proposal.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={statusColors[proposal.status] || "secondary"}>
+                          {getStatusDisplay(proposal.status)}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>

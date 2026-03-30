@@ -32,12 +32,9 @@ interface InfluencerRegisterFormData {
   bio: string;
   instagramHandle: string;
   youtubeUrl: string;
-  tiktokHandle: string;
-  twitterHandle: string;
   niches: InfluencerNiche[];
   instagramFollowers: string;
   youtubeSubscribers: string;
-  tiktokFollowers: string;
   engagementRate: string;
 }
 
@@ -65,12 +62,9 @@ export default function InfluencerRegisterPage() {
     bio: "",
     instagramHandle: "",
     youtubeUrl: "",
-    tiktokHandle: "",
-    twitterHandle: "",
     niches: [],
     instagramFollowers: "",
     youtubeSubscribers: "",
-    tiktokFollowers: "",
     engagementRate: "",
   });
 
@@ -95,7 +89,7 @@ export default function InfluencerRegisterPage() {
     if (form.bio.length > 300) nextErrors.bio = "Bio cannot exceed 300 characters.";
     if (form.niches.length === 0) nextErrors.niches = "Please select at least one niche.";
 
-    const hasSocial = [form.instagramHandle, form.youtubeUrl, form.tiktokHandle, form.twitterHandle].some((value) => value.trim().length > 0);
+    const hasSocial = [form.instagramHandle, form.youtubeUrl].some((value) => value.trim().length > 0);
     if (!hasSocial) nextErrors.social = "At least one social media handle is required.";
 
     setErrors(nextErrors);
@@ -109,10 +103,22 @@ export default function InfluencerRegisterPage() {
         password: form.password,
         name: form.fullName,
         role: "influencer",
-        genre: form.niches,
-        city: "",
-        platform: [],
+        niches: form.niches,
+        platform: [
+          ...(form.instagramHandle ? ["instagram"] : []),
+          ...(form.youtubeUrl ? ["youtube"] : []),
+        ],
         tier: "micro",
+        bio: form.bio,
+        socialHandles: {
+          instagram: form.instagramHandle || undefined,
+          youtube: form.youtubeUrl || undefined,
+        },
+        followers: {
+          instagram: form.instagramFollowers ? Number(form.instagramFollowers) : undefined,
+          youtube: form.youtubeSubscribers ? Number(form.youtubeSubscribers) : undefined,
+        },
+        engagementRate: form.engagementRate ? Number(form.engagementRate) : undefined,
       });
       navigate("/influencer/dashboard");
     } catch (err) {
@@ -210,10 +216,8 @@ export default function InfluencerRegisterPage() {
                 <h2 className="font-semibold">Social Media Handles</h2>
                 <p className="text-xs text-muted-foreground">At least one handle is required.</p>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Input placeholder="Instagram handle" value={form.instagramHandle} onChange={(event) => setForm((prev) => ({ ...prev, instagramHandle: event.target.value }))} />
+                  <Input placeholder="Instagram handle (e.g., @username)" value={form.instagramHandle} onChange={(event) => setForm((prev) => ({ ...prev, instagramHandle: event.target.value }))} />
                   <Input placeholder="YouTube channel URL" value={form.youtubeUrl} onChange={(event) => setForm((prev) => ({ ...prev, youtubeUrl: event.target.value }))} />
-                  <Input placeholder="TikTok handle" value={form.tiktokHandle} onChange={(event) => setForm((prev) => ({ ...prev, tiktokHandle: event.target.value }))} />
-                  <Input placeholder="Twitter/X handle" value={form.twitterHandle} onChange={(event) => setForm((prev) => ({ ...prev, twitterHandle: event.target.value }))} />
                 </div>
                 {errors.social && <p className="text-xs text-destructive">{errors.social}</p>}
               </section>
@@ -236,9 +240,8 @@ export default function InfluencerRegisterPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Input type="number" min={0} placeholder="Instagram Followers" value={form.instagramFollowers} onChange={(event) => setForm((prev) => ({ ...prev, instagramFollowers: event.target.value }))} />
                   <Input type="number" min={0} placeholder="YouTube Subscribers" value={form.youtubeSubscribers} onChange={(event) => setForm((prev) => ({ ...prev, youtubeSubscribers: event.target.value }))} />
-                  <Input type="number" min={0} placeholder="TikTok Followers" value={form.tiktokFollowers} onChange={(event) => setForm((prev) => ({ ...prev, tiktokFollowers: event.target.value }))} />
-                  <div className="relative">
-                    <Input type="number" min={0} step="0.01" placeholder="Average Engagement Rate" value={form.engagementRate} onChange={(event) => setForm((prev) => ({ ...prev, engagementRate: event.target.value }))} className="pr-7" />
+                  <div className="relative sm:col-span-2">
+                    <Input type="number" min={0} step="0.01" placeholder="Average Engagement Rate (%)" value={form.engagementRate} onChange={(event) => setForm((prev) => ({ ...prev, engagementRate: event.target.value }))} className="pr-7" />
                     <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
                   </div>
                 </div>

@@ -26,15 +26,13 @@ const NICHE_OPTIONS = [
 interface FormData {
   fullName: string;
   bio: string;
+  city: string;
   instagramHandle: string;
   youtubeHandle: string;
-  tiktokHandle: string;
-  twitterHandle: string;
   niches: string[];
   instagramFollowers: string;
   youtubeFollowers: string;
-  tiktokFollowers: string;
-  twitterFollowers: string;
+  engagementRate: string;
 }
 
 interface FormErrors {
@@ -52,15 +50,13 @@ export default function EditInfluencerProfile() {
   const [form, setForm] = useState<FormData>({
     fullName: "",
     bio: "",
+    city: "",
     instagramHandle: "",
     youtubeHandle: "",
-    tiktokHandle: "",
-    twitterHandle: "",
     niches: [],
     instagramFollowers: "",
     youtubeFollowers: "",
-    tiktokFollowers: "",
-    twitterFollowers: "",
+    engagementRate: "",
   });
 
   useEffect(() => {
@@ -70,15 +66,13 @@ export default function EditInfluencerProfile() {
         setForm({
           fullName: profile.name || "",
           bio: profile.bio || "",
-          instagramHandle: profile.instagramHandle || "",
-          youtubeHandle: profile.youtubeHandle || "",
-          tiktokHandle: profile.tiktokHandle || "",
-          twitterHandle: profile.twitterHandle || "",
+          city: profile.city || "",
+          instagramHandle: profile.socialHandles?.instagram || "",
+          youtubeHandle: profile.socialHandles?.youtube || "",
           niches: profile.niches || [],
           instagramFollowers: profile.followers?.instagram?.toString() || "",
           youtubeFollowers: profile.followers?.youtube?.toString() || "",
-          tiktokFollowers: profile.followers?.tiktok?.toString() || "",
-          twitterFollowers: profile.followers?.twitter?.toString() || "",
+          engagementRate: profile.engagementRate?.toString() || "",
         });
       } catch (error) {
         toast({
@@ -119,17 +113,17 @@ export default function EditInfluencerProfile() {
     const updateData: UpdateInfluencerProfileData = {
       name: form.fullName,
       bio: form.bio,
+      city: form.city,
       niches: form.niches,
-      instagramHandle: form.instagramHandle || undefined,
-      youtubeHandle: form.youtubeHandle || undefined,
-      tiktokHandle: form.tiktokHandle || undefined,
-      twitterHandle: form.twitterHandle || undefined,
+      socialHandles: {
+        instagram: form.instagramHandle || undefined,
+        youtube: form.youtubeHandle || undefined,
+      },
       followers: {
         instagram: form.instagramFollowers ? parseInt(form.instagramFollowers) : undefined,
         youtube: form.youtubeFollowers ? parseInt(form.youtubeFollowers) : undefined,
-        tiktok: form.tiktokFollowers ? parseInt(form.tiktokFollowers) : undefined,
-        twitter: form.twitterFollowers ? parseInt(form.twitterFollowers) : undefined,
       },
+      engagementRate: form.engagementRate ? parseFloat(form.engagementRate) : undefined,
     };
 
     setSaving(true);
@@ -198,13 +192,22 @@ export default function EditInfluencerProfile() {
                   <p className="text-right text-xs text-muted-foreground">{bioCount}/300</p>
                   {errors.bio && <p className="text-xs text-destructive">{errors.bio}</p>}
                 </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={form.city}
+                    onChange={(event) => setForm((prev) => ({ ...prev, city: event.target.value }))}
+                    placeholder="Your city"
+                  />
+                </div>
               </section>
 
               <section className="space-y-3">
                 <h2 className="font-semibold">Social Media Handles</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Input
-                    placeholder="Instagram handle"
+                    placeholder="Instagram handle (e.g., @username)"
                     value={form.instagramHandle}
                     onChange={(event) => setForm((prev) => ({ ...prev, instagramHandle: event.target.value }))}
                   />
@@ -212,16 +215,6 @@ export default function EditInfluencerProfile() {
                     placeholder="YouTube channel URL"
                     value={form.youtubeHandle}
                     onChange={(event) => setForm((prev) => ({ ...prev, youtubeHandle: event.target.value }))}
-                  />
-                  <Input
-                    placeholder="TikTok handle"
-                    value={form.tiktokHandle}
-                    onChange={(event) => setForm((prev) => ({ ...prev, tiktokHandle: event.target.value }))}
-                  />
-                  <Input
-                    placeholder="Twitter/X handle"
-                    value={form.twitterHandle}
-                    onChange={(event) => setForm((prev) => ({ ...prev, twitterHandle: event.target.value }))}
                   />
                 </div>
               </section>
@@ -243,7 +236,7 @@ export default function EditInfluencerProfile() {
               </section>
 
               <section className="space-y-3">
-                <h2 className="font-semibold">Follower Counts</h2>
+                <h2 className="font-semibold">Follower Counts & Engagement</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Input
                     type="number"
@@ -259,20 +252,18 @@ export default function EditInfluencerProfile() {
                     value={form.youtubeFollowers}
                     onChange={(event) => setForm((prev) => ({ ...prev, youtubeFollowers: event.target.value }))}
                   />
-                  <Input
-                    type="number"
-                    min={0}
-                    placeholder="TikTok Followers"
-                    value={form.tiktokFollowers}
-                    onChange={(event) => setForm((prev) => ({ ...prev, tiktokFollowers: event.target.value }))}
-                  />
-                  <Input
-                    type="number"
-                    min={0}
-                    placeholder="Twitter/X Followers"
-                    value={form.twitterFollowers}
-                    onChange={(event) => setForm((prev) => ({ ...prev, twitterFollowers: event.target.value }))}
-                  />
+                  <div className="relative sm:col-span-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      placeholder="Average Engagement Rate (%)"
+                      value={form.engagementRate}
+                      onChange={(event) => setForm((prev) => ({ ...prev, engagementRate: event.target.value }))}
+                      className="pr-7"
+                    />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                  </div>
                 </div>
               </section>
 

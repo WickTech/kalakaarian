@@ -24,6 +24,7 @@ import SubmitProposal from "./pages/SubmitProposal";
 import MyProfile from "./pages/MyProfile";
 import EditInfluencerProfile from "./pages/EditInfluencerProfile";
 import EditBrandProfile from "./pages/EditBrandProfile";
+import Messages from "./pages/Messages";
 
 const queryClient = new QueryClient();
 
@@ -150,19 +151,11 @@ const App = () => {
               <Route path="/role-select" element={<RoleSelectPage />} />
               <Route
                 path="/influencer-register"
-                element={
-                  <ProtectedRoute>
-                    <InfluencerRegisterPage />
-                  </ProtectedRoute>
-                }
+                element={<InfluencerRegisterPage />}
               />
               <Route
                 path="/brand-register"
-                element={
-                  <ProtectedRoute>
-                    <BrandRegisterPage />
-                  </ProtectedRoute>
-                }
+                element={<BrandRegisterPage />}
               />
               <Route
                 path="/brand-campaign"

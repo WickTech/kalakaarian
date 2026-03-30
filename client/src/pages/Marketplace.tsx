@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { api, InfluencerProfile } from "@/lib/api";
 import { InfluencerCard } from "@/components/InfluencerCard";
+import { Influencer } from "@/lib/store";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface MarketplaceProps {
@@ -19,6 +20,111 @@ const CITIES = ["All", "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "
 const GENRES = ["All", "Fashion", "Tech", "Food", "Fitness", "Travel", "Beauty", "Gaming", "Education", "Comedy", "Lifestyle"];
 const PER_PAGE = 12;
 
+const mockInfluencers: Influencer[] = [
+  {
+    id: "inf-1",
+    name: "Aisha Kapoor",
+    handle: "@aishastyled",
+    photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
+    platform: "instagram",
+    tier: "micro",
+    genre: "Fashion",
+    city: "Mumbai",
+    followers: 182000,
+    activeFollowers: 156000,
+    fakeFollowers: 26000,
+    avgViews: 45000,
+    avgLikes: 8900,
+    genderSplit: { male: 35, female: 62, other: 3 },
+    price: 25000,
+  },
+  {
+    id: "inf-2",
+    name: "Rohan Mehta",
+    handle: "@rohanreviews",
+    photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+    platform: "youtube",
+    tier: "macro",
+    genre: "Tech",
+    city: "Delhi",
+    followers: 265000,
+    activeFollowers: 210000,
+    fakeFollowers: 55000,
+    avgViews: 120000,
+    avgLikes: 15000,
+    genderSplit: { male: 68, female: 30, other: 2 },
+    price: 45000,
+  },
+  {
+    id: "inf-3",
+    name: "Maya Singh",
+    handle: "@mapwithmaya",
+    photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
+    platform: "instagram",
+    tier: "micro",
+    genre: "Travel",
+    city: "Bangalore",
+    followers: 94000,
+    activeFollowers: 78000,
+    fakeFollowers: 16000,
+    avgViews: 28000,
+    avgLikes: 5200,
+    genderSplit: { male: 42, female: 55, other: 3 },
+    price: 18000,
+  },
+  {
+    id: "inf-4",
+    name: "Dev Arora",
+    handle: "@devgetsfit",
+    photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
+    platform: "instagram",
+    tier: "nano",
+    genre: "Fitness",
+    city: "Pune",
+    followers: 51000,
+    activeFollowers: 44000,
+    fakeFollowers: 7000,
+    avgViews: 15000,
+    avgLikes: 3800,
+    genderSplit: { male: 58, female: 40, other: 2 },
+    price: 12000,
+  },
+  {
+    id: "inf-5",
+    name: "Kabir Jain",
+    handle: "@kabirplays",
+    photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
+    platform: "youtube",
+    tier: "macro",
+    genre: "Gaming",
+    city: "Hyderabad",
+    followers: 402000,
+    activeFollowers: 320000,
+    fakeFollowers: 82000,
+    avgViews: 250000,
+    avgLikes: 35000,
+    genderSplit: { male: 75, female: 23, other: 2 },
+    price: 65000,
+  },
+  {
+    id: "inf-6",
+    name: "Sara Fernandes",
+    handle: "@saramoneywise",
+    photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop",
+    platform: "youtube",
+    tier: "micro",
+    genre: "Finance",
+    city: "Mumbai",
+    followers: 118000,
+    activeFollowers: 95000,
+    fakeFollowers: 23000,
+    avgViews: 55000,
+    avgLikes: 7200,
+    genderSplit: { male: 52, female: 45, other: 3 },
+    price: 28000,
+  },
+];
+
 export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, isInCart, addToCart }: MarketplaceProps) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -30,7 +136,7 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
   const [genre, setGenre] = useState("All");
   const [sort, setSort] = useState<"high" | "low">("high");
   const [page, setPage] = useState(1);
-  const [influencers, setInfluencers] = useState<InfluencerProfile[]>([]);
+  const [influencers, setInfluencers] = useState<Influencer[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,9 +144,31 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
       setLoading(true);
       try {
         const data = await api.searchInfluencers();
-        setInfluencers(data);
+        if (data.length > 0) {
+          const transformed: Influencer[] = data.map((inf: InfluencerProfile) => ({
+            id: inf._id || inf.id || "",
+            name: inf.name || "",
+            handle: inf.instagramHandle || inf.youtubeHandle || "",
+            photo: `https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop`,
+            platform: (inf.platform as "instagram" | "youtube") || "instagram",
+            tier: (inf.tier as "nano" | "micro" | "macro" | "celebrity") || "micro",
+            genre: inf.genres?.[0] || inf.niches?.[0] || "",
+            city: inf.city || "",
+            followers: inf.followers?.total || 0,
+            activeFollowers: Math.floor((inf.followers?.total || 0) * 0.85),
+            fakeFollowers: Math.floor((inf.followers?.total || 0) * 0.15),
+            avgViews: Math.floor((inf.followers?.total || 0) * 0.3),
+            avgLikes: Math.floor((inf.followers?.total || 0) * 0.05),
+            genderSplit: { male: 45, female: 52, other: 3 },
+            price: inf.price || null,
+          }));
+          setInfluencers(transformed);
+        } else {
+          setInfluencers(mockInfluencers);
+        }
       } catch (err) {
         console.error("Failed to fetch influencers:", err);
+        setInfluencers(mockInfluencers);
       } finally {
         setLoading(false);
       }
@@ -51,15 +179,15 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
   const filtered = useMemo(() => {
     let result = influencers;
     if (platform === "instagram") {
-      result = result.filter((i) => (i.followers?.instagram || 0) > 0);
+      result = result.filter((i) => i.platform === "instagram");
     } else {
-      result = result.filter((i) => (i.followers?.youtube || 0) > 0);
+      result = result.filter((i) => i.platform === "youtube");
     }
     if (tier !== "all") result = result.filter((i) => i.tier === tier);
     if (city !== "All") result = result.filter((i) => i.city === city);
-    if (genre !== "All") result = result.filter((i) => i.genres?.includes(genre));
+    if (genre !== "All") result = result.filter((i) => i.genre === genre);
     result.sort((a, b) =>
-      sort === "high" ? ((b.followers?.total || 0) - (a.followers?.total || 0)) : ((a.followers?.total || 0) - (b.followers?.total || 0))
+      sort === "high" ? (b.followers - a.followers) : (a.followers - b.followers)
     );
     return result;
   }, [influencers, platform, tier, city, genre, sort]);

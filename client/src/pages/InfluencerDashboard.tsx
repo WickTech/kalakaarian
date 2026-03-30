@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, TrendingUp, DollarSign, CheckCircle, Edit, User } from "lucide-react";
+import { ArrowLeft, TrendingUp, DollarSign, CheckCircle, Edit, User, Instagram, Youtube, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -104,30 +104,61 @@ export default function InfluencerDashboard() {
                   <div>
                     <p className="text-sm font-medium">Niches</p>
                     <div className="mt-1 flex flex-wrap gap-1">
-                      {profile.niches.map((niche) => (
+                      {profile.niches?.map((niche) => (
                         <Badge key={niche} variant="secondary">
                           {niche}
                         </Badge>
-                      ))}
+                      )) || <span className="text-muted-foreground">No niches set</span>}
                     </div>
                   </div>
                   <div>
                     <p className="text-sm font-medium">Followers</p>
                     <div className="mt-1 grid grid-cols-3 gap-2 text-center text-sm">
                       <div>
-                        <p className="font-bold">{profile.followers.instagram.toLocaleString()}</p>
+                        <p className="font-bold">{(profile.followers?.instagram || 0).toLocaleString()}</p>
                         <p className="text-xs text-muted-foreground">Instagram</p>
                       </div>
                       <div>
-                        <p className="font-bold">{profile.followers.youtube.toLocaleString()}</p>
+                        <p className="font-bold">{(profile.followers?.youtube || 0).toLocaleString()}</p>
                         <p className="text-xs text-muted-foreground">YouTube</p>
                       </div>
                       <div>
-                        <p className="font-bold">{profile.followers.total.toLocaleString()}</p>
+                        <p className="font-bold">{(profile.followers?.total || profile.followerCount || 0).toLocaleString()}</p>
                         <p className="text-xs text-muted-foreground">Total</p>
                       </div>
                     </div>
                   </div>
+                  {(profile.socialHandles?.instagram || profile.socialHandles?.youtube) && (
+                    <div>
+                      <p className="text-sm font-medium">Social Links</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {profile.socialHandles?.instagram && (
+                          <a
+                            href={`https://instagram.com/${profile.socialHandles.instagram.replace('@', '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-3 py-1.5 text-sm text-white hover:opacity-90"
+                          >
+                            <Instagram className="h-4 w-4" />
+                            @{profile.socialHandles.instagram.replace('@', '')}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                        {profile.socialHandles?.youtube && (
+                          <a
+                            href={profile.socialHandles.youtube.startsWith('http') ? profile.socialHandles.youtube : `https://youtube.com/@${profile.socialHandles.youtube.replace('@', '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1.5 text-sm text-white hover:opacity-90"
+                          >
+                            <Youtube className="h-4 w-4" />
+                            YouTube
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="text-center py-4 text-muted-foreground">

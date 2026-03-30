@@ -7,23 +7,20 @@ const influencerProfileSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     bio: { type: String, default: '' },
-    city: { type: String, required: true, index: true },
+    city: { type: String, default: '' },
     niches: [{ type: String, index: true }],
     socialHandles: {
       instagram: String,
       youtube: String,
-      tiktok: String,
-      twitter: String,
     },
     followerCount: { type: Number, default: 0, index: true },
-    platform: [{ type: String, enum: ['instagram', 'youtube', 'tiktok', 'twitter'] }],
-    tier: { type: String, enum: ['nano', 'micro', 'mid', 'macro', 'mega'], required: true, index: true },
+    platform: [{ type: String, enum: ['instagram', 'youtube'] }],
+    tier: { type: String, enum: ['nano', 'micro', 'mid', 'macro', 'mega'], default: 'micro', index: true },
     followers: {
       instagram: Number,
       youtube: Number,
-      tiktok: Number,
-      twitter: Number,
     },
+    engagementRate: { type: Number, default: 0 },
     pricing: {
       story: Number,
       reel: Number,

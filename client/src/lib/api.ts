@@ -44,41 +44,43 @@ export interface CampaignFilters {
 
 export interface InfluencerProfile {
   _id: string;
-  name: string;
-  bio: string;
-  genres?: string[];
+  name?: string;
+  bio?: string;
   niches?: string[];
   city?: string;
   tier?: string;
-  platform?: string;
-  instagramHandle?: string;
-  youtubeHandle?: string;
-  tiktokHandle?: string;
-  twitterHandle?: string;
-  followers: {
-    instagram: number;
-    youtube: number;
-    tiktok?: number;
-    twitter?: number;
-    total: number;
+  platform?: string[];
+  socialHandles?: {
+    instagram?: string;
+    youtube?: string;
   };
-  price?: number;
+  followers?: {
+    instagram?: number;
+    youtube?: number;
+    total?: number;
+  };
+  followerCount?: number;
+  engagementRate?: number;
+  verified?: boolean;
 }
 
 export interface UpdateInfluencerProfileData {
   name?: string;
   bio?: string;
+  city?: string;
   niches?: string[];
-  instagramHandle?: string;
-  youtubeHandle?: string;
-  tiktokHandle?: string;
-  twitterHandle?: string;
+  platform?: string[];
+  tier?: string;
+  socialHandles?: {
+    instagram?: string;
+    youtube?: string;
+  };
   followers?: {
     instagram?: number;
     youtube?: number;
-    tiktok?: number;
-    twitter?: number;
+    total?: number;
   };
+  engagementRate?: number;
 }
 
 export interface UpdateBrandProfileData {
@@ -122,9 +124,19 @@ export interface RegisterData {
   companyName?: string;
   industry?: string;
   city?: string;
-  genre?: string[];
+  niches?: string[];
   platform?: string[];
   tier?: string;
+  bio?: string;
+  socialHandles?: {
+    instagram?: string;
+    youtube?: string;
+  };
+  followers?: {
+    instagram?: number;
+    youtube?: number;
+  };
+  engagementRate?: number;
 }
 
 export interface LoginResponse {

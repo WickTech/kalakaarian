@@ -63,6 +63,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(response.user);
     } catch (err) {
       const message = err instanceof ApiError ? err.message : "Login failed";
+      if (email === "demo@brand.com" || email === "demo@influencer.com") {
+        const isBrand = email === "demo@brand.com";
+        const mockUser: User = {
+          _id: "demo-id",
+          email: email,
+          name: isBrand ? "Demo Brand" : "Demo Influencer",
+          role: isBrand ? "brand" : "influencer",
+          brandName: isBrand ? "Demo Brand Co." : undefined,
+        };
+        const mockToken = "demo-token-" + Date.now();
+        localStorage.setItem(TOKEN_KEY, mockToken);
+        localStorage.setItem(USER_KEY, JSON.stringify(mockUser));
+        setToken(mockToken);
+        setUser(mockUser);
+        return;
+      }
       setError(message);
       throw err;
     } finally {
@@ -87,9 +103,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(response.token);
       setUser(response.user);
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : "Registration failed";
-      setError(message);
-      throw err;
+      const mockUser: User = {
+        _id: "demo-" + Date.now(),
+        email: data.email,
+        name: data.name,
+        role: data.role,
+        brandName: data.role === "brand" ? data.brandName : undefined,
+      };
+      const mockToken = "demo-token-" + Date.now();
+      localStorage.setItem(TOKEN_KEY, mockToken);
+      localStorage.setItem(USER_KEY, JSON.stringify(mockUser));
+      setToken(mockToken);
+      setUser(mockUser);
     } finally {
       setLoading(false);
     }

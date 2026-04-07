@@ -194,7 +194,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         socialHandles: socialHandles || {},
         followers: followers || {},
         engagementRate: engagementRate || 0,
-        followerCount: followers ? Object.values(followers).reduce((sum: number, val: number) => sum + (val || 0), 0) : 0,
+        followerCount: followers ? Object.values(followers).reduce((sum: number, val: unknown) => sum + ((val as number) || 0), 0) : 0,
       });
     }
 

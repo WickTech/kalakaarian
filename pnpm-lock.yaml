@@ -286,6 +286,9 @@ importers:
       '@types/node':
         specifier: ^20.19.37
         version: 20.19.37
+      '@types/serverless':
+        specifier: ^3.12.28
+        version: 3.12.28
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@swc/core@1.15.21)(@types/node@20.19.37)(typescript@5.9.3)
@@ -1781,6 +1784,9 @@ packages:
 
   '@types/serve-static@1.15.10':
     resolution: {integrity: sha512-tRs1dB+g8Itk72rlSI2ZrW6vZg0YrLI81iQSTkMmOqnqCaNr/8Ek4VwWcN5vZgCYWbg/JJSGBlUaYGAOP73qBw==}
+
+  '@types/serverless@3.12.28':
+    resolution: {integrity: sha512-8jid93aeKGxoweug+Rsv60SH8Y8bF+xWfVkun6e4RTw0MX9YythBAAz2VMzOf7IBZrT8uZHCyNNNP9tRFZkCmA==}
 
   '@types/webidl-conversions@7.0.3':
     resolution: {integrity: sha512-CiJJvcRtIgzadHCYXw7dqEnMNRjhGZlYK05Mj9OyktqV8uVT8fD2BFOB7S1uwBE3Kj2Z+4UyPmFw/Ixgw/LAlA==}
@@ -4958,6 +4964,8 @@ snapshots:
       '@types/http-errors': 2.0.5
       '@types/node': 22.19.15
       '@types/send': 0.17.6
+
+  '@types/serverless@3.12.28': {}
 
   '@types/webidl-conversions@7.0.3': {}
 

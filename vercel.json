@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd client && npm run build",
+  "buildCommand": "pnpm --filter vite_react_shadcn_ts build",
   "outputDirectory": "client/dist",
   "framework": "vite"
 }

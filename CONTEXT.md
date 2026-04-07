@@ -1,6 +1,6 @@
 # Kalakaarian - Project Context
 
-**Last Updated:** 2026-03-28
+**Last Updated:** 2026-04-07
 
 ---
 
@@ -36,7 +36,7 @@ Login / Sign Up (Email + Password + Google Auth)
 - **Backend:** Node.js + Express + TypeScript
 - **Database:** MongoDB + Mongoose
 - **Auth:** JWT (Email/Password) + Google OAuth 2.0
-- **Deployment:** Vercel (frontend) + Railway (backend)
+- **Deployment:** Vercel (frontend + backend)
 
 ---
 
@@ -89,7 +89,7 @@ Fixed critical API mismatches:
 | Frontend | ✅ | Build passing, blank screen fixed |
 | Backend | ✅ | API endpoints ready |
 | MongoDB | ✅ | Connected (Atlas/Railway) |
-| Deployment | ✅ | Vercel + Railway |
+| Deployment | ✅ | Vercel (serverless) |
 
 ---
 
@@ -99,6 +99,17 @@ Fixed critical API mismatches:
 2. ~~Marketplace showing no data~~ - FIXED
 3. Payment Integration: Still pending (Phase 10).
 4. Analytics UI: APIs ready, but visualization (charts) not yet implemented.
+
+---
+
+## Recent Session Fixes (2026-04-07)
+### Backend Migration to Vercel Serverless
+- ✅ Added `serverless-http` package for serverless support
+- ✅ Created `vercel.json` with @vercel/node build config
+- ✅ Updated `database.ts` with connection caching (global mongoose cache for cold starts)
+- ✅ Updated `app.ts` to export serverless handler instead of `app.listen()`
+- ✅ Fixed TypeScript errors (CORS options type, reduce callback type)
+- ✅ Added `@types/serverless` for TypeScript support
 
 ---
 

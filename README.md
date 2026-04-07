@@ -1,5 +1,4 @@
 # Kalakariaan - D2C Influencer Marketplace
-
 A Direct-to-Consumer (D2C) influencer marketplace connecting brands with micro-influencers for authentic marketing campaigns.
 
 ## Tech Stack

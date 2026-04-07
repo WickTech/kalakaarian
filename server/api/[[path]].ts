@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
 import serverless from 'serverless-http';
 import cors from 'cors';
@@ -11,13 +12,16 @@ app.use(cors({
 
 app.use(express.json());
 
-app.get('/health', (req, res) => {
+app.get('/health', (req: express.Request, res: express.Response) => {
   res.json({ status: 'ok' });
 });
 
-app.get('/test', (req, res) => {
+app.get('/test', (req: express.Request, res: express.Response) => {
   res.json({ message: 'Test works' });
 });
 
 const handler = serverless(app);
-export default handler;
+
+export default function(req: VercelRequest, res: VercelResponse) {
+  return handler(req, res);
+}

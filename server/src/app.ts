@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import serverless from 'serverless';
 import connectDB from './config/database';
 import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './routes/auth';
@@ -15,14 +16,12 @@ dotenv.config();
 
 const app = express();
 
-connectDB();
-
 const corsOptions = {
   origin: [
     'http://localhost:3000',
     'http://localhost:5173',
-    'https://kalakariaan.com',
-  ],
+    process.env.CORS_ORIGIN,
+  ].filter(Boolean),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -46,10 +45,16 @@ app.use('/api/analytics', analyticsRoutes);
 
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const server = app;
+const handler = serverless(server);
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+export { handler };
 
-export default app;
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  connectDB().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  });
+}

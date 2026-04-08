@@ -68,8 +68,9 @@ export default function Landing({ dark, toggleTheme }: LandingProps) {
       {/* Header */}
       <header className="border-b border-border flex items-center justify-between px-4 py-3 shrink-0">
         <div className="flex items-center gap-3">
-          <Link to="/">
-            <img src="/k-logo.png" alt="Kalakaarian" className="h-10 w-auto" />
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/k-logo-no-bg.png" alt="Kalakaarian" className="h-10 w-auto" />
+            <span className="font-bold text-lg tracking-wide">KALAKAARIAN</span>
           </Link>
         </div>
         <div className="flex items-center gap-2">

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import serverless from 'serverless-http';
 import authRoutes from './routes/auth';
 import influencerRoutes from './routes/influencers';
 import campaignRoutes from './routes/campaigns';
@@ -87,10 +88,5 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-export default app;
+const handler = serverless(app);
+export { handler };

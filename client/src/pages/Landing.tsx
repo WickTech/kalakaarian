@@ -70,7 +70,9 @@ export default function Landing({ dark, toggleTheme }: LandingProps) {
         <div className="flex items-center gap-3">
           <Link to="/" className="flex items-center gap-2">
             <img src="/k-logo-no-bg.png" alt="Kalakaarian" className="h-10 w-auto" />
-            <span className="font-bold text-lg tracking-wide">KALAKAARIAN</span>
+            <h1 className="font-mono text-sm uppercase tracking-[0.3em] font-bold">
+              <span className="text-purple-600">■</span> KALAKAARIAN
+            </h1>
           </Link>
         </div>
         <div className="flex items-center gap-2">

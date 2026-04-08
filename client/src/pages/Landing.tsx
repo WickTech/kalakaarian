@@ -1,13 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Users, Target, TrendingUp, Shield, Sparkles } from "lucide-react";
 
 interface LandingProps {
+  dark?: boolean;
+  toggleTheme?: () => void;
 }
 
-export default function Landing({ }: LandingProps) {
+export default function Landing({ dark, toggleTheme }: LandingProps) {
   const navigate = useNavigate();
 
   return (
@@ -20,6 +23,7 @@ export default function Landing({ }: LandingProps) {
           </Link>
         </div>
         <div className="flex items-center gap-2">
+          {toggleTheme && <ThemeToggle dark={dark} toggle={toggleTheme} />}
           <Link to="/role-select">
             <Button size="sm">Get Started</Button>
           </Link>

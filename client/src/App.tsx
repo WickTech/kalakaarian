@@ -126,7 +126,10 @@ const App = () => {
               <Route
                 path="/"
                 element={
-                  <Landing />
+                  <Landing
+                    dark={dark}
+                    toggleTheme={toggle}
+                  />
                 }
               />
               <Route

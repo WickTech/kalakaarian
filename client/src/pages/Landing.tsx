@@ -71,7 +71,7 @@ export default function Landing({ dark, toggleTheme }: LandingProps) {
           <Link to="/" className="flex items-center gap-2">
             <img src="/k-logo-no-bg.png" alt="Kalakaarian" className="h-10 w-auto" />
             <h1 className="font-mono text-sm uppercase tracking-[0.3em] font-bold">
-              <span className="text-purple-600">■</span> KALAKAARIAN
+              KALAKAARIAN
             </h1>
           </Link>
         </div>

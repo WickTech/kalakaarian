@@ -13,6 +13,55 @@ interface LandingProps {
 export default function Landing({ dark, toggleTheme }: LandingProps) {
   const navigate = useNavigate();
 
+  const tiers = [
+    {
+      key: "nano",
+      label: "Nano Creator",
+      range: "2K - 25K Followers",
+      desc: "INVENTORY: 30 ASSETS",
+    },
+    {
+      key: "micro",
+      label: "Micro Creator",
+      range: "26K - 250K Followers",
+      desc: "INVENTORY: 30 ASSETS",
+    },
+    {
+      key: "macro",
+      label: "Macro Creator",
+      range: "251K - 3M Followers",
+      desc: "INVENTORY: 30 ASSETS",
+    },
+    {
+      key: "celebrity",
+      label: "Celebrity",
+      range: "3M+ Followers",
+      desc: "INVENTORY: 10 ASSETS",
+    },
+  ];
+
+  const whyKalakaarian = [
+    {
+      icon: Users,
+      title: "Creator Connectivity",
+      description: "Connect with countless creators in a single click, with zero margins.",
+    },
+    {
+      icon: Target,
+      title: "Fast Campaign Delivery",
+      description: "Get your campaign ready within 24 hours with the lowest platform fee.",
+    },
+    {
+      icon: TrendingUp,
+      title: "Track & Navigate",
+      description: "Track your payments and navigate your campaigns seamlessly.",
+    },
+    {
+      icon: Sparkles,
+      title: "AI Profile Suggestions",
+      description: "Use AI to find creators with 100% compatibility for your target audience.",
+    },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/30">

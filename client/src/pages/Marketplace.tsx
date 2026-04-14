@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, ShoppingCart, Instagram, Youtube } from "lucide-react";
 import { api, InfluencerProfile } from "@/lib/api";
 import { InfluencerCard } from "@/components/InfluencerCard";
 import { Influencer } from "@/lib/store";
@@ -198,21 +198,18 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="border-b border-border flex items-center justify-between px-4 py-2 shrink-0">
+      <header className="border-b border-border flex items-center justify-between px-4 py-3 shrink-0">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/")} className="p-1 border border-border hover:border-terminal">
+          <button onClick={() => navigate("/")} className="p-2 border border-border rounded-md hover:bg-secondary transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <h1 className="font-mono text-sm uppercase tracking-[0.3em] font-bold">
-            <span className="text-terminal">■</span> INFLUENCE.MARKET
-          </h1>
+          <h1 className="text-xl font-bold brand-text">Marketplace</h1>
         </div>
         <div className="flex items-center gap-2">
-          <ThemeToggle dark={dark} toggle={toggleTheme} />
-          <button onClick={onCartOpen} className="border border-border p-2 hover:border-terminal transition-colors relative">
-            <span className="font-mono text-xs">CART</span>
+          <button onClick={onCartOpen} className="relative p-2 border border-border rounded-md hover:bg-secondary transition-colors">
+            <ShoppingCart className="w-5 h-5" />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-terminal text-primary-foreground font-mono text-[10px] flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full brand-gradient text-primary-foreground text-xs flex items-center justify-center font-medium">
                 {cartCount}
               </span>
             )}
@@ -224,24 +221,28 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
       <div className="border-b border-border grid grid-cols-2">
         <button
           onClick={() => { setPlatform("instagram"); setPage(1); }}
-          className={`py-3 font-mono text-sm uppercase tracking-widest text-center border-r border-border transition-colors ${
-            platform === "instagram" ? "bg-ig-pink/10 text-ig-pink border-b-2 border-b-ig-pink" : "text-muted-foreground hover:text-foreground"
+          className={`py-3 flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+            platform === "instagram" 
+              ? "bg-secondary text-primary border-b-2 border-b-primary" 
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          INSTAGRAM
+          <Instagram className="w-4 h-4" /> Instagram
         </button>
         <button
           onClick={() => { setPlatform("youtube"); setPage(1); }}
-          className={`py-3 font-mono text-sm uppercase tracking-widest text-center transition-colors ${
-            platform === "youtube" ? "bg-yt-red/10 text-yt-red border-b-2 border-b-yt-red" : "text-muted-foreground hover:text-foreground"
+          className={`py-3 flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+            platform === "youtube" 
+              ? "bg-secondary text-destructive border-b-2 border-b-destructive" 
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          YOUTUBE
+          <Youtube className="w-4 h-4" /> YouTube
         </button>
       </div>
 
       {/* Filters */}
-      <div className="border-b border-border px-4 py-2 flex flex-wrap gap-2 items-center">
+      <div className="border-b border-border px-4 py-3 flex flex-wrap gap-3 items-center">
         <FilterSelect label="Tier" value={tier} options={["all", ...TIERS]} onChange={(v) => { setTier(v as any); setPage(1); }} />
         <FilterSelect label="City" value={city} options={CITIES} onChange={(v) => { setCity(v); setPage(1); }} />
         <FilterSelect label="Genre" value={genre} options={GENRES} onChange={(v) => { setGenre(v); setPage(1); }} />
@@ -252,16 +253,26 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
           displayMap={{ high: "Highest First", low: "Lowest First" }}
           onChange={(v) => setSort(v as "high" | "low")}
         />
-        <span className="ml-auto font-mono text-[10px] text-muted-foreground uppercase">
-          {filtered.length} ASSETS FOUND
+        <span className="ml-auto text-sm text-muted-foreground">
+          {filtered.length} influencers found
         </span>
       </div>
 
       {/* Grid */}
       <div className="flex-1 p-4">
-        {paginated.length === 0 ? (
+        {loading ? (
           <div className="flex items-center justify-center h-64">
-            <p className="font-mono text-sm text-muted-foreground">NO ASSETS MATCH CURRENT FILTERS</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : paginated.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-2">
+            <p className="text-muted-foreground">No influencers found matching your filters.</p>
+            <button 
+              onClick={() => { setTier("all"); setCity("All"); setGenre("All"); }}
+              className="text-sm text-primary hover:underline"
+            >
+              Clear filters
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -279,18 +290,34 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="border-t border-border px-4 py-3 flex items-center justify-center gap-1">
+        <div className="border-t border-border px-4 py-3 flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-3 py-1 border border-border rounded-md text-sm disabled:opacity-50 hover:bg-secondary transition-colors"
+          >
+            Prev
+          </button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <button
               key={p}
               onClick={() => setPage(p)}
-              className={`w-8 h-8 font-mono text-xs border transition-colors ${
-                p === page ? "border-terminal text-terminal bg-terminal/10" : "border-border text-muted-foreground hover:border-foreground"
+              className={`w-8 h-8 rounded-md text-sm transition-colors ${
+                p === page 
+                  ? "brand-gradient text-primary-foreground" 
+                  : "border border-border text-muted-foreground hover:bg-secondary"
               }`}
             >
               {p}
             </button>
           ))}
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-3 py-1 border border-border rounded-md text-sm disabled:opacity-50 hover:bg-secondary transition-colors"
+          >
+            Next
+          </button>
         </div>
       )}
     </div>
@@ -311,21 +338,21 @@ function FilterSelect({
   displayMap?: Record<string, string>;
 }) {
   return (
-    <div className="relative flex items-center gap-1">
-      <span className="font-mono text-[10px] uppercase text-muted-foreground">{label}:</span>
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted-foreground">{label}:</span>
       <div className="relative">
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="appearance-none bg-card border border-border px-3 py-1 pr-6 font-mono text-xs uppercase text-foreground cursor-pointer hover:border-terminal transition-colors focus:outline-none focus:border-terminal"
+          className="appearance-none bg-card border border-border rounded-md px-3 py-1.5 pr-8 text-sm text-foreground cursor-pointer hover:border-primary transition-colors focus:outline-none focus:border-primary"
         >
           {options.map((opt) => (
             <option key={opt} value={opt}>
-              {displayMap?.[opt] ?? opt.toUpperCase()}
+              {displayMap?.[opt] ?? opt.charAt(0).toUpperCase() + opt.slice(1)}
             </option>
           ))}
         </select>
-        <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none text-muted-foreground" />
+        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-muted-foreground" />
       </div>
     </div>
   );

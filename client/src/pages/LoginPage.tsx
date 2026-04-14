@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Building2, Star } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [form, setForm] = useState<LoginFormData>({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loginRole, setLoginRole] = useState<"brand" | "influencer">("brand");
 
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
   const showGoogleLogin = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "your-google-client-id.apps.googleusercontent.com";
@@ -70,54 +71,48 @@ export default function LoginPage() {
 
   if (mode === "signup-role") {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-700 via-fuchsia-600 to-pink-500 px-4 py-12">
-        <div className="w-full max-w-5xl space-y-6">
+      <main className="flex min-h-screen items-center justify-center bg-background p-4">
+        <div className="w-full max-w-2xl">
           <Link 
             to="#" 
             onClick={() => setMode("login")}
-            className="inline-flex items-center gap-2 text-sm text-white/90 hover:text-white"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
+            Back to login
           </Link>
 
-          <div className="text-center text-white">
-            <h1 className="text-3xl font-black sm:text-4xl">Create your account</h1>
-            <p className="mt-2 text-white/90">Choose how you want to use Kalakaarian</p>
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold mb-2">Create your account</h1>
+            <p className="text-muted-foreground">Choose how you want to use Kalakaarian</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <Card 
-              className="border-0 bg-white/95 shadow-xl cursor-pointer hover:ring-2 hover:ring-purple-500 transition-all"
+              className="cursor-pointer hover:shadow-lg transition-all group"
               onClick={() => handleRoleSelect("influencer")}
             >
               <CardHeader>
-                <div className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                  <Star className="h-5 w-5" />
-                </div>
-                <CardTitle>I'm an Influencer</CardTitle>
+                <CardTitle className="text-lg">I'm an Influencer</CardTitle>
                 <CardDescription>List your profile and get discovered by top brands</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-95">
+                <Button className="w-full brand-gradient brand-gradient-hover text-primary-foreground">
                   Sign up as Influencer
                 </Button>
               </CardContent>
             </Card>
 
             <Card 
-              className="border-0 bg-white/95 shadow-xl cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              className="cursor-pointer hover:shadow-lg transition-all group"
               onClick={() => handleRoleSelect("brand")}
             >
               <CardHeader>
-                <div className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
-                  <Building2 className="h-5 w-5" />
-                </div>
-                <CardTitle>I'm a Brand</CardTitle>
+                <CardTitle className="text-lg">I'm a Brand</CardTitle>
                 <CardDescription>Find the perfect influencers for your campaigns</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:opacity-95">
+                <Button className="w-full brand-gradient brand-gradient-hover text-primary-foreground">
                   Sign up as Brand
                 </Button>
               </CardContent>
@@ -129,20 +124,42 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-700 via-fuchsia-600 to-pink-500 px-4 py-10">
-      <div className="w-full max-w-md space-y-4">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm text-white/90 hover:text-white">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Home
-        </Link>
+    <main className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <Link to="/">
+            <h1 className="text-2xl font-bold brand-text mb-2">Kalakaarian</h1>
+          </Link>
+          <p className="text-muted-foreground">Welcome back</p>
+        </div>
 
         <Card>
-          <CardHeader className="text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground">Kalakaarian</p>
-            <CardTitle className="text-2xl">Welcome Back</CardTitle>
-            <CardDescription>Sign in to continue to your dashboard</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-6">
+            <div className="flex rounded-lg bg-secondary p-1 mb-6">
+              <button
+                type="button"
+                onClick={() => setLoginRole("brand")}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                  loginRole === "brand" 
+                    ? "brand-gradient text-primary-foreground shadow-sm" 
+                    : "text-muted-foreground"
+                }`}
+              >
+                Brand
+              </button>
+              <button
+                type="button"
+                onClick={() => setLoginRole("influencer")}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+                  loginRole === "influencer" 
+                    ? "brand-gradient text-primary-foreground shadow-sm" 
+                    : "text-muted-foreground"
+                }`}
+              >
+                Influencer
+              </button>
+            </div>
+
             {showGoogleLogin && (
               <>
                 <div className="flex flex-col items-center justify-center space-y-4 pt-2">
@@ -188,7 +205,7 @@ export default function LoginPage() {
 
               {error && <p className="text-sm text-destructive">{error}</p>}
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full brand-gradient brand-gradient-hover text-primary-foreground" disabled={loading}>
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
@@ -198,7 +215,7 @@ export default function LoginPage() {
               <button 
                 type="button"
                 onClick={() => setMode("signup-role")} 
-                className="font-semibold text-purple-700 hover:text-purple-900"
+                className="font-medium text-primary hover:underline"
               >
                 Sign Up
               </button>

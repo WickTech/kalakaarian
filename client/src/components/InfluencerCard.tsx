@@ -1,7 +1,14 @@
-import { ShoppingCart, Check, MapPin } from "lucide-react";
+import { ShoppingCart, Check, MapPin, Instagram, Youtube } from "lucide-react";
 import { Influencer } from "@/lib/store";
 
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+
+const tierColors: Record<string, string> = {
+  nano: "bg-nano",
+  micro: "bg-micro", 
+  macro: "bg-macro",
+  celebrity: "bg-celebrity",
+};
 
 interface InfluencerCardProps {
   influencer: Influencer;
@@ -14,81 +21,80 @@ export function InfluencerCard({ influencer, isInCart, onAddToCart }: Influencer
   const hasNiche = influencer.genre && influencer.genre.trim() !== "";
 
   return (
-    <div className="border border-border bg-card group hover:border-purple-500 transition-colors">
-      {/* Photo */}
-      <div className="aspect-square overflow-hidden relative">
-        <img
-          src={influencer.photo || DEFAULT_AVATAR}
-          alt={influencer.name}
-          className="w-full h-full object-cover"
-          loading="lazy"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
-          }}
-        />
-        <div className="absolute top-2 right-2">
-          <span className="font-mono text-[10px] uppercase tracking-widest bg-background/90 border border-border px-2 py-0.5 text-foreground">
-            {influencer.tier}
-          </span>
+    <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all group animate-scale-in">
+      <div className="relative p-4 pb-0">
+        <div className={`absolute top-3 right-3 px-2 py-0.5 rounded-full text-xs font-medium text-primary-foreground capitalize ${tierColors[influencer.tier] || 'bg-secondary'}`}>
+          {influencer.tier}
         </div>
-        {hasLocation && (
-          <div className="absolute bottom-2 left-2 flex items-center gap-1">
-            <MapPin className="w-3 h-3 text-muted-foreground" />
-            <span className="font-mono text-[10px] uppercase tracking-widest bg-background/90 border border-border px-2 py-0.5 text-muted-foreground">
-              {influencer.city}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="p-3 space-y-2">
-        <div className="flex justify-between items-start">
+        <div className="flex items-center gap-3">
+          <img
+            src={influencer.photo || DEFAULT_AVATAR}
+            alt={influencer.name}
+            className="w-14 h-14 rounded-full border-2 border-border object-cover"
+            loading="lazy"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
+            }}
+          />
           <div>
-            <p className="text-sm font-semibold leading-tight">{influencer.name}</p>
+            <h3 className="font-semibold text-sm">{influencer.name}</h3>
             {influencer.handle && (
-              <p className="font-mono text-xs text-muted-foreground">{influencer.handle}</p>
+              <p className="text-xs text-muted-foreground">{influencer.handle}</p>
             )}
           </div>
         </div>
+      </div>
 
-        {/* Niche Tags */}
-        {hasNiche && (
-          <div className="flex flex-wrap gap-1">
-            <span className="font-mono text-[10px] uppercase tracking-widest bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5">
-              {influencer.genre}
-            </span>
-          </div>
-        )}
-
-        {/* Social Handles */}
-        <div className="flex gap-2 text-xs text-muted-foreground">
-          {influencer.platform === "instagram" && (
-            <span className="text-ig-pink">Instagram</span>
-          )}
-          {influencer.platform === "youtube" && (
-            <span className="text-yt-red">YouTube</span>
-          )}
+      <div className="grid grid-cols-3 gap-2 p-4 text-center">
+        <div>
+          <p className="font-bold text-sm">{influencer.followers ? formatFollowers(influencer.followers) : "0"}</p>
+          <p className="text-[10px] text-muted-foreground">Followers</p>
         </div>
-
-        {/* Price & Cart */}
-        <div className="flex items-center justify-between border-t border-border pt-2">
-          <span className="font-mono text-lg font-bold text-purple-600">
-            GET IN TOUCH
-          </span>
-          <button
-            onClick={() => onAddToCart(influencer)}
-            disabled={isInCart}
-            className={`p-2 border transition-colors ${
-              isInCart
-                ? "border-purple-600 bg-purple-600 text-white"
-                : "border-border hover:border-purple-600 hover:text-purple-600"
-            }`}
-          >
-            {isInCart ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
-          </button>
+        <div>
+          <p className="font-bold text-sm">{influencer.avgViews || 0}</p>
+          <p className="text-[10px] text-muted-foreground">Avg Views</p>
+        </div>
+        <div>
+          <p className="font-bold text-sm">{influencer.avgLikes || 0}</p>
+          <p className="text-[10px] text-muted-foreground">Avg Likes</p>
         </div>
       </div>
+
+      <div className="px-4 pb-4 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          {influencer.platform === "instagram" && <Instagram className="w-4 h-4 text-accent" />}
+          {influencer.platform === "youtube" && <Youtube className="w-4 h-4 text-destructive" />}
+          {hasNiche && (
+            <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-muted-foreground">
+              {influencer.genre}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => onAddToCart(influencer)}
+          disabled={isInCart}
+          className={`p-2 rounded-md transition-colors ${
+            isInCart
+              ? "bg-primary text-primary-foreground"
+              : "border border-border hover:border-primary hover:text-primary"
+          }`}
+        >
+          {isInCart ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
+        </button>
+      </div>
+
+      {hasLocation && (
+        <div className="px-4 pb-3 flex items-center gap-1 text-xs text-muted-foreground">
+          <MapPin className="w-3 h-3" />
+          <span>{influencer.city}</span>
+        </div>
+      )}
     </div>
   );
+}
+
+function formatFollowers(n: number): string {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+  if (n >= 1000) return (n / 1000).toFixed(1) + "K";
+  return n.toString();
 }

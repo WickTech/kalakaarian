@@ -126,4 +126,38 @@
   .border-terminal {
     border-color: hsl(var(--terminal-green));
   }
+
+  .brand-gradient {
+    background: linear-gradient(135deg, hsl(262, 83%, 58%), hsl(340, 82%, 52%));
+  }
+
+  .brand-gradient-hover:hover {
+    background: linear-gradient(135deg, hsl(262, 83%, 50%), hsl(340, 82%, 45%));
+  }
+
+  .brand-text {
+    background: linear-gradient(135deg, hsl(262, 83%, 58%), hsl(340, 82%, 52%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glass {
+    backdrop-filter: blur(20px);
+    background: hsl(0 0% 100% / 0.8);
+  }
+
+  .tier-nano { background-color: hsl(199, 89%, 48%); }
+  .tier-micro { background-color: hsl(262, 83%, 58%); }
+  .tier-macro { background-color: hsl(340, 82%, 52%); }
+  .tier-celebrity { background-color: hsl(38, 92%, 50%); }
+
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out forwards;
+  }
+
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
 }

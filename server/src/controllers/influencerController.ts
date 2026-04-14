@@ -165,17 +165,19 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
       return;
     }
 
-    const { bio, city, genre, platform, tier, followers, pricing, portfolio } = req.body;
+    const { bio, city, niches, platform, tier, followers, pricing, portfolio, instagramPosts, youtubeVideos } = req.body;
 
     const updateData: any = {};
     if (bio !== undefined) updateData.bio = bio;
     if (city) updateData.city = city;
-    if (genre) updateData.genre = genre;
+    if (niches) updateData.niches = niches;
     if (platform) updateData.platform = platform;
     if (tier) updateData.tier = tier;
     if (followers) updateData.followers = followers;
     if (pricing) updateData.pricing = pricing;
     if (portfolio) updateData.portfolio = portfolio;
+    if (instagramPosts) updateData.instagramPosts = instagramPosts;
+    if (youtubeVideos) updateData.youtubeVideos = youtubeVideos;
 
     const profile = await InfluencerProfile.findOneAndUpdate(
       { userId: req.user.userId },

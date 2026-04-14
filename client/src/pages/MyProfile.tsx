@@ -10,6 +10,27 @@ import { api, InfluencerProfile, BrandProfile } from "@/lib/api";
 interface InfluencerProfileView extends InfluencerProfile {
   tiktokHandle?: string;
   twitterHandle?: string;
+  followers?: {
+    instagram?: number;
+    youtube?: number;
+    tiktok?: number;
+    twitter?: number;
+    total?: number;
+  };
+  engagementRate?: number;
+  posts?: Array<{
+    id: string;
+    imageUrl: string;
+    postUrl: string;
+    likes?: number;
+  }>;
+  videos?: Array<{
+    id: string;
+    thumbnailUrl: string;
+    title: string;
+    videoUrl: string;
+    views?: number;
+  }>;
 }
 
 export default function MyProfile() {
@@ -19,6 +40,7 @@ export default function MyProfile() {
   const [loading, setLoading] = useState(true);
   const [influencerProfile, setInfluencerProfile] = useState<InfluencerProfileView | null>(null);
   const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null);
+  const [activeTab, setActiveTab] = useState<"instagram" | "youtube">("instagram");
 
   const isInfluencer = user?.role === "influencer";
 
@@ -136,43 +158,139 @@ export default function MyProfile() {
                 </div>
               </div>
 
-              {influencerProfile.followers && (
+              {(influencerProfile.followers || influencerProfile.engagementRate) && (
                 <div>
-                  <h3 className="font-semibold">Follower Counts</h3>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                    {influencerProfile.followers.instagram !== undefined && influencerProfile.followers.instagram > 0 && (
-                      <div className="flex justify-between rounded-md bg-purple-50 p-2 dark:bg-purple-950">
-                        <span className="text-sm text-purple-700 dark:text-purple-300">Instagram</span>
-                        <span className="font-medium">{influencerProfile.followers.instagram.toLocaleString()}</span>
+                  <h3 className="font-semibold">Stats</h3>
+                  <div className="mt-2 grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900">
+                    <div className="space-y-1">
+                      <span className="text-xs uppercase text-muted-foreground">Followers</span>
+                      <div className="flex items-center gap-2">
+                        <Instagram className="h-4 w-4 text-pink-600" />
+                        <span className="font-semibold">
+                          {influencerProfile.followers?.instagram
+                            ? `${(influencerProfile.followers.instagram / 1000).toFixed(1)}K`
+                            : "0"}
+                        </span>
                       </div>
-                    )}
-                    {influencerProfile.followers.youtube !== undefined && influencerProfile.followers.youtube > 0 && (
-                      <div className="flex justify-between rounded-md bg-red-50 p-2 dark:bg-red-950">
-                        <span className="text-sm text-red-700 dark:text-red-300">YouTube</span>
-                        <span className="font-medium">{influencerProfile.followers.youtube.toLocaleString()}</span>
+                      <div className="flex items-center gap-2">
+                        <Youtube className="h-4 w-4 text-red-600" />
+                        <span className="font-semibold">
+                          {influencerProfile.followers?.youtube
+                            ? `${(influencerProfile.followers.youtube / 1000).toFixed(1)}K`
+                            : "0"}
+                        </span>
                       </div>
-                    )}
-                    {influencerProfile.followers.tiktok !== undefined && influencerProfile.followers.tiktok > 0 && (
-                      <div className="flex justify-between rounded-md bg-gray-50 p-2 dark:bg-gray-950">
-                        <span className="text-sm">TikTok</span>
-                        <span className="font-medium">{influencerProfile.followers.tiktok.toLocaleString()}</span>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-xs uppercase text-muted-foreground">Subscribers</span>
+                      <div className="flex items-center gap-2">
+                        <Youtube className="h-4 w-4 text-red-600" />
+                        <span className="font-semibold">
+                          {influencerProfile.followers?.youtube
+                            ? `${(influencerProfile.followers.youtube / 1000).toFixed(1)}K`
+                            : "0"}
+                        </span>
                       </div>
-                    )}
-                    {influencerProfile.followers.twitter !== undefined && influencerProfile.followers.twitter > 0 && (
-                      <div className="flex justify-between rounded-md bg-blue-50 p-2 dark:bg-blue-950">
-                        <span className="text-sm text-blue-700 dark:text-blue-300">Twitter/X</span>
-                        <span className="font-medium">{influencerProfile.followers.twitter.toLocaleString()}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Engagement</span>
+                        <span className="font-semibold text-green-600">
+                          {influencerProfile.engagementRate?.toFixed(1) || "0"}%
+                        </span>
                       </div>
-                    )}
-                    {influencerProfile.followers.total > 0 && (
-                      <div className="flex justify-between rounded-md bg-gray-100 p-2 font-semibold dark:bg-gray-800">
-                        <span>Total</span>
-                        <span>{influencerProfile.followers.total.toLocaleString()}</span>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               )}
+
+              <div>
+                <h3 className="mb-3 font-semibold">Content</h3>
+                <div className="mb-3 flex gap-2">
+                  <button
+                    onClick={() => setActiveTab("instagram")}
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                      activeTab === "instagram"
+                        ? "brand-gradient text-primary-foreground"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
+                    }`}
+                  >
+                    <Instagram className="h-4 w-4" />
+                    Instagram ({influencerProfile.posts?.length || 0})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("youtube")}
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                      activeTab === "youtube"
+                        ? "brand-gradient text-primary-foreground"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
+                    }`}
+                  >
+                    <Youtube className="h-4 w-4" />
+                    YouTube ({influencerProfile.videos?.length || 0})
+                  </button>
+                </div>
+
+                {activeTab === "instagram" && (
+                  <div className="min-h-[200px] rounded-lg border bg-gray-50 p-4 dark:bg-gray-900">
+                    {influencerProfile.posts && influencerProfile.posts.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        {influencerProfile.posts.map((post) => (
+                          <a
+                            key={post.id}
+                            href={post.postUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group relative aspect-square overflow-hidden rounded-lg bg-gray-200"
+                          >
+                            <img
+                              src={post.imageUrl}
+                              alt="Instagram post"
+                              className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex h-[200px] items-center justify-center text-muted-foreground">
+                        <p>No Instagram posts yet</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "youtube" && (
+                  <div className="min-h-[200px] rounded-lg border bg-gray-50 p-4 dark:bg-gray-900">
+                    {influencerProfile.videos && influencerProfile.videos.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        {influencerProfile.videos.map((video) => (
+                          <a
+                            key={video.id}
+                            href={video.videoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group relative overflow-hidden rounded-lg bg-gray-200"
+                          >
+                            <img
+                              src={video.thumbnailUrl}
+                              alt={video.title}
+                              className="aspect-video w-full object-cover"
+                            />
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                              <p className="line-clamp-2 text-sm font-medium text-white">{video.title}</p>
+                              {video.views && (
+                                <p className="text-xs text-gray-300">{video.views.toLocaleString()} views</p>
+                              )}
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex h-[200px] items-center justify-center text-muted-foreground">
+                        <p>No YouTube videos yet</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

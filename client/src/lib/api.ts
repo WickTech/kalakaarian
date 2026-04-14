@@ -57,6 +57,8 @@ export interface InfluencerProfile {
   };
   profileImage?: string;
   verified?: boolean;
+  instagramPosts?: Array<{ url: string; thumbnail?: string; caption?: string }>;
+  youtubeVideos?: Array<{ url: string; thumbnail?: string; title?: string }>;
 }
 
 export interface UpdateInfluencerProfileData {
@@ -76,6 +78,8 @@ export interface UpdateInfluencerProfileData {
     total?: number;
   };
   engagementRate?: number;
+  instagramPosts?: Array<{ url: string; thumbnail?: string; caption?: string }>;
+  youtubeVideos?: Array<{ url: string; thumbnail?: string; title?: string }>;
 }
 
 export interface UpdateBrandProfileData {

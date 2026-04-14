@@ -26,6 +26,20 @@ const influencerProfileSchema = new Schema(
     },
     portfolio: [{ type: String }],
     verified: { type: Boolean, default: false, index: true },
+    instagramPosts: [{
+      postId: String,
+      url: String,
+      thumbnail: String,
+      caption: String,
+    }],
+    youtubeVideos: [{
+      videoId: String,
+      url: String,
+      thumbnail: String,
+      title: String,
+      views: Number,
+      publishedAt: Date,
+    }],
   },
   { timestamps: true }
 );

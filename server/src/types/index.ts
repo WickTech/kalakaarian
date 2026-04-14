@@ -34,6 +34,20 @@ export interface IInfluencerProfile {
   };
   portfolio: string[];
   verified: boolean;
+  instagramPosts: {
+    postId: string;
+    url: string;
+    thumbnail: string;
+    caption: string;
+  }[];
+  youtubeVideos: {
+    videoId: string;
+    url: string;
+    thumbnail: string;
+    title: string;
+    views: number;
+    publishedAt: Date;
+  }[];
   createdAt?: Date;
   updatedAt?: Date;
 }

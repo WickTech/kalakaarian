@@ -67,8 +67,14 @@ export function InfluencerCard({ influencer, isInCart, onAddToCart }: Influencer
 
       <div className="px-4 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          {influencer.platform === "instagram" && <Instagram className="w-4 h-4 text-accent" />}
-          {influencer.platform === "youtube" && <Youtube className="w-4 h-4 text-destructive" />}
+          {(influencer.platform === "instagram" || 
+            (Array.isArray(influencer.platform) && influencer.platform.includes("instagram"))) && (
+            <Instagram className="w-4 h-4 text-accent" />
+          )}
+          {(influencer.platform === "youtube" || 
+            (Array.isArray(influencer.platform) && influencer.platform.includes("youtube"))) && (
+            <Youtube className="w-4 h-4 text-destructive" />
+          )}
           {hasNiche && (
             <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-muted-foreground">
               {influencer.genre}

@@ -151,7 +151,8 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
       setLoading(true);
       try {
         const data = await api.searchInfluencers();
-        if (data.length > 0) {
+        console.log('API Response:', data);
+        if (Array.isArray(data) && data.length > 0) {
           const transformed: Influencer[] = data.map((inf: InfluencerProfile) => ({
             id: inf._id || inf.id || "",
             name: inf.name || "",
@@ -186,9 +187,19 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
   const filtered = useMemo(() => {
     let result = influencers;
     if (platform === "instagram") {
-      result = result.filter((i) => i.platform === "instagram");
+      result = result.filter((i) => {
+        if (Array.isArray(i.platform)) {
+          return i.platform.includes("instagram");
+        }
+        return i.platform === "instagram";
+      });
     } else {
-      result = result.filter((i) => i.platform === "youtube");
+      result = result.filter((i) => {
+        if (Array.isArray(i.platform)) {
+          return i.platform.includes("youtube");
+        }
+        return i.platform === "youtube";
+      });
     }
     if (tier !== "all") result = result.filter((i) => i.tier === tier);
     if (city !== "All") result = result.filter((i) => i.city === city);

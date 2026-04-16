@@ -52,8 +52,11 @@ app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin === 'https://kalakaarian.vercel.app' || 
       origin === 'http://localhost:5173' || 
-      origin === 'http://localhost:3000') {
-    res.setHeader('Access-Control-Allow-Origin', origin);
+      origin === 'http://localhost:3000' ||
+      (origin && origin.includes('vercel.app'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');

@@ -1,32 +1,12 @@
 # Kalakaarian - Project Context
 
-**Last Updated:** 2026-04-17
+**Last Updated:** 2026-04-17 (Evening)
 
 ---
 
 ## Project Overview
 
-**Kalakaarian** is India"s First AI-Powered Influencer Marketplace connecting brands with micro-influencers for authentic marketing campaigns.
-
----
-
-## User Flow (Updated)
-
-```
-Landing Page
-    ↓
-Login / Sign Up (Email + Password + Google Auth)
-    ↓
-┌────────────────────┬────────────────────┐
-│      BRAND         │    INFLUENCER      │
-├────────────────────┼────────────────────┤
-│ • Browse Influencers│ • Browse Campaigns │
-│ • Create Campaign  │ • Submit Proposal  │
-│ • Manage Campaigns │ • Dashboard        │
-│ • View Proposals   │ • Profile          │
-│ • Accept/Reject    │ • Chat             │
-└────────────────────┴────────────────────┘
-```
+**Kalakaarian** is India's First AI-Powered Influencer Marketplace connecting brands with micro-influencers for authentic marketing campaigns.
 
 ---
 
@@ -42,179 +22,76 @@ Login / Sign Up (Email + Password + Google Auth)
 
 ## Current Status (2026-04-17)
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| Frontend | ✅ | All pages working |
-| Backend | ✅ | All APIs working |
-| MongoDB | ✅ | Connected (Atlas free tier) |
-| Deployment | ✅ | Vercel (frontend + backend serverless) |
-| Seed Data | ✅ | 5 influencers, 3 brands, 4 campaigns, 5 proposals |
+| Component | Status |
+|-----------|--------|
+| Frontend | ✅ Working |
+| Backend | ✅ Working |
+| MongoDB | ✅ Connected (Atlas) |
+| Deployment | ✅ Vercel |
+| Seed Data | ✅ 14 influencers, 1 brand, 1 campaign |
 
 ---
 
-## Recent Fixes (2026-04-17)
+## Today's Progress (2026-04-17)
 
-### ✅ Step 1: Back Button Fix
-- Created `useNavigateBack` hook with fallback navigation
-- Updated back buttons in ContactPage, InfluencerProfile, Messages
-- Fixed navigation to fall back to sensible default routes
+### Fixed Issues
+1. **Blank page error** - Fixed `useAuth` hook error by moving `useCart` inside `AuthProvider`
+2. **Removed mock data** - Marketplace now shows only real influencers from database
+3. **Added 14 real influencers** - Including 9 from Surat, Gujarat
 
-### ✅ Step 2: Campaign File Upload in CreateCampaign
-- Added file upload capability to campaign creation form
-- Files saved as URLs (Google Drive, Dropbox, etc.)
-- Supports brief, contract, other file types
+### Database Seed Data
+- **1 Brand** (login: `brand@techcorp.com` / `password123`)
+- **14 Influencers** (12 display-only, 2 with login)
+- **1 Campaign**
+- **1 Proposal**
 
-### ✅ Step 3: WhatsApp Integration
-- Created WhatsApp Business API service (`server/src/services/whatsapp.ts`)
-- Added WhatsApp notification preferences to User model
-- API routes for status, preferences, test messages, webhooks
-
-### ✅ Step 4: Instagram/YouTube Integration
-- Enhanced social media service with real API support
-- Social stats API routes for followers, posts, videos
-- Frontend updated to display real social stats
-
-### ✅ Step 5: Analytics Improvements
-- Created analytics calculation service
-- Analytics now use real data from social media APIs
-- Updated InfluencerProfile with real engagement metrics
-
-### ✅ Step 6: New Influencer Visibility
-- Fixed API response mismatch for influencer listing
-- Marketplace now shows real influencers from database
-- Handle array platform type in filters
-
-### ✅ Step 7: Fixes from Feature Audit
-- **Cart sync with backend** - Cart now persists across refreshes
-- **Analytics dashboard UI** - Brand/Influencer dashboards show real stats
-- **Contact form backend** - Messages saved to database
+### Influencers Added (Surat, Gujarat)
+1. Sambhav Khatang (@imazikyt)
+2. Kaksha Sarvani (@kakshaaaaaa)
+3. Dhruvisha Jariwala (@thedhruvishajariwala)
+4. Riya Lekhadiya (@ria_aarel)
+5. Heer Darshan (@heer_darshan)
+6. Jiya Khurana (@jiyakhuranaa)
+7. Jaydip Patel (@jaydip.123)
+8. Aarvi Arnav (@arnav__aarvi)
+9. Drishti Patel (@drashti.ghanva)
 
 ---
 
-## Known Issues (Still Pending)
+## All Pages Working
+
+| Page | Status |
+|------|--------|
+| Landing | ✅ |
+| Marketplace | ✅ |
+| Login/Register | ✅ |
+| Brand Dashboard | ✅ |
+| Influencer Dashboard | ✅ |
+| Browse Campaigns | ✅ |
+| Messages | ✅ |
+| Contact | ✅ |
+
+---
+
+## Known Issues (Pending)
 
 1. **Real-time messaging** - Uses polling (5s), not WebSocket
-2. **File upload** - URLs only, no actual file storage
-3. **Social media API** - Mock data fallback, needs API keys for real data:
-   - `YOUTUBE_API_KEY`
-   - `INSTAGRAM_ACCESS_TOKEN`
-4. **WhatsApp API** - Needs API keys:
-   - `WHATSAPP_PHONE_NUMBER_ID`
-   - `WHATSAPP_ACCESS_TOKEN`
-   - `WHATSAPP_BUSINESS_ACCOUNT_ID`
+2. **File upload** - URLs only, no actual storage
+3. **Social media API** - Needs API keys for real data
+4. **WhatsApp API** - Needs API keys
 
 ---
 
-## Test Accounts
+## Environment Variables
 
-| Role | Email | Password |
-|------|-------|----------|
-| Brand | `brand@techcorp.com` | `password123` |
-| Influencer | `sarah@creator.com` | `password123` |
-| Influencer | `raj@creator.com` | `password123` |
-
----
-
-## Full Website Audit Status
-
-### Frontend Pages - Status
-| Page | Status | Notes |
-|------|--------|-------|
-| Landing.tsx | ✅ Working | Dynamic tier counts |
-| LoginPage.tsx | ✅ Working | Login + Signup |
-| RoleSelectPage.tsx | ✅ Working | Role selection |
-| InfluencerRegisterPage.tsx | ✅ Working | Profile image upload |
-| BrandRegisterPage.tsx | ✅ Working | Registration |
-| Marketplace.tsx | ✅ Working | Filters, cart |
-| BrandDashboard.tsx | ✅ Working | Campaigns, proposals, analytics |
-| InfluencerDashboard.tsx | ✅ Working | Proposals, profile, analytics |
-| BrowseCampaigns.tsx | ✅ Working | Open campaigns |
-| CampaignDetails.tsx | ✅ Working | Campaign info |
-| SubmitProposal.tsx | ✅ Working | Proposal form |
-| CreateCampaign.tsx | ✅ Working | File upload |
-| Messages.tsx | ✅ Working | Chat UI |
-| ContactPage.tsx | ✅ Working | Form, chatbot, callback |
-| InfluencerProfile.tsx | ✅ Working | Social stats, analytics |
-
-### Backend API - Status
-| Endpoint | Status |
-|----------|--------|
-| Auth | ✅ Working |
-| Campaigns CRUD | ✅ Working |
-| Proposals CRUD | ✅ Working |
-| Influencers | ✅ Working |
-| Messages | ✅ Working |
-| Analytics | ✅ Working |
-| Cart | ✅ Working |
-| Notifications | ✅ Working |
-| WhatsApp | ✅ Working |
-| Social Stats | ✅ Working |
-| Contact | ✅ Working |
-
----
-
-## Environment Variables Needed
-
-### Backend (.env)
+### Backend
 ```
 MONGODB_URI=mongodb+srv://kalakariaan_admin:WLnsNGZLkGuYFdGE@kalakariaan-cluster.4hamors.mongodb.net/?appName=kalakariaan-cluster
-JWT_SECRET=your_jwt_secret
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-# Optional - for real API data
-YOUTUBE_API_KEY=your_youtube_api_key
-INSTAGRAM_ACCESS_TOKEN=your_instagram_token
-WHATSAPP_PHONE_NUMBER_ID=your_phone_id
-WHATSAPP_ACCESS_TOKEN=your_whatsapp_token
 ```
 
-### Frontend (.env)
+### Frontend
 ```
 VITE_API_URL=https://kalakaarian-server.vercel.app
-```
-
----
-
-## Project Structure
-
-```
-kalakaarian/
-├── client/                    # Frontend (Vite + React)
-│   ├── src/
-│   │   ├── pages/            # Page components
-│   │   ├── hooks/            # React hooks (useCart, useAuth, useTheme, useNavigateBack)
-│   │   ├── lib/              # API client (api.ts)
-│   │   └── components/      # UI components
-│   └── vercel.json
-└── server/                   # Backend (Express + TypeScript)
-    ├── src/
-    │   ├── routes/           # API endpoints
-    │   ├── controllers/     # Business logic
-    │   ├── models/           # MongoDB models
-    │   ├── services/         # Services (whatsapp, socialMedia, analytics)
-    │   └── middleware/       # Auth, validation
-    └── vercel.json
-```
-
----
-
-## How to Run Locally
-
-```bash
-cd /home/rishi/github/kalakaarian
-
-# Install dependencies
-pnpm install
-
-# Seed database (first time)
-cd server && pnpm seed
-
-# Frontend
-cd client && pnpm dev
-
-# Backend
-cd server && pnpm dev
 ```
 
 ---
@@ -223,23 +100,18 @@ cd server && pnpm dev
 
 ```bash
 cd /home/rishi/github/kalakaarian/server
-
-# Create .env with MONGODB_URI
-echo "MONGODB_URI=mongodb+srv://..." > .env
-
-# Run seed
 pnpm seed
 ```
 
 ---
 
-## Tomorrow's Tasks (2026-04-18)
+## Tomorrow's Tasks
 
-1. Test all features on deployed site
-2. Real-time messaging (WebSocket vs polling)
-3. File upload actual storage (Cloudinary/S3)
-4. Social media real API integration (need API keys)
-5. Payment integration
+1. Verify marketplace shows all 14 influencers
+2. Test login with brand account
+3. Test influencer registration flow
+4. Real-time messaging implementation
+5. File upload storage (Cloudinary)
 
 ---
 

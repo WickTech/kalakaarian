@@ -349,6 +349,47 @@ export const api = {
   getInfluencerAnalytics: async (): Promise<any> => {
     return request<any>("/api/analytics/influencer");
   },
+
+  getMembershipStatus: async (): Promise<{ tier: string }> => {
+    return request<{ tier: string }>('/api/membership/status');
+  },
+
+  purchaseMembership: async (tier: string): Promise<any> => {
+    return request<any>('/api/membership/purchase', {
+      method: 'POST',
+      body: JSON.stringify({ tier }),
+    });
+  },
+
+  cancelMembership: async (): Promise<void> => {
+    return request<void>('/api/membership/cancel', { method: 'PUT' });
+  },
+
+  getMyVideos: async (): Promise<any[]> => {
+    return request<any[]>('/api/videos/my');
+  },
+
+  uploadVideo: async (videoUrl: string, platform: string, campaignId?: string): Promise<any> => {
+    return request<any>('/api/videos', {
+      method: 'POST',
+      body: JSON.stringify({ videoUrl, platform, campaignId }),
+    });
+  },
+
+  generateReferralCode: async (): Promise<{ code: string }> => {
+    return request<{ code: string }>('/api/referrals/generate', { method: 'POST' });
+  },
+
+  useReferralCode: async (code: string): Promise<any> => {
+    return request<any>('/api/referrals/use', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+  },
+
+  getReferralStats: async (): Promise<{ code: string | null; usedCount: number; goldUnlocked: boolean; silverUnlocked: boolean }> => {
+    return request('/api/referrals/stats');
+  },
 };
 
 export { ApiError };

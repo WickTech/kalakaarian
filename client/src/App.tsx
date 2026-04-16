@@ -25,6 +25,7 @@ import MyProfile from "./pages/MyProfile";
 import EditInfluencerProfile from "./pages/EditInfluencerProfile";
 import EditBrandProfile from "./pages/EditBrandProfile";
 import Messages from "./pages/Messages";
+import InfluencerProfile from "./pages/InfluencerProfile";
 
 const queryClient = new QueryClient();
 
@@ -242,6 +243,10 @@ const App = () => {
                     <Messages />
                   </ProtectedRoute>
                 }
+              />
+              <Route
+                path="/influencer/:id"
+                element={<InfluencerProfile />}
               />
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import User from '../models/User';
 import BrandProfile from '../models/BrandProfile';
 import InfluencerProfile from '../models/InfluencerProfile';

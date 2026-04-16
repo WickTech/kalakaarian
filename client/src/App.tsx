@@ -257,6 +257,9 @@ const App = () => {
               removeFromCart={cart.removeFromCart}
               clearCart={cart.clearCart}
               total={cart.total}
+              campaignName={cart.campaignName}
+              campaignId={cart.campaignId}
+              setCampaign={cart.setCampaign}
             />
           </BrowserRouter>
         </TooltipProvider>

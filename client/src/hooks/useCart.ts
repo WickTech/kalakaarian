@@ -3,6 +3,8 @@ import { Influencer, CartItem } from "@/lib/store";
 
 export function useCart() {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [campaignName, setCampaignName] = useState<string>("");
+  const [campaignId, setCampaignId] = useState<string>("");
 
   const addToCart = useCallback((influencer: Influencer) => {
     setItems((prev) => {
@@ -16,7 +18,16 @@ export function useCart() {
     setItems((prev) => prev.filter((i) => i.influencer.id !== id));
   }, []);
 
-  const clearCart = useCallback(() => setItems([]), []);
+  const clearCart = useCallback(() => {
+    setItems([]);
+    setCampaignName("");
+    setCampaignId("");
+  }, []);
+
+  const setCampaign = useCallback((name: string, id: string = "") => {
+    setCampaignName(name);
+    setCampaignId(id);
+  }, []);
 
   const isInCart = useCallback(
     (id: string) => items.some((i) => i.influencer.id === id),
@@ -25,5 +36,16 @@ export function useCart() {
 
   const total = items.reduce((sum, i) => sum + (i.influencer.price ?? 0), 0);
 
-  return { items, addToCart, removeFromCart, clearCart, isInCart, total, count: items.length };
+  return { 
+    items, 
+    addToCart, 
+    removeFromCart, 
+    clearCart, 
+    isInCart, 
+    total, 
+    count: items.length,
+    campaignName,
+    campaignId,
+    setCampaign
+  };
 }

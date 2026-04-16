@@ -18,6 +18,8 @@ interface MarketplaceProps {
 const TIERS = ["nano", "micro", "macro", "celebrity"] as const;
 const CITIES = ["All", "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "Kolkata", "Pune", "Jaipur", "Ahmedabad", "Lucknow"];
 const GENRES = ["All", "Fashion", "Tech", "Food", "Fitness", "Travel", "Beauty", "Gaming", "Education", "Comedy", "Lifestyle"];
+const CAMPAIGN_TYPES = ["All", "Reels", "Stories", "YT Video", "UGC Content"];
+const GENDERS = ["All", "Male", "Female"];
 const PER_PAGE = 12;
 
 const mockInfluencers: Influencer[] = [
@@ -138,6 +140,11 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
   const [page, setPage] = useState(1);
   const [influencers, setInfluencers] = useState<Influencer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [followersMin, setFollowersMin] = useState<number | "">("");
+  const [followersMax, setFollowersMax] = useState<number | "">("");
+  const [maxBudget, setMaxBudget] = useState<number | "">("");
+  const [gender, setGender] = useState<"All" | "Male" | "Female">("All");
+  const [campaignType, setCampaignType] = useState<typeof CAMPAIGN_TYPES[number]>("All");
 
   useEffect(() => {
     const fetchInfluencers = async () => {
@@ -186,11 +193,20 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
     if (tier !== "all") result = result.filter((i) => i.tier === tier);
     if (city !== "All") result = result.filter((i) => i.city === city);
     if (genre !== "All") result = result.filter((i) => i.genre === genre);
+    if (followersMin !== "") result = result.filter((i) => i.followers >= followersMin);
+    if (followersMax !== "") result = result.filter((i) => i.followers <= followersMax);
+    if (maxBudget !== "" && result[0]?.price !== null) {
+      result = result.filter((i) => i.price !== null && i.price <= maxBudget);
+    }
+    if (gender !== "All") {
+      const genderKey = gender.toLowerCase() as "male" | "female";
+      result = result.filter((i) => i.genderSplit && i.genderSplit[genderKey] > 50);
+    }
     result.sort((a, b) =>
       sort === "high" ? (b.followers - a.followers) : (a.followers - b.followers)
     );
     return result;
-  }, [influencers, platform, tier, city, genre, sort]);
+  }, [influencers, platform, tier, city, genre, sort, followersMin, followersMax, maxBudget, gender]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -242,20 +258,50 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
       </div>
 
       {/* Filters */}
-      <div className="border-b border-border px-4 py-3 flex flex-wrap gap-3 items-center">
-        <FilterSelect label="Tier" value={tier} options={["all", ...TIERS]} onChange={(v) => { setTier(v as any); setPage(1); }} />
-        <FilterSelect label="City" value={city} options={CITIES} onChange={(v) => { setCity(v); setPage(1); }} />
-        <FilterSelect label="Genre" value={genre} options={GENRES} onChange={(v) => { setGenre(v); setPage(1); }} />
-        <FilterSelect
-          label="Sort"
-          value={sort}
-          options={["high", "low"]}
-          displayMap={{ high: "Highest First", low: "Lowest First" }}
-          onChange={(v) => setSort(v as "high" | "low")}
-        />
-        <span className="ml-auto text-sm text-muted-foreground">
-          {filtered.length} influencers found
-        </span>
+      <div className="border-b border-border px-4 py-3 space-y-2">
+        <div className="flex flex-wrap gap-3 items-center">
+          <FilterSelect label="Tier" value={tier} options={["all", ...TIERS]} onChange={(v) => { setTier(v as any); setPage(1); }} />
+          <FilterSelect label="City" value={city} options={CITIES} onChange={(v) => { setCity(v); setPage(1); }} />
+          <FilterSelect label="Genre" value={genre} options={GENRES} onChange={(v) => { setGenre(v); setPage(1); }} />
+          <FilterSelect
+            label="Sort"
+            value={sort}
+            options={["high", "low"]}
+            displayMap={{ high: "Highest First", low: "Lowest First" }}
+            onChange={(v) => setSort(v as "high" | "low")}
+          />
+          <span className="ml-auto text-sm text-muted-foreground">
+            {filtered.length} influencers found
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-3 items-center">
+          <span className="text-xs text-muted-foreground">Followers:</span>
+          <input
+            type="number"
+            placeholder="Min"
+            value={followersMin}
+            onChange={(e) => { setFollowersMin(e.target.value ? parseInt(e.target.value) : ""); setPage(1); }}
+            className="w-20 px-2 py-1 text-sm border border-border rounded-md bg-card focus:outline-none focus:border-primary"
+          />
+          <span className="text-muted-foreground">-</span>
+          <input
+            type="number"
+            placeholder="Max"
+            value={followersMax}
+            onChange={(e) => { setFollowersMax(e.target.value ? parseInt(e.target.value) : ""); setPage(1); }}
+            className="w-20 px-2 py-1 text-sm border border-border rounded-md bg-card focus:outline-none focus:border-primary"
+          />
+          <span className="text-xs text-muted-foreground ml-2">Budget (₹):</span>
+          <input
+            type="number"
+            placeholder="Max"
+            value={maxBudget}
+            onChange={(e) => { setMaxBudget(e.target.value ? parseInt(e.target.value) : ""); setPage(1); }}
+            className="w-24 px-2 py-1 text-sm border border-border rounded-md bg-card focus:outline-none focus:border-primary"
+          />
+          <FilterSelect label="Gender" value={gender} options={GENDERS} onChange={(v) => { setGender(v as any); setPage(1); }} />
+          <FilterSelect label="Content" value={campaignType} options={CAMPAIGN_TYPES} onChange={(v) => { setCampaignType(v as any); setPage(1); }} />
+        </div>
       </div>
 
       {/* Grid */}
@@ -268,7 +314,11 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
           <div className="flex flex-col items-center justify-center h-64 gap-2">
             <p className="text-muted-foreground">No influencers found matching your filters.</p>
             <button 
-              onClick={() => { setTier("all"); setCity("All"); setGenre("All"); }}
+              onClick={() => { 
+                setTier("all"); setCity("All"); setGenre("All"); 
+                setFollowersMin(""); setFollowersMax(""); setMaxBudget("");
+                setGender("All"); setCampaignType("All"); setPage(1);
+              }}
               className="text-sm text-primary hover:underline"
             >
               Clear filters

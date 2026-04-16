@@ -390,6 +390,43 @@ export const api = {
   getReferralStats: async (): Promise<{ code: string | null; usedCount: number; goldUnlocked: boolean; silverUnlocked: boolean }> => {
     return request('/api/referrals/stats');
   },
+
+  // Campaign Files
+  getCampaignFiles: async (campaignId: string): Promise<any[]> => {
+    return request<any[]>(`/api/campaigns/${campaignId}/files`);
+  },
+
+  uploadCampaignFile: async (campaignId: string, fileUrl: string, fileName: string, fileType: string): Promise<any> => {
+    return request<any>(`/api/campaigns/${campaignId}/files`, {
+      method: 'POST',
+      body: JSON.stringify({ fileUrl, fileName, fileType }),
+    });
+  },
+
+  deleteCampaignFile: async (campaignId: string, fileId: string): Promise<void> => {
+    return request<void>(`/api/campaigns/${campaignId}/files/${fileId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Campaign Workflow
+  getCampaignWorkflow: async (campaignId: string): Promise<any> => {
+    return request<any>(`/api/campaigns/${campaignId}/workflow`);
+  },
+
+  updateWorkflowStage: async (campaignId: string, stage: string): Promise<any> => {
+    return request<any>(`/api/campaigns/${campaignId}/workflow/stage`, {
+      method: 'PUT',
+      body: JSON.stringify({ stage }),
+    });
+  },
+
+  updateVideoStatus: async (campaignId: string, videoIndex: number, status: string, feedback?: string): Promise<any> => {
+    return request<any>(`/api/campaigns/${campaignId}/videos/${videoIndex}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, feedback }),
+    });
+  },
 };
 
 export { ApiError };

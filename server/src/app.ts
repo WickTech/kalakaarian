@@ -13,6 +13,8 @@ import analyticsRoutes from './routes/analytics';
 import membershipRoutes from './routes/membership';
 import videoRoutes from './routes/videos';
 import referralRoutes from './routes/referrals';
+import campaignFilesRoutes from './routes/campaignFiles';
+import campaignWorkflowRoutes from './routes/campaignWorkflow';
 
 dotenv.config();
 
@@ -93,6 +95,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/membership', membershipRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/referrals', referralRoutes);
+app.use('/api/campaigns', campaignFilesRoutes);
+app.use('/api/campaigns', campaignWorkflowRoutes);
 
 const handler = serverless(app);
 export { handler };

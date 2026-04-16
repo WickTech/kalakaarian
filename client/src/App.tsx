@@ -6,7 +6,6 @@ import { useTheme } from "@/hooks/useTheme";
 import { useCart } from "@/hooks/useCart";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { CartDrawer } from "@/components/CartDrawer";
-import { NotificationBell } from "@/components/NotificationBell";
 import Landing from "./pages/Landing";
 import Marketplace from "./pages/Marketplace";
 import NotFound from "./pages/NotFound";
@@ -115,158 +114,168 @@ function EditProfileWrapper() {
   return <EditBrandProfile />;
 }
 
-const App = () => {
+function AppContent() {
   const { dark, toggle } = useTheme();
   const cart = useCart();
   const [cartOpen, setCartOpen] = useState(false);
+
+  return (
+    <>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Landing
+              dark={dark}
+              toggleTheme={toggle}
+            />
+          }
+        />
+        <Route
+          path="/marketplace"
+          element={
+            <Marketplace
+              dark={dark}
+              toggleTheme={toggle}
+              cartCount={cart.count}
+              onCartOpen={() => setCartOpen(true)}
+              isInCart={cart.isInCart}
+              addToCart={cart.addToCart}
+            />
+          }
+        />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/role-select" element={<RoleSelectPage />} />
+        <Route
+          path="/influencer-register"
+          element={<InfluencerRegisterPage />}
+        />
+        <Route
+          path="/brand-register"
+          element={<BrandRegisterPage />}
+        />
+        <Route
+          path="/brand-campaign"
+          element={
+            <ProtectedRoute>
+              <BrandCampaignPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/brand/dashboard"
+          element={
+            <BrandRoute>
+              <BrandDashboard />
+            </BrandRoute>
+          }
+        />
+        <Route
+          path="/brand/create-campaign"
+          element={
+            <BrandRoute>
+              <CreateCampaign />
+            </BrandRoute>
+          }
+        />
+        <Route
+          path="/influencer/dashboard"
+          element={
+            <ProtectedRoute>
+              <InfluencerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/campaigns"
+          element={
+            <InfluencerRoute>
+              <BrowseCampaigns />
+            </InfluencerRoute>
+          }
+        />
+        <Route
+          path="/campaign/:id"
+          element={
+            <InfluencerRoute>
+              <CampaignDetails />
+            </InfluencerRoute>
+          }
+        />
+        <Route
+          path="/campaign/:id/propose"
+          element={
+            <InfluencerRoute>
+              <SubmitProposal />
+            </InfluencerRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <MyProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/edit"
+          element={
+            <ProtectedRoute>
+              <EditProfileWrapper />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <ProtectedRoute>
+              <Messages />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/influencer/:id"
+          element={<InfluencerProfile />}
+        />
+        <Route
+          path="/contact"
+          element={<ContactPage />}
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <CartDrawer
+        open={cartOpen}
+        onClose={() => setCartOpen(false)}
+        items={cart.items}
+        removeFromCart={cart.removeFromCart}
+        clearCart={cart.clearCart}
+        total={cart.total}
+        campaignName={cart.campaignName}
+        campaignId={cart.campaignId}
+        setCampaign={cart.setCampaign}
+      />
+    </>
+  );
+}
+
+const App = () => {
+  const { dark, toggle } = useTheme();
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
           <BrowserRouter>
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <Landing
-                    dark={dark}
-                    toggleTheme={toggle}
-                  />
-                }
-              />
-              <Route
-                path="/marketplace"
-                element={
-                  <Marketplace
-                    dark={dark}
-                    toggleTheme={toggle}
-                    cartCount={cart.count}
-                    onCartOpen={() => setCartOpen(true)}
-                    isInCart={cart.isInCart}
-                    addToCart={cart.addToCart}
-                  />
-                }
-              />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/role-select" element={<RoleSelectPage />} />
-              <Route
-                path="/influencer-register"
-                element={<InfluencerRegisterPage />}
-              />
-              <Route
-                path="/brand-register"
-                element={<BrandRegisterPage />}
-              />
-              <Route
-                path="/brand-campaign"
-                element={
-                  <ProtectedRoute>
-                    <BrandCampaignPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/brand/dashboard"
-                element={
-                  <BrandRoute>
-                    <BrandDashboard />
-                  </BrandRoute>
-                }
-              />
-              <Route
-                path="/brand/create-campaign"
-                element={
-                  <BrandRoute>
-                    <CreateCampaign />
-                  </BrandRoute>
-                }
-              />
-              <Route
-                path="/influencer/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <InfluencerDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/campaigns"
-                element={
-                  <InfluencerRoute>
-                    <BrowseCampaigns />
-                  </InfluencerRoute>
-                }
-              />
-              <Route
-                path="/campaign/:id"
-                element={
-                  <InfluencerRoute>
-                    <CampaignDetails />
-                  </InfluencerRoute>
-                }
-              />
-              <Route
-                path="/campaign/:id/propose"
-                element={
-                  <InfluencerRoute>
-                    <SubmitProposal />
-                  </InfluencerRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <MyProfile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile/edit"
-                element={
-                  <ProtectedRoute>
-                    <EditProfileWrapper />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/messages"
-                element={
-                  <ProtectedRoute>
-                    <Messages />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/influencer/:id"
-                element={<InfluencerProfile />}
-              />
-              <Route
-                path="/contact"
-                element={<ContactPage />}
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <CartDrawer
-              open={cartOpen}
-              onClose={() => setCartOpen(false)}
-              items={cart.items}
-              removeFromCart={cart.removeFromCart}
-              clearCart={cart.clearCart}
-              total={cart.total}
-              campaignName={cart.campaignName}
-              campaignId={cart.campaignId}
-              setCampaign={cart.setCampaign}
-            />
+            <AppContent />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

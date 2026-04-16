@@ -22,111 +22,6 @@ const CAMPAIGN_TYPES = ["All", "Reels", "Stories", "YT Video", "UGC Content"];
 const GENDERS = ["All", "Male", "Female"];
 const PER_PAGE = 12;
 
-const mockInfluencers: Influencer[] = [
-  {
-    id: "inf-1",
-    name: "Aisha Kapoor",
-    handle: "@aishastyled",
-    photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
-    platform: "instagram",
-    tier: "micro",
-    genre: "Fashion",
-    city: "Mumbai",
-    followers: 182000,
-    activeFollowers: 156000,
-    fakeFollowers: 26000,
-    avgViews: 45000,
-    avgLikes: 8900,
-    genderSplit: { male: 35, female: 62, other: 3 },
-    price: 25000,
-  },
-  {
-    id: "inf-2",
-    name: "Rohan Mehta",
-    handle: "@rohanreviews",
-    photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
-    platform: "youtube",
-    tier: "macro",
-    genre: "Tech",
-    city: "Delhi",
-    followers: 265000,
-    activeFollowers: 210000,
-    fakeFollowers: 55000,
-    avgViews: 120000,
-    avgLikes: 15000,
-    genderSplit: { male: 68, female: 30, other: 2 },
-    price: 45000,
-  },
-  {
-    id: "inf-3",
-    name: "Maya Singh",
-    handle: "@mapwithmaya",
-    photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
-    platform: "instagram",
-    tier: "micro",
-    genre: "Travel",
-    city: "Bangalore",
-    followers: 94000,
-    activeFollowers: 78000,
-    fakeFollowers: 16000,
-    avgViews: 28000,
-    avgLikes: 5200,
-    genderSplit: { male: 42, female: 55, other: 3 },
-    price: 18000,
-  },
-  {
-    id: "inf-4",
-    name: "Dev Arora",
-    handle: "@devgetsfit",
-    photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
-    platform: "instagram",
-    tier: "nano",
-    genre: "Fitness",
-    city: "Pune",
-    followers: 51000,
-    activeFollowers: 44000,
-    fakeFollowers: 7000,
-    avgViews: 15000,
-    avgLikes: 3800,
-    genderSplit: { male: 58, female: 40, other: 2 },
-    price: 12000,
-  },
-  {
-    id: "inf-5",
-    name: "Kabir Jain",
-    handle: "@kabirplays",
-    photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
-    platform: "youtube",
-    tier: "macro",
-    genre: "Gaming",
-    city: "Hyderabad",
-    followers: 402000,
-    activeFollowers: 320000,
-    fakeFollowers: 82000,
-    avgViews: 250000,
-    avgLikes: 35000,
-    genderSplit: { male: 75, female: 23, other: 2 },
-    price: 65000,
-  },
-  {
-    id: "inf-6",
-    name: "Sara Fernandes",
-    handle: "@saramoneywise",
-    photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop",
-    platform: "youtube",
-    tier: "micro",
-    genre: "Finance",
-    city: "Mumbai",
-    followers: 118000,
-    activeFollowers: 95000,
-    fakeFollowers: 23000,
-    avgViews: 55000,
-    avgLikes: 7200,
-    genderSplit: { male: 52, female: 45, other: 3 },
-    price: 28000,
-  },
-];
-
 export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, isInCart, addToCart }: MarketplaceProps) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -151,7 +46,6 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
       setLoading(true);
       try {
         const data = await api.searchInfluencers();
-        console.log('API Response:', data);
         if (Array.isArray(data) && data.length > 0) {
           const transformed: Influencer[] = data.map((inf: InfluencerProfile) => ({
             id: inf._id || inf.id || "",
@@ -172,11 +66,11 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
           }));
           setInfluencers(transformed);
         } else {
-          setInfluencers(mockInfluencers);
+          setInfluencers([]);
         }
       } catch (err) {
         console.error("Failed to fetch influencers:", err);
-        setInfluencers(mockInfluencers);
+        setInfluencers([]);
       } finally {
         setLoading(false);
       }

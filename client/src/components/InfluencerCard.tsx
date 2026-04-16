@@ -1,4 +1,5 @@
 import { ShoppingCart, Check, MapPin, Instagram, Youtube } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Influencer } from "@/lib/store";
 
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
@@ -17,11 +18,15 @@ interface InfluencerCardProps {
 }
 
 export function InfluencerCard({ influencer, isInCart, onAddToCart }: InfluencerCardProps) {
+  const navigate = useNavigate();
   const hasLocation = influencer.city && influencer.city.trim() !== "";
   const hasNiche = influencer.genre && influencer.genre.trim() !== "";
 
   return (
-    <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all group animate-scale-in">
+    <div 
+      onClick={() => navigate(`/influencer/${influencer.id}`)}
+      className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-all group animate-scale-in cursor-pointer"
+    >
       <div className="relative p-4 pb-0">
         <div className={`absolute top-3 right-3 px-2 py-0.5 rounded-full text-xs font-medium text-primary-foreground capitalize ${tierColors[influencer.tier] || 'bg-secondary'}`}>
           {influencer.tier}

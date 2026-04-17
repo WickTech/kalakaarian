@@ -1,11 +1,12 @@
 {
   "builds": [
     {
-      "src": "server/dist/**/*.js",
+      "src": "server/package.json",
       "use": "@vercel/node"
     }
   ],
   "version": 2,
+  "installCommand": "cd server && npm install",
   "routes": [
     {
       "src": "/(.*)",

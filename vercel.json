@@ -1,5 +1,6 @@
 {
   "installCommand": "cd server && npm install",
   "buildCommand": "cd server && npm run build",
-  "framework": null
+  "framework": null,
+  "rootDirectory": "server"
 }

@@ -1,3 +1,15 @@
 {
-  "rootDirectory": "server"
+  "builds": [
+    {
+      "src": "server/dist/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "version": 2,
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/server/dist/app.js"
+    }
+  ]
 }

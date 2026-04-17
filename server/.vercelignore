@@ -1,7 +1,0 @@
-client
-packages
-.git
-.github
-*.md
-.env.local
-.env.*.local

@@ -1,16 +1,3 @@
 {
-  "builds": [
-    {
-      "src": "server/package.json",
-      "use": "@vercel/node"
-    }
-  ],
-  "version": 2,
-  "installCommand": "cd server && npm install",
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/server/dist/app.js"
-    }
-  ]
+  "rootDirectory": "server"
 }

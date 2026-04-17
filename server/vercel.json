@@ -1,18 +1,5 @@
 {
-  "builds": [
-    {
-      "src": "server/src/(.*)",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "server/dist/app.js"
-    },
-    {
-      "src": "/health",
-      "dest": "server/dist/app.js"
-    }
-  ]
+  "framework": null,
+  "buildCommand": "npm run build",
+  "installCommand": "npm install"
 }

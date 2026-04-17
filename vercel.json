@@ -1,5 +1,15 @@
 {
   "framework": "node",
-  "buildCommand": "cd server && npm run build",
-  "installCommand": "cd server && npm install"
+  "builds": [
+    {
+      "src": "server/dist/app.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "server/dist/app.js"
+    }
+  ]
 }

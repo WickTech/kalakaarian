@@ -1,0 +1,27 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "anthropic/claude-sonnet-4-6",
+  "provider": {
+    "anthropic": {
+      "apiKey": "${ANTHROPIC_API_KEY}"
+    },
+    "openai": {
+      "apiKey": "${OPENAI_API_KEY}"
+    },
+    "google": {
+      "apiKey": "${GEMINI_API_KEY}"
+    }
+  },
+  "instructions": [
+    "This is Kalakaarian — a D2C influencer marketplace monorepo (npm workspaces: client, server, packages/models).",
+    "Read CLAUDE.md before making any changes. For UI work also read client/CLAUDE.md; for API work read server/CLAUDE.md.",
+    "95% Rule: only make code changes when 95% confident. Read all relevant files (schema, middleware, routes) first.",
+    "200-line limit: keep every file under 200 lines. Split controllers by concern, services by platform.",
+    "Never weaken security: do not remove rate limiters, escapeRegex, mongo-sanitize, or auth guards to make tests pass.",
+    "Server key contracts: use AuthRequest (not req as any), bidAmount (not price), connectDB() cached pattern, applyPlatformMargin() on all brand-facing pricing reads, CORS_ORIGINS env var (never origin: '*').",
+    "Server is serverless-only (no app.listen). Local dev uses vercel dev from repo root.",
+    "Only server/src/ is deployed — server/{controllers,models,routes,utils} without src/ are dead code.",
+    "Pre-ship: typecheck, lint, test must pass before pushing to main.",
+    "Storage auth token key is kalakariaan_token (historical typo — keep it)."
+  ]
+}

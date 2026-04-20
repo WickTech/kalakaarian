@@ -1,0 +1,101 @@
+# RuFlo Workflow: PWA Multi-AI Task Router
+# Routes PWA development tasks to the best AI provider based on task type.
+#
+# Task type → AI routing:
+#   ui-component       → GPT-4o via opencode (fast UI iteration)
+#   codebase-review    → Gemini 2.5 Pro via opencode (1M token context)
+#   architecture       → Claude native (deep reasoning, security)
+#   parallel           → RuFlo swarm (multi-agent parallelism)
+#
+# Usage:
+#   From Claude Code:  /workflow pwa-multi-ai "task description"
+#   From opencode CLI: /model anthropic/claude-sonnet-4-6, then ask Claude to run this workflow
+
+name: pwa-multi-ai
+version: "1.0.0"
+description: Route PWA tasks to the right AI provider
+
+inputs:
+  task:
+    type: string
+    description: "The development task to route and execute"
+  type:
+    type: string
+    description: "Task type override: ui-component | codebase-review | architecture | parallel"
+    required: false
+
+steps:
+  - id: classify
+    name: Classify task type
+    agent: claude
+    prompt: |
+      Classify this PWA development task into exactly one category. Reply with only the category name.
+
+      Task: {{ inputs.task }}
+
+      Categories:
+      - ui-component: React component, Tailwind styling, shadcn/ui usage, form, page layout
+      - codebase-review: code audit, performance review, Lighthouse, full-repo analysis, security review
+      - architecture: API design, database schema, service design, multi-file refactor, auth flow
+      - parallel: feature that needs implementation + tests + docs at the same time
+    output: task_type
+
+  - id: route
+    name: Route to provider
+    condition: "{{ inputs.type || steps.classify.output.task_type }}"
+    branches:
+      ui-component:
+        - id: gpt_ui
+          name: GPT-4o UI generation
+          tool: shell
+          command: >
+            opencode run
+            --model openai/gpt-4o-mini
+            --context CLAUDE.md
+            --context client/CLAUDE.md
+            "{{ inputs.task }}. Follow the project conventions in CLAUDE.md: TypeScript strict, shadcn/ui components from src/components/ui, Tailwind 3 utility classes, no inline any types, storage key is kalakariaan_token."
+          output: result
+
+      codebase-review:
+        - id: gemini_review
+          name: Gemini large-context review
+          tool: shell
+          command: >
+            opencode run
+            --model google/gemini-2.5-pro
+            --context CLAUDE.md
+            --context GEMINI.md
+            "{{ inputs.task }}. This is a monorepo with client (React/Vite/PWA), server (Express serverless), and packages/models. Report findings in structured markdown with file:line references."
+          output: result
+
+      architecture:
+        - id: claude_arch
+          name: Claude architecture decision
+          agent: claude
+          prompt: |
+            {{ inputs.task }}
+
+            Before responding, read the relevant files. Follow CLAUDE.md rules:
+            - 95% confidence before changes
+            - 200-line file limit per file
+            - Use AuthRequest, bidAmount, applyPlatformMargin, connectDB patterns
+            - Never weaken security controls
+          output: result
+
+      parallel:
+        - id: swarm_parallel
+          name: RuFlo parallel swarm
+          tool: swarm
+          topology: hierarchical
+          agents:
+            - role: implementer
+              prompt: "Implement: {{ inputs.task }}. Follow CLAUDE.md patterns."
+            - role: tester
+              prompt: "Write Vitest unit tests for: {{ inputs.task }}. Use src/**/*.test.ts pattern."
+            - role: documenter
+              prompt: "Update docs/API.md and docs/CHANGELOG.md for: {{ inputs.task }}."
+          output: result
+
+  - id: output
+    name: Return result
+    return: "{{ steps.route.output.result }}"

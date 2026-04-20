@@ -12,6 +12,7 @@ const userSchema = new Schema(
     password: { type: String },
     googleId: { type: String, unique: true, sparse: true, index: true },
     role: { type: String, enum: ['brand', 'influencer'], required: true, index: true },
+    isAdmin: { type: Boolean, default: false },
     name: { type: String, required: true },
     isPhoneLogin: { type: Boolean, default: false },
     whatsappNotifications: {

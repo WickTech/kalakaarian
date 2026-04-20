@@ -1,12 +1,12 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import Notification from '../models/Notification';
-import { auth } from '../middleware/auth';
+import { auth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-router.get('/', auth, async (req: Request, res: Response) => {
+router.get('/', auth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.user!.userId;
     const notifications = await Notification.find({ userId })
       .sort({ createdAt: -1 })
       .limit(50);
@@ -16,9 +16,9 @@ router.get('/', auth, async (req: Request, res: Response) => {
   }
 });
 
-router.get('/unread-count', auth, async (req: Request, res: Response) => {
+router.get('/unread-count', auth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.user!.userId;
     const count = await Notification.countDocuments({ userId, read: false });
     res.json({ count });
   } catch (error) {
@@ -26,9 +26,9 @@ router.get('/unread-count', auth, async (req: Request, res: Response) => {
   }
 });
 
-router.put('/:id/read', auth, async (req: Request, res: Response) => {
+router.put('/:id/read', auth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.user!.userId;
     await Notification.findOneAndUpdate(
       { _id: req.params.id, userId },
       { read: true }
@@ -39,9 +39,9 @@ router.put('/:id/read', auth, async (req: Request, res: Response) => {
   }
 });
 
-router.put('/read-all', auth, async (req: Request, res: Response) => {
+router.put('/read-all', auth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.user!.userId;
     await Notification.updateMany({ userId, read: false }, { read: true });
     res.json({ message: 'All marked as read' });
   } catch (error) {
@@ -49,9 +49,9 @@ router.put('/read-all', auth, async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/:id', auth, async (req: Request, res: Response) => {
+router.delete('/:id', auth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.user!.userId;
     await Notification.findOneAndDelete({ _id: req.params.id, userId });
     res.json({ message: 'Notification deleted' });
   } catch (error) {

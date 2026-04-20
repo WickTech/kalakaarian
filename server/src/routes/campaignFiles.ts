@@ -1,15 +1,15 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import CampaignFile from '../models/CampaignFile';
 import Campaign from '../models/Campaign';
-import { auth } from '../middleware/auth';
+import { auth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-router.post('/:campaignId/files', auth, async (req: Request, res: Response) => {
+router.post('/:campaignId/files', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { fileUrl, fileType, fileName } = req.body;
     const campaignId = req.params.campaignId;
-    const userId = (req as any).userId;
+    const userId = req.user!.userId;
 
     const campaign = await Campaign.findOne({ _id: campaignId, brandId: userId });
     if (!campaign) {
@@ -31,7 +31,7 @@ router.post('/:campaignId/files', auth, async (req: Request, res: Response) => {
   }
 });
 
-router.get('/:campaignId/files', auth, async (req: Request, res: Response) => {
+router.get('/:campaignId/files', auth, async (req: AuthRequest, res: Response) => {
   try {
     const files = await CampaignFile.find({ campaignId: req.params.campaignId })
       .populate('uploadedBy', 'name email');
@@ -41,12 +41,12 @@ router.get('/:campaignId/files', auth, async (req: Request, res: Response) => {
   }
 });
 
-router.delete('/:campaignId/files/:fileId', auth, async (req: Request, res: Response) => {
+router.delete('/:campaignId/files/:fileId', auth, async (req: AuthRequest, res: Response) => {
   try {
     await CampaignFile.findOneAndDelete({
       _id: req.params.fileId,
       campaignId: req.params.campaignId,
-      uploadedBy: (req as any).userId,
+      uploadedBy: req.user!.userId,
     });
     res.json({ message: 'File deleted' });
   } catch (error) {

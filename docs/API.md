@@ -1,849 +1,477 @@
 # API Documentation
 
-Base URL: `http://localhost:5000/api`
-
-## Authentication
+Base URL: `https://<project>.vercel.app/api` (production) or `http://localhost:4000/api` (local via `vercel dev`)
 
 All protected endpoints require:
 ```
 Authorization: Bearer <jwt_token>
 ```
 
+Errors always return `{ message: string }`. Common HTTP codes:
+| Code | Meaning |
+|------|---------|
+| 400 | Validation / bad input |
+| 401 | Missing or invalid JWT |
+| 403 | Wrong role or not resource owner |
+| 404 | Not found |
+| 429 | Rate limit exceeded |
+| 503 | DB unavailable |
+
 ---
 
-## Auth Endpoints
+## Health
+
+### GET /health
+No auth. Returns `{ status: "ok" }`. Safe to use as a readiness probe.
+
+---
+
+## Auth — `/api/auth`
 
 ### POST /api/auth/register
+Register brand or influencer. Returns JWT on success.
 
-Register a new user (brand or influencer).
-
-**Request:**
 ```json
+// Request
 {
   "email": "user@example.com",
-  "password": "securePassword123",
-  "role": "brand",
-  "name": "Brand Name"
+  "password": "s3cret",
+  "name": "Riya",
+  "role": "brand" | "influencer",
+  // brand-only
+  "companyName": "StyleCo",
+  "industry": "Fashion",
+  // influencer-only
+  "city": "Mumbai",
+  "niches": ["fashion"],
+  "platform": ["instagram"],
+  "tier": "micro",
+  "bio": "...",
+  "socialHandles": { "instagram": "handle" }
 }
+// Response 201
+{ "message": "User registered successfully", "token": "...", "user": { "_id": "...", "role": "brand", "name": "Riya" } }
 ```
-
-**Response (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "60d5ec49f1b2c8b1f4e3e1e1",
-      "email": "user@example.com",
-      "role": "brand",
-      "name": "Brand Name"
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-}
-```
-
-**Error Codes:**
-| Code | Message |
-|------|---------|
-| 400 | Validation error / Email already exists |
-| 500 | Server error |
-
----
-
-### POST /api/auth/google
-
-Authenticate user via Google OAuth 2.0.
-
-**Request:**
-```json
-{
-  "code": "authorization-code-from-google"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "60d5ec49f1b2c8b1f4e3e1e1",
-      "email": "user@gmail.com",
-      "name": "John Doe",
-      "role": "brand"
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-}
-```
-
-**Error Codes:**
-| Code | Message |
-|------|---------|
-| 400 | Invalid authorization code |
-| 500 | Server error |
-
----
 
 ### POST /api/auth/login
+Password login (email/username) or initiate phone-OTP login.
 
-Authenticate user and receive JWT.
-
-**Request:**
 ```json
-{
-  "email": "user@example.com",
-  "password": "securePassword123"
-}
+// Password login
+{ "email": "user@example.com", "password": "s3cret" }
+// → 200 { "token": "...", "user": {...} }
+
+// Phone OTP initiation
+{ "phone": "+919876543210", "isPhoneLogin": true }
+// → 200 { "message": "OTP sent", "phone": "+919876543210" }
 ```
 
-**Response (200):**
+### POST /api/auth/send-otp
+Send OTP to phone (rate-limited per phone number).
+
 ```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "60d5ec49f1b2c8b1f4e3e1e1",
-      "email": "user@example.com",
-      "role": "brand"
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }
-}
+{ "phone": "+919876543210" }
+// → 200 { "message": "OTP sent" }
 ```
 
-**Error Codes:**
-| Code | Message |
-|------|---------|
-| 401 | Invalid credentials |
-| 500 | Server error |
+### POST /api/auth/verify-otp
+Verify OTP and receive JWT.
 
----
+```json
+{ "phone": "+919876543210", "otp": "123456" }
+// → 200 { "token": "...", "user": { "_id": "...", "role": "influencer", "name": "..." } }
+```
+
+### POST /api/auth/google
+Google ID token login / register.
+
+```json
+{ "jwtToken": "<google-id-token>" }
+// → 200 { "token": "...", "user": { "_id": "...", "role": "brand", "name": "..." } }
+```
 
 ### GET /api/auth/profile
+**Auth required.** Returns current user.
 
-Get current user profile.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
 ```json
-{
-  "success": true,
-  "data": {
-    "id": "60d5ec49f1b2c8b1f4e3e1e1",
-    "email": "user@example.com",
-    "role": "brand",
-    "name": "Brand Name",
-    "createdAt": "2024-01-15T10:30:00Z"
-  }
-}
+// → 200 { "_id": "...", "name": "Riya", "role": "brand", "email": "...", "phone": "...", ... }
 ```
-
----
 
 ### PUT /api/auth/profile
+**Auth required.** Update user name or WhatsApp notification preferences.
 
-Update current user profile.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
 ```json
-{
-  "name": "Updated Name",
-  "avatar": "https://example.com/avatar.jpg"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "60d5ec49f1b2c8b1f4e3e1e1",
-    "email": "user@example.com",
-    "role": "brand",
-    "name": "Updated Name",
-    "avatar": "https://example.com/avatar.jpg"
-  }
-}
+{ "name": "New Name" }
 ```
 
 ---
 
-## Influencer Endpoints
+## Influencers — `/api/influencers`
 
 ### GET /api/influencers
+List influencers. Public (optional auth). Results include `pricing` with **5% platform margin already applied**.
 
-List all influencers with optional filters.
+| Param | Type | Notes |
+|-------|------|-------|
+| `page` | number | default 1 |
+| `limit` | number | default 20, max 100 |
+| `tier` | string | `nano\|micro\|mid\|macro\|mega` |
+| `platform` | string | `instagram\|youtube` |
+| `city` | string | regex-escaped search |
+| `q` | string | name/bio full-text |
+| `gender` | string | `male\|female\|non_binary\|prefer_not_to_say` |
+| `minFollowers` | number | |
+| `maxFollowers` | number | |
 
-**Query Parameters:**
-| Param | Type | Description | Default |
-|-------|------|-------------|---------|
-| page | number | Page number | 1 |
-| limit | Items per page | 20 |
-| niche | string | Filter by niche | - |
-| minFollowers | number | Minimum follower count | - |
-| maxFollowers | number | Maximum follower count | - |
-| minEngagement | number | Minimum engagement rate | - |
-
-**Response (200):**
 ```json
+// → 200
 {
-  "success": true,
-  "data": {
-    "influencers": [
-      {
-        "id": "60d5ec49f1b2c8b1f4e3e1e2",
-        "name": "Jane Doe",
-        "email": "jane@influencer.com",
-        "niche": "fashion",
-        "followers": 25000,
-        "engagementRate": 4.5,
-        "platforms": ["instagram", "tiktok"],
-        "avatar": "https://example.com/avatar.jpg"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 150,
-      "pages": 8
+  "influencers": [
+    {
+      "_id": "...",
+      "name": "Priya",
+      "bio": "...",
+      "city": "Mumbai",
+      "tier": "micro",
+      "gender": "female",
+      "platform": ["instagram"],
+      "niches": ["fashion"],
+      "isOnline": true,
+      "lastSeenAt": "2026-04-20T10:00:00Z",
+      "pricing": { "story": 2100, "reel": 5250, "post": 3150 },
+      "verified": true
     }
-  }
+  ],
+  "pagination": { "page": 1, "limit": 20, "total": 80, "pages": 4 }
 }
 ```
 
----
+### GET /api/influencers/tier-counts
+Public. Returns count of influencers per tier.
+
+```json
+// → 200 { "nano": 12, "micro": 34, "mid": 8, "macro": 5, "mega": 1 }
+```
 
 ### GET /api/influencers/:id
+Public (optional auth). Populates `userId` with `name` only (no email).
 
-Get influencer details by ID.
-
-**Response (200):**
 ```json
-{
-  "success": true,
-  "data": {
-    "id": "60d5ec49f1b2c8b1f4e3e1e2",
-    "name": "Jane Doe",
-    "email": "jane@influencer.com",
-    "bio": "Fashion enthusiast sharing daily outfit inspiration",
-    "niche": "fashion",
-    "followers": 25000,
-    "engagementRate": 4.5,
-    "platforms": ["instagram", "tiktok"],
-    "avatar": "https://example.com/avatar.jpg",
-    "portfolio": ["https://example.com/work1.jpg"],
-    "stats": {
-      "totalCampaigns": 12,
-      "avgReach": 50000,
-      "rating": 4.8
-    }
-  }
-}
+// → 200 { "influencer": { "_id": "...", "name": "...", "isOnline": false, "lastSeenAt": "...", ... } }
 ```
-
-**Error Codes:**
-| Code | Message |
-|------|---------|
-| 404 | Influencer not found |
-
----
-
-### GET /api/influencers/search
-
-Advanced search with full-text capabilities.
-
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| q | string | Search query |
-| niche | string | Filter by niche |
-| location | string | Filter by location |
-| minRate | number | Minimum rate per post |
-| maxRate | number | Maximum rate per post |
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "influencers": [...],
-    "total": 45,
-    "query": "fashion lifestyle"
-  }
-}
-```
-
----
 
 ### PUT /api/influencers/profile
+**Auth required (influencer).** Update own profile.
 
-Update influencer profile.
-
-**Headers:** `Authorization: Bearer <token>` (influencer only)
-
-**Request:**
 ```json
 {
-  "bio": "Updated bio",
-  "niche": "lifestyle",
-  "followers": 30000,
-  "engagementRate": 5.0,
-  "platforms": ["instagram", "tiktok", "youtube"],
-  "avatar": "https://example.com/new-avatar.jpg"
+  "bio": "...", "city": "Delhi", "niches": ["tech"],
+  "platform": ["youtube"], "tier": "macro",
+  "socialHandles": { "youtube": "mychannel" },
+  "pricing": { "video": 10000 }
 }
 ```
 
-**Response (200):**
+### PUT /api/influencers/presence
+**Auth required (influencer).** Toggle online/offline status.
+
 ```json
-{
-  "success": true,
-  "data": {
-    "id": "60d5ec49f1b2c8b1f4e3e1e2",
-    "name": "Jane Doe",
-    "bio": "Updated bio",
-    "niche": "lifestyle",
-    "followers": 30000,
-    "engagementRate": 5.0,
-    "platforms": ["instagram", "tiktok", "youtube"]
-  }
-}
+{ "isOnline": true }
+// → 200 { "message": "Presence updated", "isOnline": true, "lastSeenAt": "..." }
 ```
 
----
+### PUT /api/influencers/:id/image
+**Auth required (influencer, own profile).** Update profile image.
 
-## Campaign Endpoints
-
-### GET /api/campaigns
-
-List campaigns (brands see their own, influencers see open).
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| status | string | open, closed, in_progress |
-| niche | string | Filter by niche |
-| minBudget | number | Minimum budget |
-| maxBudget | number | Maximum budget |
-| page | number | Page number |
-| limit | number | Items per page |
-
-**Response (200):**
 ```json
-{
-  "success": true,
-  "data": {
-    "campaigns": [
-      {
-        "id": "60d5ec49f1b2c8b1f4e3e1e3",
-        "title": "Summer Collection Launch",
-        "brand": {
-          "id": "60d5ec49f1b2c8b1f4e3e1e1",
-          "name": "StyleCo"
-        },
-        "budget": 5000,
-        "status": "open",
-        "proposalsCount": 5
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 45
-    }
-  }
-}
+{ "imageUrl": "https://..." }
+```
+
+### POST /api/influencers/connect-social
+**Auth required (influencer).** Link Instagram or YouTube handle.
+
+```json
+{ "platform": "instagram", "handle": "my_handle" }
 ```
 
 ---
+
+## Campaigns — `/api/campaigns`
 
 ### GET /api/campaigns/open
+Public (optional auth). Lists open campaigns.
 
-List all open campaigns for influencers (public endpoint).
+| Param | Type |
+|-------|------|
+| `niche` | string |
+| `minBudget` | number |
+| `maxBudget` | number |
+| `page` | number |
+| `limit` | number |
 
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| niche | string | Filter by niche |
-| minBudget | number | Minimum budget |
-| maxBudget | number | Maximum budget |
-| page | number | Page number |
-| limit | number | Items per page |
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "campaigns": [
-      {
-        "id": "60d5ec49f1b2c8b1f4e3e1e3",
-        "title": "Summer Collection Launch",
-        "brand": {
-          "id": "60d5ec49f1b2c8b1f4e3e1e1",
-          "name": "StyleCo"
-        },
-        "description": "Looking for influencers...",
-        "budget": 5000,
-        "deadline": "2024-06-30",
-        "status": "open"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 45
-    }
-  }
-}
-```
-
----
+### GET /api/campaigns
+**Auth required.** Brands see their own campaigns; influencers see open ones.
 
 ### GET /api/campaigns/:id
-
-Get campaign details.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "60d5ec49f1b2c8b1f4e3e1e3",
-    "title": "Summer Collection Launch",
-    "description": "Looking for influencers...",
-    "brand": {
-      "id": "60d5ec49f1b2c8b1f4e3e1e1",
-      "name": "StyleCo"
-    },
-    "budget": 5000,
-    "deadline": "2024-06-30",
-    "status": "open",
-    "requirements": {
-      "posts": 3,
-      "platforms": ["instagram"],
-      "minFollowers": 10000
-    },
-    "createdAt": "2024-01-15T10:30:00Z"
-  }
-}
-```
-
----
+**Auth required.**
 
 ### POST /api/campaigns
+**Auth required (brand).** Create campaign.
 
-Create a new campaign (brands only).
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
 ```json
 {
-  "title": "Summer Collection Launch",
-  "description": "Looking for influencers to showcase our summer collection",
-  "niche": "fashion",
-  "budget": 5000,
-  "deadline": "2024-06-30",
-  "requirements": {
-    "posts": 3,
-    "platforms": ["instagram"],
-    "minFollowers": 10000
-  }
+  "title": "Summer Drop",
+  "description": "...",
+  "deliverables": "3 reels",
+  "genre": ["fashion"],
+  "platform": ["instagram"],
+  "budget": 50000,
+  "deadline": "2026-06-30",
+  "requirements": "Min 10k followers"
 }
+// → 201 { "campaign": { "_id": "...", "status": "draft", ... } }
 ```
-
-**Response (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "60d5ec49f1b2c8b1f4e3e1e3",
-    "title": "Summer Collection Launch",
-    "brandId": "60d5ec49f1b2c8b1f4e3e1e1",
-    "status": "open",
-    "proposalsCount": 0
-  }
-}
-```
-
-**Error Codes:**
-| Code | Message |
-|------|---------|
-| 403 | Only brands can create campaigns |
-| 400 | Validation error |
-
----
 
 ### PUT /api/campaigns/:id
-
-Update campaign (brand owner only).
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "title": "Updated Title",
-  "budget": 6000,
-  "status": "closed"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "60d5ec49f1b2c8b1f4e3e1e3",
-    "title": "Updated Title",
-    "budget": 6000,
-    "status": "closed"
-  }
-}
-```
-
----
+**Auth required (brand owner).** Update campaign fields or status.
 
 ### DELETE /api/campaigns/:id
-
-Delete campaign (brand owner only).
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Campaign deleted"
-}
-```
-
----
+**Auth required (brand owner).**
 
 ### POST /api/campaigns/:id/proposals
+**Auth required (influencer).** Submit proposal. Uses `bidAmount` (not `price`).
 
-Submit proposal for campaign (influencers only).
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
 ```json
-{
-  "message": "I'd love to collaborate on this campaign...",
-  "price": 500
-}
+{ "message": "I can deliver...", "bidAmount": 8000, "timeline": "2 weeks" }
+// → 201 { "proposal": { "_id": "...", "status": "pending", "bidAmount": 8000, ... } }
 ```
-
-**Response (201):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "60d5ec49f1b2c8b1f4e3e1e4",
-    "campaignId": "60d5ec49f1b2c8b1f4e3e1e3",
-    "influencerId": "60d5ec49f1b2c8b1f4e3e1e2",
-    "status": "pending",
-    "createdAt": "2024-01-15T10:30:00Z"
-  }
-}
-```
-
-**Error Codes:**
-| Code | Message |
-|------|---------|
-| 403 | Only influencers can submit proposals |
-| 400 | Already submitted proposal for this campaign |
-
----
 
 ### GET /api/campaigns/:id/proposals
-
-Get proposals for a campaign (brand owner only).
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "proposals": [
-      {
-        "id": "60d5ec49f1b2c8b1f4e3e1e4",
-        "influencer": {
-          "id": "60d5ec49f1b2c8b1f4e3e1e2",
-          "name": "Jane Doe",
-          "followers": 25000
-        },
-        "message": "I'd love to collaborate...",
-        "price": 500,
-        "status": "pending"
-      }
-    ]
-  }
-}
-```
-
----
-
-### GET /api/proposals/my
-
-Get current user's (influencer's) submitted proposals.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Query Parameters:**
-| Param | Type | Description |
-|-------|------|-------------|
-| status | string | pending, accepted, rejected |
-| page | number | Page number |
-| limit | number | Items per page |
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "proposals": [
-      {
-        "id": "60d5ec49f1b2c8b1f4e3e1e4",
-        "campaign": {
-          "id": "60d5ec49f1b2c8b1f4e3e1e3",
-          "title": "Summer Collection Launch"
-        },
-        "message": "I'd love to collaborate...",
-        "price": 500,
-        "status": "pending",
-        "createdAt": "2024-01-15T10:30:00Z"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 5
-    }
-  }
-}
-```
-
----
+**Auth required (brand owner).** List proposals for a campaign.
 
 ### PUT /api/campaigns/proposals/:proposalId/status
+**Auth required (brand).** Accept or reject.
 
-Update proposal status (brand owner only).
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
 ```json
-{
-  "status": "accepted"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "60d5ec49f1b2c8b1f4e3e1e4",
-    "status": "accepted"
-  }
-}
-```
-
-**Error Codes:**
-| Code | Message |
-|------|---------|
-| 403 | Only brand owner can update proposal status |
-| 404 | Proposal not found |
-
----
-
-## Cart Endpoints
-
-### GET /api/cart
-
-Get current user's cart.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "userId": "60d5ec49f1b2c8b1f4e3e1e1",
-    "items": [
-      {
-        "influencerId": "60d5ec49f1b2c8b1f4e3e1e2",
-        "influencer": {
-          "id": "60d5ec49f1b2c8b1f4e3e1e2",
-          "name": "Jane Doe"
-        },
-        "price": 500
-      }
-    ],
-    "total": 500
-  }
-}
+{ "status": "accepted" | "rejected" }
 ```
 
 ---
 
-### POST /api/cart/add
+## Proposals — `/api/proposals`
 
-Add item to cart.
+### GET /api/proposals/my
+**Auth required (influencer).** My submitted proposals.
 
-**Headers:** `Authorization: Bearer <token>`
+### GET /api/proposals/:id
+**Auth required.**
 
-**Request:**
+### PUT /api/proposals/:id
+**Auth required (influencer, own).** Update message/bidAmount while pending.
+
+### DELETE /api/proposals/:id
+**Auth required (influencer, own).** Delete pending proposal.
+
+### POST /api/proposals/:id/respond
+**Auth required (brand).** Accept or reject.
+
 ```json
-{
-  "influencerId": "60d5ec49f1b2c8b1f4e3e1e2",
-  "price": 500
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "userId": "60d5ec49f1b2c8b1f4e3e1e1",
-    "items": [
-      {
-        "influencerId": "60d5ec49f1b2c8b1f4e3e1e2",
-        "influencer": {
-          "id": "60d5ec49f1b2c8b1f4e3e1e2",
-          "name": "Jane Doe"
-        },
-        "price": 500
-      }
-    ],
-    "total": 500
-  }
-}
-```
-
-**Error Codes:**
-| Code | Message |
-|------|---------|
-| 400 | Validation error |
-| 404 | Influencer not found |
-
----
-
-### DELETE /api/cart/remove/:influencerId
-
-Remove item from cart.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "userId": "60d5ec49f1b2c8b1f4e3e1e1",
-    "items": [],
-    "total": 0
-  }
-}
+{ "status": "accepted" | "rejected" }
 ```
 
 ---
 
-### DELETE /api/cart/clear
+## Campaign Files — `/api/campaigns`
 
-Clear entire cart.
+### POST /api/campaigns/:campaignId/files
+**Auth required.** Attach a file reference (URL) to campaign.
 
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
 ```json
-{
-  "success": true,
-  "message": "Cart cleared"
-}
+{ "fileUrl": "https://...", "fileName": "brief.pdf", "fileType": "application/pdf" }
+```
+
+### GET /api/campaigns/:campaignId/files
+**Auth required.**
+
+### DELETE /api/campaigns/:campaignId/files/:fileId
+**Auth required.**
+
+---
+
+## Campaign Workflow — `/api/campaigns`
+
+### GET /api/campaigns/:campaignId/workflow
+**Auth required.**
+
+### PUT /api/campaigns/:campaignId/workflow/stage
+**Auth required.**
+
+```json
+{ "stage": "brief_shared" | "content_creation" | "review" | "published" | "completed" }
+```
+
+### POST /api/campaigns/:campaignId/videos
+**Auth required.** Add video submission to campaign.
+
+### PUT /api/campaigns/:campaignId/videos/:videoIndex
+**Auth required (brand).** Review video submission.
+
+```json
+{ "status": "approved" | "rejected", "feedback": "..." }
 ```
 
 ---
 
-### PUT /api/cart/update/:influencerId
+## Cart — `/api/cart`
 
-Update cart item price.
+All cart endpoints require auth.
 
-**Headers:** `Authorization: Bearer <token>`
+| Method | Path | Action |
+|--------|------|--------|
+| GET | `/api/cart` | Get cart |
+| POST | `/api/cart/add` | Add influencer: `{ influencerId, price, campaignId? }` |
+| DELETE | `/api/cart/remove/:influencerId` | Remove item |
+| DELETE | `/api/cart/clear` | Clear cart |
+| PUT | `/api/cart/update/:influencerId` | Update item: `{ campaignId, price }` |
 
-**Request:**
+---
+
+## Membership — `/api/membership`
+
+### POST /api/membership/purchase
+**Auth required.**
+
 ```json
-{
-  "price": 750
-}
+{ "tier": "silver" | "gold" }
+// After Gold purchase, referral auto-grant logic runs server-side.
+// Refetch /api/membership/status to surface any auto-upgrade.
 ```
 
-**Response (200):**
+### GET /api/membership/status
+**Auth required.** Returns `{ tier: "regular" | "silver" | "gold", expiresAt?: "..." }`.
+
+### PUT /api/membership/cancel
+**Auth required.**
+
+---
+
+## Referrals — `/api/referrals`
+
+### POST /api/referrals/generate
+**Auth required.** Generate referral code (idempotent).
+
 ```json
-{
-  "success": true,
-  "data": {
-    "userId": "60d5ec49f1b2c8b1f4e3e1e1",
-    "items": [
-      {
-        "influencerId": "60d5ec49f1b2c8b1f4e3e1e2",
-        "price": 750
-      }
-    ],
-    "total": 750
-  }
-}
+// → 200 { "code": "ABC123" }
+```
+
+### POST /api/referrals/use
+**Auth required.**
+
+```json
+{ "code": "ABC123" }
+```
+
+### GET /api/referrals/stats
+**Auth required.**
+
+```json
+// → 200 { "code": "ABC123", "usedCount": 7, "goldUnlocked": false, "silverUnlocked": true }
 ```
 
 ---
 
-## Error Response Format
+## Notifications — `/api/notifications`
 
-All errors follow this structure:
+All require auth.
+
+| Method | Path | Action |
+|--------|------|--------|
+| GET | `/api/notifications` | List all |
+| GET | `/api/notifications/unread-count` | `{ count: number }` |
+| PUT | `/api/notifications/:id/read` | Mark one read |
+| PUT | `/api/notifications/read-all` | Mark all read |
+| DELETE | `/api/notifications/:id` | Delete |
+
+---
+
+## Messages — `/api/messages`
+
+All require auth.
+
+| Method | Path | Action |
+|--------|------|--------|
+| POST | `/api/messages/send` | `{ receiverId, content }` |
+| GET | `/api/messages/conversations` | List conversations |
+| GET | `/api/messages/conversations/:id` | Get messages |
+| PUT | `/api/messages/conversations/:id/read` | Mark read |
+
+---
+
+## Analytics — `/api/analytics`
+
+| Method | Path | Auth | Notes |
+|--------|------|------|-------|
+| GET | `/api/analytics/brand` | brand | Campaign metrics |
+| GET | `/api/analytics/influencer` | influencer | Reach/engagement |
+
+---
+
+## Videos — `/api/videos`
+
+| Method | Path | Auth | Notes |
+|--------|------|------|-------|
+| POST | `/api/videos` | influencer | `{ videoUrl, platform, campaignId? }` |
+| GET | `/api/videos/my` | influencer | Own videos |
+| GET | `/api/videos/campaign/:campaignId` | auth | Campaign videos |
+| PUT | `/api/videos/:id/review` | brand | Review: `{ status, feedback? }` |
+
+---
+
+## Social Stats — `/api/social`
+
+Public endpoints (no auth required).
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/social/stats/:userId` | Combined stats |
+| GET | `/api/social/instagram/:handle/posts` | `?limit=` |
+| GET | `/api/social/youtube/:channelId/videos` | `?limit=` |
+| GET | `/api/social/instagram/stats/:handle` | Follower/engagement |
+| GET | `/api/social/youtube/stats/:channelId` | Subscriber/view stats |
+
+Falls back to mock data when `INSTAGRAM_ACCESS_TOKEN` / `YOUTUBE_API_KEY` are absent.
+
+---
+
+## WhatsApp — `/api/whatsapp`
+
+All auth required except webhook.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/whatsapp/status` | Notification preferences |
+| PUT | `/api/whatsapp/preferences` | `{ enabled, campaigns, proposals, messages, payments }` |
+| POST | `/api/whatsapp/send-test` | Send test message |
+| GET | `/api/whatsapp/webhook` | WhatsApp webhook verification |
+| POST | `/api/whatsapp/webhook` | Incoming message hook |
+
+---
+
+## Contact — `/api/contact`
+
+### POST /api/contact
+Public. Rate-limited: **5 req / hour / IP**. Returns 429 on breach.
 
 ```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Email is required",
-    "details": [
-      {
-        "field": "email",
-        "message": "Email is required"
-      }
-    ]
-  }
-}
+{ "name": "Riya", "email": "r@example.com", "message": "...", "type": "general" | "callback" | "business" }
 ```
 
-## Common Error Codes
+### GET /api/contact
+**Auth + admin required.** List submissions.
 
-| Code | Description |
-|------|-------------|
-| 400 | Bad Request - Validation error |
-| 401 | Unauthorized - Invalid or missing token |
-| 403 | Forbidden - Insufficient permissions |
-| 404 | Not Found - Resource not found |
-| 429 | Too Many Requests - Rate limit exceeded |
-| 500 | Internal Server Error |
+### PUT /api/contact/:id/status
+**Auth + admin required.**
 
-## Rate Limiting
-
-- Public endpoints: 100 requests/minute
-- Auth endpoints: 5 requests/minute
-- Cart endpoints: 30 requests/minute
+```json
+{ "status": "open" | "resolved" | "in_progress" }
+```

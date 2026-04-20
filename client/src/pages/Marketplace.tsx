@@ -12,14 +12,16 @@ interface MarketplaceProps {
   cartCount: number;
   onCartOpen: () => void;
   isInCart: (id: string) => boolean;
-  addToCart: (i: any) => void;
+  addToCart: (i: Influencer) => void;
 }
 
-const TIERS = ["nano", "micro", "macro", "celebrity"] as const;
+const TIERS = ["nano", "micro", "mid", "macro", "mega"] as const;
 const CITIES = ["All", "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "Kolkata", "Pune", "Jaipur", "Ahmedabad", "Lucknow"];
 const GENRES = ["All", "Fashion", "Tech", "Food", "Fitness", "Travel", "Beauty", "Gaming", "Education", "Comedy", "Lifestyle"];
 const CAMPAIGN_TYPES = ["All", "Reels", "Stories", "YT Video", "UGC Content"];
-const GENDERS = ["All", "Male", "Female"];
+const GENDERS = ["all", "male", "female", "non_binary", "prefer_not_to_say"] as const;
+const GENDER_LABELS: Record<string, string> = { all: "All", male: "Male", female: "Female", non_binary: "Non-Binary", prefer_not_to_say: "Prefer Not to Say" };
+type GenderFilter = typeof GENDERS[number];
 const PER_PAGE = 12;
 
 export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, isInCart, addToCart }: MarketplaceProps) {
@@ -38,14 +40,16 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
   const [followersMin, setFollowersMin] = useState<number | "">("");
   const [followersMax, setFollowersMax] = useState<number | "">("");
   const [maxBudget, setMaxBudget] = useState<number | "">("");
-  const [gender, setGender] = useState<"All" | "Male" | "Female">("All");
+  const [gender, setGender] = useState<GenderFilter>("all");
   const [campaignType, setCampaignType] = useState<typeof CAMPAIGN_TYPES[number]>("All");
 
   useEffect(() => {
     const fetchInfluencers = async () => {
       setLoading(true);
       try {
-        const data = await api.searchInfluencers();
+        const data = await api.searchInfluencers({
+          gender: gender !== "all" ? gender : undefined,
+        });
         if (Array.isArray(data) && data.length > 0) {
           const transformed: Influencer[] = data.map((inf: InfluencerProfile) => ({
             id: inf._id || inf.id || "",
@@ -53,7 +57,7 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
             handle: inf.socialHandles?.instagram || inf.socialHandles?.youtube || "",
             photo: inf.profileImage || "https://api.dicebear.com/7.x/avataaars/svg?seed=default",
             platform: (inf.platform as "instagram" | "youtube") || "instagram",
-            tier: (inf.tier as "nano" | "micro" | "macro" | "celebrity") || "micro",
+            tier: inf.tier || "micro",
             genre: inf.niches?.[0] || "",
             city: inf.city || "",
             followers: 0,
@@ -63,6 +67,8 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
             avgLikes: 0,
             genderSplit: { male: 45, female: 52, other: 3 },
             price: null,
+            isOnline: inf.isOnline,
+            lastSeenAt: inf.lastSeenAt,
           }));
           setInfluencers(transformed);
         } else {
@@ -76,7 +82,7 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
       }
     };
     fetchInfluencers();
-  }, []);
+  }, [gender]);
 
   const filtered = useMemo(() => {
     let result = influencers;
@@ -103,15 +109,11 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
     if (maxBudget !== "" && result[0]?.price !== null) {
       result = result.filter((i) => i.price !== null && i.price <= maxBudget);
     }
-    if (gender !== "All") {
-      const genderKey = gender.toLowerCase() as "male" | "female";
-      result = result.filter((i) => i.genderSplit && i.genderSplit[genderKey] > 50);
-    }
     result.sort((a, b) =>
       sort === "high" ? (b.followers - a.followers) : (a.followers - b.followers)
     );
     return result;
-  }, [influencers, platform, tier, city, genre, sort, followersMin, followersMax, maxBudget, gender]);
+  }, [influencers, platform, tier, city, genre, sort, followersMin, followersMax, maxBudget]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -166,7 +168,7 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
       {/* Filters */}
       <div className="border-b border-border px-4 py-3 space-y-2">
         <div className="flex flex-wrap gap-3 items-center">
-          <FilterSelect label="Tier" value={tier} options={["all", ...TIERS]} onChange={(v) => { setTier(v as any); setPage(1); }} />
+          <FilterSelect label="Tier" value={tier} options={["all", ...TIERS]} onChange={(v) => { setTier(v as typeof TIERS[number] | 'all'); setPage(1); }} />
           <FilterSelect label="City" value={city} options={CITIES} onChange={(v) => { setCity(v); setPage(1); }} />
           <FilterSelect label="Genre" value={genre} options={GENRES} onChange={(v) => { setGenre(v); setPage(1); }} />
           <FilterSelect
@@ -205,8 +207,8 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
             onChange={(e) => { setMaxBudget(e.target.value ? parseInt(e.target.value) : ""); setPage(1); }}
             className="w-24 px-2 py-1 text-sm border border-border rounded-md bg-card focus:outline-none focus:border-primary"
           />
-          <FilterSelect label="Gender" value={gender} options={GENDERS} onChange={(v) => { setGender(v as any); setPage(1); }} />
-          <FilterSelect label="Content" value={campaignType} options={CAMPAIGN_TYPES} onChange={(v) => { setCampaignType(v as any); setPage(1); }} />
+          <FilterSelect label="Gender" value={gender} options={[...GENDERS]} displayMap={GENDER_LABELS} onChange={(v) => { setGender(v as GenderFilter); setPage(1); }} />
+          <FilterSelect label="Content" value={campaignType} options={CAMPAIGN_TYPES} onChange={(v) => { setCampaignType(v as typeof CAMPAIGN_TYPES[number]); setPage(1); }} />
         </div>
       </div>
 
@@ -240,7 +242,7 @@ export default function Marketplace({ dark, toggleTheme, cartCount, onCartOpen, 
                 onClick={() => { 
                   setTier("all"); setCity("All"); setGenre("All"); 
                   setFollowersMin(""); setFollowersMax(""); setMaxBudget("");
-                  setGender("All"); setCampaignType("All"); setPage(1);
+                  setGender("all"); setCampaignType("All"); setPage(1);
                 }}
                 className="text-sm text-primary hover:underline"
               >

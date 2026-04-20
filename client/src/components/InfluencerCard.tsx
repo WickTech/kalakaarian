@@ -6,9 +6,10 @@ const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
 
 const tierColors: Record<string, string> = {
   nano: "bg-nano",
-  micro: "bg-micro", 
+  micro: "bg-micro",
+  mid: "bg-micro",
   macro: "bg-macro",
-  celebrity: "bg-celebrity",
+  mega: "bg-macro",
 };
 
 interface InfluencerCardProps {
@@ -32,15 +33,20 @@ export function InfluencerCard({ influencer, isInCart, onAddToCart }: Influencer
           {influencer.tier}
         </div>
         <div className="flex items-center gap-3">
-          <img
-            src={influencer.photo || DEFAULT_AVATAR}
-            alt={influencer.name}
-            className="w-14 h-14 rounded-full border-2 border-border object-cover"
-            loading="lazy"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
-            }}
-          />
+          <div className="relative shrink-0">
+            <img
+              src={influencer.photo || DEFAULT_AVATAR}
+              alt={influencer.name}
+              className="w-14 h-14 rounded-full border-2 border-border object-cover"
+              loading="lazy"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
+              }}
+            />
+            {influencer.isOnline && (
+              <span className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-card" title="Online" />
+            )}
+          </div>
           <div>
             <h3 className="font-semibold text-sm">{influencer.name}</h3>
             {influencer.handle && (

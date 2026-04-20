@@ -6,7 +6,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit",
+    "test": "echo \"No model tests yet\" && exit 0"
   },
   "keywords": ["mongoose", "mongodb", "models", "influencer", "marketplace"],
   "author": "WickTech",

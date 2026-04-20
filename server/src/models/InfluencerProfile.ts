@@ -10,6 +10,11 @@ const influencerProfileSchema = new Schema(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     bio: { type: String, default: '' },
     city: { type: String, default: '' },
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'non_binary', 'prefer_not_to_say'],
+      index: true,
+    },
     niches: [{ type: String, index: true }],
     socialHandles: {
       instagram: String,
@@ -26,6 +31,8 @@ const influencerProfileSchema = new Schema(
     },
     portfolio: [{ type: String }],
     verified: { type: Boolean, default: false, index: true },
+    isOnline: { type: Boolean, default: false, index: true },
+    lastSeenAt: { type: Date },
     instagramPosts: [{
       postId: String,
       url: String,

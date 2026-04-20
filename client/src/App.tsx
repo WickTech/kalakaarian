@@ -27,6 +27,7 @@ import EditBrandProfile from "./pages/EditBrandProfile";
 import Messages from "./pages/Messages";
 import InfluencerProfile from "./pages/InfluencerProfile";
 import ContactPage from "./pages/ContactPage";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 const queryClient = new QueryClient();
 
@@ -263,6 +264,7 @@ function AppContent() {
         campaignId={cart.campaignId}
         setCampaign={cart.setCampaign}
       />
+      <InstallPrompt />
     </>
   );
 }

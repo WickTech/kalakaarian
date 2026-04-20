@@ -1,12 +1,23 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, RequestHandler } from 'express';
 import { body } from 'express-validator';
+import rateLimit from 'express-rate-limit';
 import { validate } from '../middleware/validate';
+import { auth } from '../middleware/auth';
+import { requireAdmin } from '../middleware/admin';
 import Contact from '../models/Contact';
 
 const router = Router();
 
+// Public contact form — limit to 5 submissions per hour per IP
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { message: 'Too many contact submissions. Please try again later.' },
+}) as unknown as RequestHandler;
+
 router.post(
   '/',
+  contactLimiter,
   [
     body('name').notEmpty().withMessage('Name is required'),
     body('email').optional().isEmail().withMessage('Invalid email'),
@@ -44,7 +55,8 @@ router.post(
   }
 );
 
-router.get('/', async (req: Request, res: Response): Promise<void> => {
+// Admin-only: read and manage contact submissions
+router.get('/', auth, requireAdmin, async (req: Request, res: Response): Promise<void> => {
   try {
     const contacts = await Contact.find().sort({ createdAt: -1 });
     res.json(contacts);
@@ -53,7 +65,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-router.put('/:id/status', async (req: Request, res: Response): Promise<void> => {
+router.put('/:id/status', auth, requireAdmin, async (req: Request, res: Response): Promise<void> => {
   try {
     const { status } = req.body;
     const contact = await Contact.findByIdAndUpdate(

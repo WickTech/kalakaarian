@@ -8,6 +8,7 @@ export interface IUser {
   password?: string;
   googleId?: string;
   role: 'brand' | 'influencer';
+  isAdmin?: boolean;
   name: string;
   isPhoneLogin?: boolean;
   whatsappNotifications?: {
@@ -25,6 +26,7 @@ export interface IInfluencerProfile {
   userId: mongoose.Types.ObjectId;
   bio: string;
   city: string;
+  gender?: 'male' | 'female' | 'non_binary' | 'prefer_not_to_say';
   niches: string[];
   socialHandles: {
     instagram?: string;
@@ -33,6 +35,8 @@ export interface IInfluencerProfile {
   profileImage?: string;
   platform: ('instagram' | 'youtube')[];
   tier: 'nano' | 'micro' | 'mid' | 'macro' | 'mega';
+  isOnline?: boolean;
+  lastSeenAt?: Date;
   pricing: {
     story?: number;
     reel?: number;

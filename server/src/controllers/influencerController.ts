@@ -2,6 +2,29 @@ import { Request, Response } from 'express';
 import InfluencerProfile from '../models/InfluencerProfile';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
+import { applyPlatformMargin } from '../utils/pricing';
+
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const ALLOWED_GENDERS = ['male', 'female', 'non_binary', 'prefer_not_to_say'] as const;
+
+const formatInfluencer = (inf: any) => ({
+  id: inf._id,
+  name: inf.userId?.name || 'Unknown',
+  bio: inf.bio || '',
+  city: inf.city || '',
+  gender: inf.gender,
+  niches: inf.niches || [],
+  socialHandles: inf.socialHandles || {},
+  profileImage: inf.profileImage,
+  platform: inf.platform || [],
+  tier: inf.tier,
+  verified: inf.verified,
+  isOnline: !!inf.isOnline,
+  lastSeenAt: inf.lastSeenAt,
+  // Brand-facing pricing includes the platform margin; raw stored values are untouched.
+  pricing: applyPlatformMargin(inf.pricing),
+});
 
 export const getTierCounts = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -37,45 +60,39 @@ export const getTierCounts = async (req: Request, res: Response): Promise<void> 
 
 export const getInfluencers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { tier, city, genre, platform, page = 1, limit = 20 } = req.query;
+    const { tier, city, genre, platform, gender, page = 1, limit = 20 } = req.query;
 
     const query: any = {};
 
+    const clampedLimit = Math.min(Number(limit) || 20, 100);
+
     if (tier) query.tier = tier;
-    if (city) query.city = { $regex: city, $options: 'i' };
+    if (typeof city === 'string') query.city = { $regex: escapeRegex(city), $options: 'i' };
     if (genre) query.niches = { $in: Array.isArray(genre) ? genre : [genre] };
     if (platform) query.platform = { $in: Array.isArray(platform) ? platform : [platform] };
+    if (typeof gender === 'string' && (ALLOWED_GENDERS as readonly string[]).includes(gender)) {
+      query.gender = gender;
+    }
 
-    const skip = (Number(page) - 1) * Number(limit);
+    const skip = (Number(page) - 1) * clampedLimit;
 
     const influencers = await InfluencerProfile.find(query)
       .populate('userId', 'name')
       .skip(skip)
-      .limit(Number(limit))
+      .limit(clampedLimit)
       .sort({ createdAt: -1 });
 
     const total = await InfluencerProfile.countDocuments(query);
 
-    const formattedInfluencers = influencers.map((inf: any) => ({
-      id: inf._id,
-      name: inf.userId?.name || 'Unknown',
-      bio: inf.bio || '',
-      city: inf.city || '',
-      niches: inf.niches || [],
-      socialHandles: inf.socialHandles || {},
-      profileImage: inf.profileImage,
-      platform: inf.platform || [],
-      tier: inf.tier,
-      verified: inf.verified,
-    }));
+    const formattedInfluencers = influencers.map(formatInfluencer);
 
     res.json({
       influencers: formattedInfluencers,
       pagination: {
         page: Number(page),
-        limit: Number(limit),
+        limit: clampedLimit,
         total,
-        pages: Math.ceil(total / Number(limit)),
+        pages: Math.ceil(total / clampedLimit),
       },
     });
   } catch (error) {
@@ -88,13 +105,13 @@ export const getInfluencerById = async (req: Request, res: Response): Promise<vo
   try {
     const { id } = req.params;
 
-    const influencer = await InfluencerProfile.findById(id).populate('userId', 'name email');
+    const influencer = await InfluencerProfile.findById(id).populate('userId', 'name');
     if (!influencer) {
       res.status(404).json({ message: 'Influencer not found' });
       return;
     }
 
-    res.json({ influencer });
+    res.json({ influencer: formatInfluencer(influencer) });
   } catch (error) {
     console.error('Get influencer error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -103,53 +120,48 @@ export const getInfluencerById = async (req: Request, res: Response): Promise<vo
 
 export const searchInfluencers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { q, tier, city, genre, platform, page = 1, limit = 20 } = req.query;
+    const { q, tier, city, genre, platform, gender, page = 1, limit = 20 } = req.query;
 
     const query: any = {};
 
-    if (q) {
+    const clampedLimit = Math.min(Number(limit) || 20, 100);
+
+    if (typeof q === 'string') {
+      const safeQ = escapeRegex(q);
       query.$or = [
-        { bio: { $regex: q, $options: 'i' } },
-        { city: { $regex: q, $options: 'i' } },
-        { niches: { $regex: q, $options: 'i' } },
+        { bio: { $regex: safeQ, $options: 'i' } },
+        { city: { $regex: safeQ, $options: 'i' } },
+        { niches: { $regex: safeQ, $options: 'i' } },
       ];
     }
 
     if (tier) query.tier = tier;
-    if (city) query.city = { $regex: city, $options: 'i' };
+    if (typeof city === 'string') query.city = { $regex: escapeRegex(city), $options: 'i' };
     if (genre) query.niches = { $in: Array.isArray(genre) ? genre : [genre] };
     if (platform) query.platform = { $in: Array.isArray(platform) ? platform : [platform] };
+    if (typeof gender === 'string' && (ALLOWED_GENDERS as readonly string[]).includes(gender)) {
+      query.gender = gender;
+    }
 
-    const skip = (Number(page) - 1) * Number(limit);
+    const skip = (Number(page) - 1) * clampedLimit;
 
     const influencers = await InfluencerProfile.find(query)
       .populate('userId', 'name')
       .skip(skip)
-      .limit(Number(limit))
+      .limit(clampedLimit)
       .sort({ createdAt: -1 });
 
     const total = await InfluencerProfile.countDocuments(query);
 
-    const formattedInfluencers = influencers.map((inf: any) => ({
-      id: inf._id,
-      name: inf.userId?.name || 'Unknown',
-      bio: inf.bio || '',
-      city: inf.city || '',
-      niches: inf.niches || [],
-      socialHandles: inf.socialHandles || {},
-      profileImage: inf.profileImage,
-      platform: inf.platform || [],
-      tier: inf.tier,
-      verified: inf.verified,
-    }));
+    const formattedInfluencers = influencers.map(formatInfluencer);
 
     res.json({
       influencers: formattedInfluencers,
       pagination: {
         page: Number(page),
-        limit: Number(limit),
+        limit: clampedLimit,
         total,
-        pages: Math.ceil(total / Number(limit)),
+        pages: Math.ceil(total / clampedLimit),
       },
     });
   } catch (error) {
@@ -165,11 +177,14 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
       return;
     }
 
-    const { bio, city, niches, platform, tier, followers, pricing, portfolio, instagramPosts, youtubeVideos } = req.body;
+    const { bio, city, gender, niches, platform, tier, followers, pricing, portfolio, instagramPosts, youtubeVideos } = req.body;
 
     const updateData: any = {};
     if (bio !== undefined) updateData.bio = bio;
     if (city) updateData.city = city;
+    if (typeof gender === 'string' && (ALLOWED_GENDERS as readonly string[]).includes(gender)) {
+      updateData.gender = gender;
+    }
     if (niches) updateData.niches = niches;
     if (platform) updateData.platform = platform;
     if (tier) updateData.tier = tier;

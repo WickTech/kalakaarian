@@ -1,7 +1,15 @@
 import { createRoot } from "react-dom/client";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./index.css";
+import { initSentry } from "./lib/sentry";
+import { initPostHog } from "./lib/posthog";
+
+initSentry();
+initPostHog();
+
+registerSW({ immediate: false });
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 const isValidClientId = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "your-google-client-id.apps.googleusercontent.com";

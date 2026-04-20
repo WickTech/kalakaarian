@@ -5,7 +5,7 @@ export interface Influencer {
   handle: string;
   photo: string;
   platform: "instagram" | "youtube";
-  tier: "nano" | "micro" | "macro" | "celebrity";
+  tier: "nano" | "micro" | "mid" | "macro" | "mega";
   genre: string;
   city: string;
   followers: number;
@@ -15,6 +15,8 @@ export interface Influencer {
   avgLikes: number;
   genderSplit: { male: number; female: number; other: number };
   price: number | null; // null = "Get in Touch"
+  isOnline?: boolean;
+  lastSeenAt?: string;
 }
 
 export interface CartItem {

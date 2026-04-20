@@ -19,5 +19,10 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.2"
+  },
+  "dependencies": {
+    "@sentry/node": "^10.49.0",
+    "@sentry/react": "^10.49.0",
+    "posthog-js": "^1.369.3"
   }
 }

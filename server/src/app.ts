@@ -1,8 +1,11 @@
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 import serverless from 'serverless-http';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const mongoSanitizeMiddleware = require('express-mongo-sanitize')() as import('express').RequestHandler;
+import connectDB from './config/database';
 import authRoutes from './routes/auth';
 import influencerRoutes from './routes/influencers';
 import campaignRoutes from './routes/campaigns';
@@ -19,40 +22,54 @@ import campaignWorkflowRoutes from './routes/campaignWorkflow';
 import whatsappRoutes from './routes/whatsapp';
 import socialStatsRoutes from './routes/socialStats';
 import contactRoutes from './routes/contact';
+import uploadRoutes from './routes/upload';
 
 dotenv.config();
 
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'production',
+    tracesSampleRate: 0.2,
+  });
+}
+
+// Fail fast on boot if critical env vars are missing
+['JWT_SECRET', 'MONGODB_URI', 'GOOGLE_CLIENT_ID'].forEach((k) => {
+  if (!process.env[k]) throw new Error(`Missing required env var: ${k}`);
+});
+
 const app = express();
 
+const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').filter(Boolean);
 app.use(cors({
-  origin: '*',
+  origin: (origin, cb) => {
+    // Allow requests with no origin (e.g. server-to-server, curl)
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error('CORS: origin not allowed'));
+  },
   credentials: true,
 }));
 
+// Raw body for Razorpay webhook signature verification (must precede express.json())
+app.use('/api/membership/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-let isConnected = false;
+app.use(mongoSanitizeMiddleware);
 
 app.use(async (req, res, next) => {
   if (req.path === '/health') return next();
-  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
-  if (!isConnected && mongoUri) {
-    try {
-      await mongoose.connect(mongoUri, {
-        serverSelectionTimeoutMS: 5000,
-        connectTimeoutMS: 5000,
-      });
-      isConnected = true;
-    } catch (e) {
-      console.error('DB error:', e);
-    }
+  try {
+    await connectDB();
+    next();
+  } catch (e) {
+    console.error('DB connection error:', e);
+    res.status(503).json({ message: 'DB unavailable' });
   }
-  next();
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', db: isConnected });
+  res.json({ status: 'ok' });
 });
 
 app.use('/api/auth', authRoutes);
@@ -71,6 +88,11 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/social', socialStatsRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/upload', uploadRoutes);
+
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 const handler = serverless(app);
 

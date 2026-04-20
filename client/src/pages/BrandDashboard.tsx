@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
-import { api, Campaign, Proposal } from "@/lib/api";
+import { api, Campaign, Proposal, BrandAnalytics, CampaignWorkflow, CampaignFile } from "@/lib/api";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
@@ -37,9 +37,9 @@ export default function BrandDashboard() {
   const [selectedCampaignProposals, setSelectedCampaignProposals] = useState<{campaignId: string, proposals: Proposal[]} | null>(null);
   const [proposalsLoading, setProposalsLoading] = useState(false);
   const [expandedCampaign, setExpandedCampaign] = useState<string | null>(null);
-  const [workflowData, setWorkflowData] = useState<Record<string, any>>({});
-  const [filesData, setFilesData] = useState<Record<string, any[]>>({});
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [workflowData, setWorkflowData] = useState<Record<string, CampaignWorkflow>>({});
+  const [filesData, setFilesData] = useState<Record<string, CampaignFile[]>>({});
+  const [analytics, setAnalytics] = useState<BrandAnalytics | null>(null);
 
   useEffect(() => {
     fetchCampaigns();

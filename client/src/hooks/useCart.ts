@@ -24,9 +24,9 @@ export function useCart() {
     if (!user) return;
     setLoading(true);
     try {
-      const data = await api.getCart();
+      const data = await api.getCart() as unknown as { cart?: { items?: Array<{ influencerId: { _id?: string; name?: string } | string; price: number; campaignId?: { _id?: string; title?: string } | string }> } };
       if (data?.cart?.items) {
-        const loadedItems: CartItem[] = data.cart.items.map((item: any) => ({
+        const loadedItems: CartItem[] = data.cart.items.map((item) => ({
           influencer: {
             id: item.influencerId?._id || item.influencerId,
             name: item.influencerId?.name || "Unknown",

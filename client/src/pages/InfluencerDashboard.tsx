@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
-import { api, Proposal, InfluencerProfile } from "@/lib/api";
+import { api, Proposal, InfluencerProfile, InfluencerAnalytics } from "@/lib/api";
 
 const statusColors: Record<string, "outline" | "default" | "secondary" | "destructive"> = {
   pending: "outline",
@@ -24,7 +24,7 @@ export default function InfluencerDashboard() {
   const [profile, setProfile] = useState<InfluencerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<InfluencerAnalytics | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {

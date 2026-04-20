@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, InfluencerProfile as InfluencerProfileData, InfluencerAnalytics, VideoItem, SocialStats } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigateBack } from '@/hooks/useNavigateBack';
@@ -11,6 +11,7 @@ import { MembershipUpgradeCard } from '@/components/MembershipBadge';
 import { VideoGrid } from '@/components/VideoGrid';
 import { ReferralCard } from '@/components/ReferralCard';
 import { SocialConnect } from '@/components/SocialConnect';
+import { openRazorpayCheckout } from '@/lib/razorpay';
 
 export default function InfluencerProfile() {
   const { id } = useParams<{ id: string }>();
@@ -18,12 +19,12 @@ export default function InfluencerProfile() {
   const { toast } = useToast();
   const { goBack } = useNavigateBack('/marketplace');
 
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<InfluencerProfileData | null>(null);
   const [membership, setMembership] = useState<{ tier: string }>({ tier: 'regular' });
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [videos, setVideos] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<InfluencerAnalytics | null>(null);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
   const [referralStats, setReferralStats] = useState({ code: null as string | null, usedCount: 0, goldUnlocked: false, silverUnlocked: false });
-  const [socialStats, setSocialStats] = useState<any>(null);
+  const [socialStats, setSocialStats] = useState<SocialStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   const isOwnProfile = user?._id === id || user?.role === 'influencer';
@@ -57,16 +58,46 @@ export default function InfluencerProfile() {
   }, [id, isOwnProfile]);
 
   const handleStatusToggle = async (isOnline: boolean) => {
-    console.log('Status toggled:', isOnline);
+    try {
+      await api.updatePresence(isOnline);
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' });
+    }
   };
 
   const handleMembershipUpgrade = async (tier: 'gold' | 'silver') => {
     try {
-      await api.purchaseMembership(tier);
-      setMembership({ tier });
-      toast({ title: 'Success', description: `Upgraded to ${tier} membership!` });
+      const order = await api.createMembershipOrder(tier);
+
+      if (!order.orderId || !order.keyId) {
+        // Razorpay not configured (dev) — activate directly
+        await api.purchaseMembership(tier);
+        setMembership({ tier });
+        toast({ title: 'Success', description: `Upgraded to ${tier} membership!` });
+        return;
+      }
+
+      await openRazorpayCheckout({
+        orderId: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        keyId: order.keyId,
+        name: `Kalakaarian ${tier.charAt(0).toUpperCase() + tier.slice(1)} Membership`,
+        prefill: { name: user?.name, email: user?.email },
+        onSuccess: async (paymentId, orderId, signature) => {
+          await api.purchaseMembership(tier, {
+            razorpayOrderId: orderId,
+            razorpayPaymentId: paymentId,
+            razorpaySignature: signature,
+          });
+          const updated = await api.getMembershipStatus();
+          setMembership(updated);
+          toast({ title: 'Payment successful!', description: `${tier} membership activated.` });
+        },
+        onDismiss: () => toast({ title: 'Payment cancelled' }),
+      });
     } catch (err) {
-      toast({ title: 'Error', description: 'Failed to upgrade membership', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to process payment', variant: 'destructive' });
     }
   };
 
@@ -144,6 +175,7 @@ export default function InfluencerProfile() {
             tier: membership.tier as 'gold' | 'silver' | 'regular',
             city: profile.city,
             socialHandles: profile.socialHandles,
+            isOnline: profile.isOnline,
           }}
           isOwnProfile={isOwnProfile}
           onStatusToggle={handleStatusToggle}

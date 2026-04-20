@@ -1,25 +1,17 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import {
-  getCampaigns,
-  getCampaignById,
-  createCampaign,
-  updateCampaign,
-  deleteCampaign,
-  submitProposal,
-  getProposals,
-  updateProposalStatus,
-  getOpenCampaigns,
+  getCampaigns, getCampaignById, createCampaign, updateCampaign, deleteCampaign, getOpenCampaigns,
 } from '../controllers/campaignController';
+import { submitProposal, getProposals } from '../controllers/proposalController';
+import { updateProposalStatus } from '../controllers/proposalActions';
 import { auth, optionalAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
 const router = Router();
 
 router.get('/open', optionalAuth, getOpenCampaigns);
-
 router.get('/', auth, getCampaigns);
-
 router.get('/:id', auth, getCampaignById);
 
 router.post(
@@ -36,7 +28,6 @@ router.post(
 );
 
 router.put('/:id', auth, updateCampaign);
-
 router.delete('/:id', auth, deleteCampaign);
 
 router.post(
@@ -44,14 +35,13 @@ router.post(
   auth,
   [
     body('message').notEmpty().withMessage('Message is required'),
-    body('price').isNumeric().withMessage('Price must be a number'),
+    body('bidAmount').isNumeric().withMessage('Bid amount must be a number'),
   ],
   validate,
   submitProposal
 );
 
 router.get('/:id/proposals', auth, getProposals);
-
 router.put('/proposals/:proposalId/status', auth, updateProposalStatus);
 
 export default router;

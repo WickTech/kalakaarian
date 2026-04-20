@@ -7,42 +7,52 @@ A Direct-to-Consumer (D2C) influencer marketplace connecting brands with micro-i
 | Layer | Technology |
 |-------|------------|
 | Frontend | React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui |
-| Backend | Node.js + Express + TypeScript |
+| Backend | Node.js + Express + TypeScript (Vercel serverless via `serverless-http`) |
 | Database | MongoDB + Mongoose |
-| Auth | JWT + bcrypt |
-| Container | Docker + Docker Compose |
+| Auth | JWT + bcrypt + Google OAuth + WhatsApp OTP |
+| Container | Docker + Docker Compose (optional, Atlas-friendly without it) |
 
 ## Deployment
 
 | Service | Platform | Cost |
 |---------|----------|------|
-| Frontend | [Vercel](./docs/VERCEL.md) | Free |
-| Backend | [Railway](./docs/RAILWAY.md) | $0-5/mo |
+| Frontend (`client/`) | [Vercel](./docs/VERCEL.md) | Free |
+| Backend (`server/src/`) | Vercel serverless function (same project) | Free tier |
 | Database | [MongoDB Atlas](./docs/MONGODB.md) | Free (M0) |
 
-**Total MVP Cost:** $0/month (within free tiers)
+**Total MVP Cost:** $0/month (within free tiers).
+
+> The backend is **not** a long-running Node process. `vercel.json` builds `server/src/app.ts` with `@vercel/node`.
 
 ## Project Structure
 
 ```
 kalakaarian/
-├── src/                     # React frontend
-│   ├── api/                 # API calls (axios)
-│   ├── contexts/            # React contexts (Auth)
-│   ├── hooks/               # Custom hooks
-│   ├── components/          # UI components
-│   └── pages/               # Page components
-├── server/                   # Express API backend
-│   ├── config/              # Configuration
-│   ├── controllers/         # Route handlers
-│   ├── middleware/          # Auth, validation, errors
-│   ├── models/              # Mongoose models
-│   ├── routes/              # API routes
-│   └── utils/               # Helpers
-├── models/                   # Shared database schemas
-├── infra/                   # Infrastructure (nginx)
-├── docs/                    # Documentation
-└── docker-compose.yml       # Local development
+├── client/                  # React + Vite frontend (workspace)
+│   ├── src/api/             # axios instance + per-resource API calls
+│   ├── src/components/      # UI components (incl. shadcn/ui in components/ui)
+│   ├── src/hooks/           # custom hooks
+│   ├── src/lib/             # api types, store, utils
+│   ├── src/pages/           # route pages
+│   └── CLAUDE.md            # frontend dev rules
+├── server/                  # Express API (workspace)
+│   ├── src/                 # ✅ deployed sources
+│   │   ├── config/          # database connection
+│   │   ├── controllers/     # route handlers
+│   │   ├── middleware/      # auth, validation, admin guards
+│   │   ├── models/          # Mongoose schemas
+│   │   ├── routes/          # API routes
+│   │   ├── services/        # external integrations (instagram, youtube, referral)
+│   │   ├── utils/           # pricing, jwt, helpers
+│   │   └── app.ts           # serverless entrypoint (no app.listen)
+│   ├── controllers/, models/, routes/, utils/   ⚠️ legacy, NOT deployed
+│   └── CLAUDE.md            # backend dev rules
+├── packages/models/         # shared types (workspace)
+├── infra/                   # nginx config
+├── docs/                    # PRD, API docs, deployment guides
+├── vercel.json              # single-build serverless config
+├── docker-compose.yml       # optional local stack
+└── CLAUDE.md                # repo-wide agent rules (read first)
 ```
 
 ## Quick Start
@@ -67,38 +77,33 @@ npm install
 
 ```bash
 cp .env.example .env
-# Edit .env with your values
+# Edit .env with your values (full template lives at .env.example)
 ```
 
-Required variables:
-
-```env
-# Backend
-MONGODB_URI=mongodb://localhost:27017/kalakariaan
-JWT_SECRET=your-secret-key-min-32-chars
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
-
-# Frontend
-VITE_API_URL=http://localhost:5000/api
-VITE_GOOGLE_CLIENT_ID=your-google-client-id
-```
+The server fail-fasts on boot if any of these are missing: `JWT_SECRET`, `MONGODB_URI`, `GOOGLE_CLIENT_ID`. See `.env.example` for the complete list and Vite (`VITE_*`) keys.
 
 ### 3. Start Development
 
-**Option A: Docker (Recommended)**
+The backend is a **Vercel serverless function**, not a long-running Node server (no `app.listen`). Pick one of:
+
+**Option A: Vercel CLI (closest to production)**
 ```bash
-docker-compose up -d
+npm i -g vercel
+cd kalakaarian
+vercel dev          # serves both client (5173) and the serverless API on one origin
 ```
 
-**Option B: Local**
+**Option B: Workspace dev (faster iteration on the UI)**
 ```bash
-# Terminal 1: Backend
-cd server && npm install && npm run dev
+# from repo root
+npm install
+npm run client      # http://localhost:5173 (Vite)
+# point VITE_API_URL at a deployed preview, or run `vercel dev` in a second terminal
+```
 
-# Terminal 2: Frontend
-npm run dev
+**Option C: Docker (optional MongoDB only)**
+```bash
+docker-compose up -d mongo   # spins up MongoDB at localhost:27017
 ```
 
 ### 4. Access
@@ -106,8 +111,8 @@ npm run dev
 | Service | URL |
 |---------|-----|
 | Frontend | http://localhost:5173 |
-| Backend | http://localhost:5000 |
-| MongoDB | localhost:27017 |
+| Backend (via `vercel dev`) | http://localhost:3000/api |
+| MongoDB (local) | mongodb://localhost:27017 |
 
 ### 5. Google OAuth Setup
 
@@ -119,26 +124,68 @@ Follow the [Google OAuth Setup Guide](./docs/GOOGLE_OAUTH_SETUP.md) to:
 
 ## Deployment Guide
 
-1. **[MongoDB Atlas Setup](./docs/MONGODB.md)** - Create free database
-2. **[Railway Backend Deploy](./docs/RAILWAY.md)** - Deploy Express API
-3. **[Vercel Frontend Deploy](./docs/VERCEL.md)** - Deploy React app
-4. **[Google OAuth Setup](./docs/GOOGLE_OAUTH_SETUP.md)** - Configure Google Login
+1. **[MongoDB Atlas Setup](./docs/MONGODB.md)** — Create free M0 cluster
+2. **[Vercel Deploy](./docs/VERCEL.md)** — Both frontend and serverless backend deploy from the same Vercel project (see `vercel.json`)
+3. **[Google OAuth Setup](./docs/GOOGLE_OAUTH_SETUP.md)** — Configure Google Login
+4. Set env vars in Vercel dashboard (see table above); the server fail-fasts on missing `JWT_SECRET`, `MONGODB_URI`, `GOOGLE_CLIENT_ID`
 
-## Features
+## Launch Status — target 1 May 2026
 
-### MVP Features
-- [x] User registration (Brand/Influencer)
-- [x] Login with JWT authentication
-- [x] Influencer marketplace with filters
-- [x] Campaign creation & management
-- [x] Proposal submission workflow
+### Shipped
+- [x] User registration (Brand / Influencer roles)
+- [x] JWT auth + Google OAuth + WhatsApp OTP + Email OTP (Resend fallback)
+- [x] Influencer marketplace — tier, city, genre, platform, gender filters (all server-side)
+- [x] Influencer presence indicator (`isOnline` / `lastSeenAt`, green dot on cards)
+- [x] Campaign CRUD + open-listing browse
+- [x] Proposal workflow — submit, respond (accept/reject), status emails
 - [x] Cart system
+- [x] Membership tiers (Silver / Gold) with Razorpay two-step checkout
+- [x] Razorpay webhook (`POST /api/membership/webhook`) for async payment confirmation
+- [x] Referral system + Gold auto-grant reward (10 referred Gold buyers → free 1-year Gold)
+- [x] Email notifications — OTP, welcome, membership invoice, proposal status (Resend)
+- [x] File upload via Cloudflare R2 presigned URLs
+- [x] Platform 5% margin applied on all brand-facing pricing reads
+- [x] Social media stats (Instagram + YouTube, with mock fallback)
+- [x] Error monitoring — Sentry (client + server)
+- [x] Product analytics — PostHog
+- [x] Admin contact form management (rate-limited public POST, admin-only reads)
+- [x] Real-time notifications route
+- [x] WhatsApp messaging integration
 
-### Future Features
-- [ ] Escrow payment system
-- [ ] Real-time messaging
-- [ ] Analytics dashboard
-- [ ] Social media integrations
+### Remaining before 1 May
+- [ ] **Env vars** — add all new keys to `.env.example` and Vercel dashboard (see table below)
+- [ ] **`CORS_ORIGINS`** — set to production domain(s) in Vercel env
+- [ ] **Razorpay webhook URL** — register `https://<prod-domain>/api/membership/webhook` in Razorpay dashboard; copy secret to `RAZORPAY_WEBHOOK_SECRET`
+- [ ] **Razorpay test → live** — swap `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` to live-mode keys
+- [ ] **Pre-ship checks** — `typecheck` + `build` + `lint` + `test` all green (see `docs/SHIP_CHECKLIST.md`)
+- [ ] **Vercel preview smoke test** — health, register, influencer list with gender filter, contact rate-limit, Gold membership purchase
+- [ ] **MongoDB Atlas capacity** — confirm cluster tier is sufficient for expected launch load
+
+### Post-launch (not blocking)
+- [ ] Escrow / milestone-based payment holding
+- [ ] In-app real-time messaging (WebSocket / Pusher)
+- [ ] Full analytics dashboard UI
+- [ ] Push notifications (FCM / APNs)
+- [ ] Influencer verified-badge flow
+
+### New env vars to add (added since initial deploy)
+
+| Variable | Used by | Required |
+|---|---|---|
+| `VITE_SENTRY_DSN` | Client Sentry | No |
+| `SENTRY_DSN` | Server Sentry | No |
+| `VITE_POSTHOG_KEY` | PostHog analytics | No |
+| `VITE_POSTHOG_HOST` | PostHog analytics | No |
+| `RESEND_API_KEY` | Email service | No (silent if absent) |
+| `RESEND_FROM` | Email from address | No |
+| `RAZORPAY_KEY_ID` | Payments | No (dev bypass if absent) |
+| `RAZORPAY_KEY_SECRET` | Payments | No |
+| `RAZORPAY_WEBHOOK_SECRET` | Webhook verification | No |
+| `R2_ACCOUNT_ID` | File upload | No (returns 503 if absent) |
+| `R2_ACCESS_KEY_ID` | File upload | No |
+| `R2_SECRET_ACCESS_KEY` | File upload | No |
+| `R2_BUCKET` | File upload | No |
+| `R2_PUBLIC_URL` | File upload | No |
 
 ## API Endpoints
 
@@ -171,8 +218,13 @@ Follow the [Google OAuth Setup Guide](./docs/GOOGLE_OAUTH_SETUP.md) to:
 ### Influencers
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/influencers` | List influencers |
-| GET | `/api/influencers/:id` | Get influencer |
+| GET | `/api/influencers` | List influencers (filters: `tier`, `city`, `genre`, `platform`, `gender`, `page`, `limit`) |
+| GET | `/api/influencers/search` | Full-text search with same filters + `q` |
+| GET | `/api/influencers/:id` | Get influencer (pricing already includes 5% margin) |
+| PUT | `/api/influencers/profile` | Update own profile (influencer only) |
+| PUT | `/api/influencers/presence` | Heartbeat — set `isOnline` + `lastSeenAt` |
+| PUT | `/api/influencers/:id/image` | Upload profile image |
+| POST | `/api/influencers/connect-social` | Link Instagram / YouTube handle |
 
 ### Cart
 | Method | Endpoint | Description |
@@ -180,6 +232,30 @@ Follow the [Google OAuth Setup Guide](./docs/GOOGLE_OAUTH_SETUP.md) to:
 | GET | `/api/cart` | Get cart |
 | POST | `/api/cart/add` | Add to cart |
 | DELETE | `/api/cart/remove/:id` | Remove from cart |
+
+### Membership & Referrals
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/membership/order` | Create Razorpay order (step 1 of checkout) |
+| POST | `/api/membership/purchase` | Verify payment + activate membership (step 2) |
+| POST | `/api/membership/webhook` | Razorpay async webhook (raw body, no auth) |
+| GET | `/api/membership/status` | Get current membership |
+| PUT | `/api/membership/cancel` | Disable auto-renew |
+| POST | `/api/referrals/generate` | Generate this user's referral code |
+| POST | `/api/referrals/use` | Apply a referral code at signup |
+| GET | `/api/referrals/stats` | Counts + Gold-unlock progress |
+
+### Upload
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/upload/presign` | Get presigned R2 PUT URL for direct browser upload |
+
+### Contact
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/contact` | Public contact form (rate-limited 5/hr/IP) |
+| GET | `/api/contact` | Admin only — list submissions |
+| PUT | `/api/contact/:id/status` | Admin only — mark resolved |
 
 See [docs/API.md](./docs/API.md) for full documentation.
 

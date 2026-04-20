@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "https://kalakaarian-server.vercel.app";
+const RAW_API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+const API_BASE_URL = RAW_API_URL.replace(/\/api\/?$/, "").replace(/\/$/, "");
 
 export interface User {
   _id: string;
@@ -49,7 +50,8 @@ export interface InfluencerProfile {
   bio?: string;
   niches?: string[];
   city?: string;
-  tier?: string;
+  tier?: 'nano' | 'micro' | 'mid' | 'macro' | 'mega';
+  gender?: 'male' | 'female' | 'non_binary' | 'prefer_not_to_say';
   platform?: string[];
   socialHandles?: {
     instagram?: string;
@@ -57,6 +59,8 @@ export interface InfluencerProfile {
   };
   profileImage?: string;
   verified?: boolean;
+  isOnline?: boolean;
+  lastSeenAt?: string;
   instagramPosts?: Array<{ url: string; thumbnail?: string; caption?: string }>;
   youtubeVideos?: Array<{ url: string; thumbnail?: string; title?: string }>;
 }
@@ -111,6 +115,100 @@ export interface InfluencerSearchFilters {
   city?: string;
   minFollowers?: number;
   maxFollowers?: number;
+  gender?: 'male' | 'female' | 'non_binary' | 'prefer_not_to_say';
+}
+
+export interface Pagination {
+  total: number;
+  page: number;
+  pages: number;
+  limit: number;
+}
+export interface Message {
+  _id: string;
+  senderId: string;
+  receiverId?: string;
+  content: string;
+  read: boolean;
+  createdAt: string;
+}
+export interface Conversation {
+  _id: string;
+  participants: string[];
+  lastMessage?: Message;
+  unreadCount?: number;
+}
+export interface BrandAnalytics {
+  totalCampaigns: number;
+  activeCampaigns: number;
+  totalProposals: number;
+  acceptedProposals: number;
+  totalSpend?: number;
+}
+export interface InfluencerAnalytics {
+  totalProposals: number;
+  acceptedProposals: number;
+  totalEarnings?: number;
+  completedCampaigns?: number;
+  views?: number;
+}
+export interface CartItem {
+  influencerId: string | InfluencerProfile;
+  price: number;
+  campaignId?: string;
+}
+export interface Cart {
+  _id?: string;
+  userId?: string;
+  items: CartItem[];
+}
+export interface VideoItem {
+  _id: string;
+  url: string;
+  platform: string;
+  thumbnail?: string;
+  title?: string;
+  campaignId?: string;
+  createdAt?: string;
+}
+export interface CampaignFile {
+  _id: string;
+  fileUrl: string;
+  fileName: string;
+  fileType: string;
+  uploadedBy: string;
+  createdAt: string;
+}
+export interface CampaignWorkflow {
+  campaignId: string;
+  stage: string;
+  videos?: Array<{ url: string; status: string; feedback?: string }>;
+  updatedAt?: string;
+}
+export interface AppNotification {
+  _id: string;
+  userId: string;
+  title: string;
+  message: string;
+  read: boolean;
+  type: string;
+  createdAt: string;
+}
+export interface SocialStats {
+  instagram?: { followers: number; following: number; posts: number; engagementRate?: number };
+  youtube?: { subscribers: number; videos: number; totalViews?: number };
+}
+export interface SocialPost {
+  url: string;
+  thumbnail?: string;
+  caption?: string;
+  title?: string;
+  likes?: number;
+  views?: number;
+}
+export interface WhatsAppStatus {
+  enabled: boolean;
+  preferences?: { campaigns: boolean; proposals: boolean; messages: boolean; payments?: boolean };
 }
 
 export interface RegisterData {
@@ -309,8 +407,9 @@ export const api = {
     if (filters?.city) params.append("city", filters.city);
     if (filters?.minFollowers) params.append("minFollowers", filters.minFollowers.toString());
     if (filters?.maxFollowers) params.append("maxFollowers", filters.maxFollowers.toString());
+    if (filters?.gender) params.append("gender", filters.gender);
     const query = params.toString() ? `?${params.toString()}` : "";
-    const response = await request<{ influencers: InfluencerProfile[]; pagination: any }>(`/api/influencers${query}`);
+    const response = await request<{ influencers: InfluencerProfile[]; pagination: Pagination }>(`/api/influencers${query}`);
     return response.influencers || response as unknown as InfluencerProfile[];
   },
 
@@ -318,7 +417,7 @@ export const api = {
     return request<Record<string, number>>("/api/influencers/tier-counts");
   },
 
-  getInfluencerById: async (id: string): Promise<any> => {
+  getInfluencerById: async (id: string): Promise<InfluencerProfile> => {
     const response = await request<{ influencer: InfluencerProfile } | InfluencerProfile>(`/api/influencers/${id}`);
     if (response && typeof response === 'object' && 'influencer' in response) {
       return (response as { influencer: InfluencerProfile }).influencer;
@@ -326,19 +425,19 @@ export const api = {
     return response;
   },
 
-  sendMessage: async (receiverId: string, content: string): Promise<any> => {
-    return request<any>("/api/messages/send", {
+  sendMessage: async (receiverId: string, content: string): Promise<Message> => {
+    return request<Message>("/api/messages/send", {
       method: "POST",
       body: JSON.stringify({ receiverId, content }),
     });
   },
 
-  getConversations: async (): Promise<any[]> => {
-    return request<any[]>("/api/messages/conversations");
+  getConversations: async (): Promise<Conversation[]> => {
+    return request<Conversation[]>("/api/messages/conversations");
   },
 
-  getMessages: async (conversationId: string): Promise<any> => {
-    return request<any>(`/api/messages/conversations/${conversationId}`);
+  getMessages: async (conversationId: string): Promise<{ messages: Message[]; conversation?: Conversation }> => {
+    return request<{ messages: Message[]; conversation?: Conversation }>(`/api/messages/conversations/${conversationId}`);
   },
 
   markAsRead: async (conversationId: string): Promise<void> => {
@@ -347,53 +446,67 @@ export const api = {
     });
   },
 
-  getBrandAnalytics: async (): Promise<any> => {
-    return request<any>("/api/analytics/brand");
+  getBrandAnalytics: async (): Promise<BrandAnalytics> => {
+    return request<BrandAnalytics>("/api/analytics/brand");
   },
 
-  getInfluencerAnalytics: async (): Promise<any> => {
-    return request<any>("/api/analytics/influencer");
+  getInfluencerAnalytics: async (): Promise<InfluencerAnalytics> => {
+    return request<InfluencerAnalytics>("/api/analytics/influencer");
   },
 
   // Cart
-  getCart: async (): Promise<any> => {
-    return request<any>("/api/cart");
+  getCart: async (): Promise<Cart> => {
+    return request<Cart>("/api/cart");
   },
 
-  addToCart: async (influencerId: string, price: number, campaignId?: string): Promise<any> => {
-    return request<any>("/api/cart/add", {
+  addToCart: async (influencerId: string, price: number, campaignId?: string): Promise<Cart> => {
+    return request<Cart>("/api/cart/add", {
       method: "POST",
       body: JSON.stringify({ influencerId, price, campaignId }),
     });
   },
 
-  removeFromCart: async (influencerId: string): Promise<any> => {
-    return request<any>(`/api/cart/remove/${influencerId}`, {
+  removeFromCart: async (influencerId: string): Promise<Cart> => {
+    return request<Cart>(`/api/cart/remove/${influencerId}`, {
       method: "DELETE",
     });
   },
 
-  clearCart: async (): Promise<any> => {
-    return request<any>("/api/cart/clear", {
+  clearCart: async (): Promise<Cart> => {
+    return request<Cart>("/api/cart/clear", {
       method: "DELETE",
     });
   },
 
-  updateCartItem: async (influencerId: string, campaignId: string, price: number): Promise<any> => {
-    return request<any>(`/api/cart/update/${influencerId}`, {
+  updateCartItem: async (influencerId: string, campaignId: string, price: number): Promise<Cart> => {
+    return request<Cart>(`/api/cart/update/${influencerId}`, {
       method: "PUT",
       body: JSON.stringify({ campaignId, price }),
     });
   },
 
-  getMembershipStatus: async (): Promise<{ tier: string }> => {
-    return request<{ tier: string }>('/api/membership/status');
+  getMembershipStatus: async (): Promise<{ tier: string; endDate?: string }> => {
+    return request<{ tier: string; endDate?: string }>('/api/membership/status');
   },
 
-  purchaseMembership: async (tier: string): Promise<any> => {
-    return request<any>('/api/membership/purchase', {
+  createMembershipOrder: async (tier: string): Promise<{ orderId: string | null; amount: number; currency: string; keyId: string | null }> => {
+    return request('/api/membership/order', { method: 'POST', body: JSON.stringify({ tier }) });
+  },
+
+  purchaseMembership: async (
+    tier: string,
+    payment?: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string }
+  ): Promise<{ tier: string; endDate?: string }> => {
+    return request<{ tier: string; endDate?: string }>('/api/membership/purchase', {
       method: 'POST',
-      body: JSON.stringify({ tier }),
+      body: JSON.stringify({ tier, ...payment }),
+    });
+  },
+
+  getUploadUrl: async (fileName: string, contentType: string, purpose: 'profile' | 'campaign' | 'video'): Promise<{ uploadUrl: string; fileUrl: string; key: string }> => {
+    return request('/api/upload/presign', {
+      method: 'POST',
+      body: JSON.stringify({ fileName, contentType, purpose }),
     });
   },
 
@@ -401,12 +514,12 @@ export const api = {
     return request<void>('/api/membership/cancel', { method: 'PUT' });
   },
 
-  getMyVideos: async (): Promise<any[]> => {
-    return request<any[]>('/api/videos/my');
+  getMyVideos: async (): Promise<VideoItem[]> => {
+    return request<VideoItem[]>('/api/videos/my');
   },
 
-  uploadVideo: async (videoUrl: string, platform: string, campaignId?: string): Promise<any> => {
-    return request<any>('/api/videos', {
+  uploadVideo: async (videoUrl: string, platform: string, campaignId?: string): Promise<VideoItem> => {
+    return request<VideoItem>('/api/videos', {
       method: 'POST',
       body: JSON.stringify({ videoUrl, platform, campaignId }),
     });
@@ -416,8 +529,8 @@ export const api = {
     return request<{ code: string }>('/api/referrals/generate', { method: 'POST' });
   },
 
-  useReferralCode: async (code: string): Promise<any> => {
-    return request<any>('/api/referrals/use', {
+  useReferralCode: async (code: string): Promise<{ message: string }> => {
+    return request<{ message: string }>('/api/referrals/use', {
       method: 'POST',
       body: JSON.stringify({ code }),
     });
@@ -428,12 +541,12 @@ export const api = {
   },
 
   // Campaign Files
-  getCampaignFiles: async (campaignId: string): Promise<any[]> => {
-    return request<any[]>(`/api/campaigns/${campaignId}/files`);
+  getCampaignFiles: async (campaignId: string): Promise<CampaignFile[]> => {
+    return request<CampaignFile[]>(`/api/campaigns/${campaignId}/files`);
   },
 
-  uploadCampaignFile: async (campaignId: string, fileUrl: string, fileName: string, fileType: string): Promise<any> => {
-    return request<any>(`/api/campaigns/${campaignId}/files`, {
+  uploadCampaignFile: async (campaignId: string, fileUrl: string, fileName: string, fileType: string): Promise<CampaignFile> => {
+    return request<CampaignFile>(`/api/campaigns/${campaignId}/files`, {
       method: 'POST',
       body: JSON.stringify({ fileUrl, fileName, fileType }),
     });
@@ -446,26 +559,26 @@ export const api = {
   },
 
   // Campaign Workflow
-  getCampaignWorkflow: async (campaignId: string): Promise<any> => {
-    return request<any>(`/api/campaigns/${campaignId}/workflow`);
+  getCampaignWorkflow: async (campaignId: string): Promise<CampaignWorkflow> => {
+    return request<CampaignWorkflow>(`/api/campaigns/${campaignId}/workflow`);
   },
 
-  updateWorkflowStage: async (campaignId: string, stage: string): Promise<any> => {
-    return request<any>(`/api/campaigns/${campaignId}/workflow/stage`, {
+  updateWorkflowStage: async (campaignId: string, stage: string): Promise<CampaignWorkflow> => {
+    return request<CampaignWorkflow>(`/api/campaigns/${campaignId}/workflow/stage`, {
       method: 'PUT',
       body: JSON.stringify({ stage }),
     });
   },
 
-  updateVideoStatus: async (campaignId: string, videoIndex: number, status: string, feedback?: string): Promise<any> => {
-    return request<any>(`/api/campaigns/${campaignId}/videos/${videoIndex}`, {
+  updateVideoStatus: async (campaignId: string, videoIndex: number, status: string, feedback?: string): Promise<CampaignWorkflow> => {
+    return request<CampaignWorkflow>(`/api/campaigns/${campaignId}/videos/${videoIndex}`, {
       method: 'PUT',
       body: JSON.stringify({ status, feedback }),
     });
   },
 
-  getNotifications: async (): Promise<any[]> => {
-    return request<any[]>('/api/notifications');
+  getNotifications: async (): Promise<AppNotification[]> => {
+    return request<AppNotification[]>('/api/notifications');
   },
 
   getUnreadNotificationCount: async (): Promise<{ count: number }> => {
@@ -484,16 +597,23 @@ export const api = {
     return request<void>(`/api/notifications/${id}`, { method: 'DELETE' });
   },
 
-  connectSocialMedia: async (platform: 'instagram' | 'youtube', handle: string): Promise<any> => {
-    return request<any>('/api/influencers/connect-social', {
+  updatePresence: async (isOnline: boolean): Promise<void> => {
+    return request<void>('/api/influencers/presence', {
+      method: 'PUT',
+      body: JSON.stringify({ isOnline }),
+    });
+  },
+
+  connectSocialMedia: async (platform: 'instagram' | 'youtube', handle: string): Promise<{ message: string }> => {
+    return request<{ message: string }>('/api/influencers/connect-social', {
       method: 'POST',
       body: JSON.stringify({ platform, handle }),
     });
   },
 
   // WhatsApp
-  getWhatsAppStatus: async (): Promise<any> => {
-    return request<any>('/api/whatsapp/status');
+  getWhatsAppStatus: async (): Promise<WhatsAppStatus> => {
+    return request<WhatsAppStatus>('/api/whatsapp/status');
   },
 
   updateWhatsAppPreferences: async (preferences: {
@@ -516,26 +636,26 @@ export const api = {
   },
 
   // Social Stats
-  getSocialStats: async (userId: string): Promise<any> => {
-    return request<any>(`/api/social/stats/${userId}`);
+  getSocialStats: async (userId: string): Promise<SocialStats> => {
+    return request<SocialStats>(`/api/social/stats/${userId}`);
   },
 
-  getInstagramPosts: async (handle: string, limit?: number): Promise<any[]> => {
+  getInstagramPosts: async (handle: string, limit?: number): Promise<SocialPost[]> => {
     const params = limit ? `?limit=${limit}` : '';
-    return request<any[]>(`/api/social/instagram/${handle}/posts${params}`);
+    return request<SocialPost[]>(`/api/social/instagram/${handle}/posts${params}`);
   },
 
-  getYouTubeVideos: async (channelId: string, limit?: number): Promise<any[]> => {
+  getYouTubeVideos: async (channelId: string, limit?: number): Promise<SocialPost[]> => {
     const params = limit ? `?limit=${limit}` : '';
-    return request<any[]>(`/api/social/youtube/${channelId}/videos${params}`);
+    return request<SocialPost[]>(`/api/social/youtube/${channelId}/videos${params}`);
   },
 
-  getInstagramStats: async (handle: string): Promise<any> => {
-    return request<any>(`/api/social/instagram/stats/${handle}`);
+  getInstagramStats: async (handle: string): Promise<SocialStats> => {
+    return request<SocialStats>(`/api/social/instagram/stats/${handle}`);
   },
 
-  getYouTubeStats: async (channelId: string): Promise<any> => {
-    return request<any>(`/api/social/youtube/stats/${channelId}`);
+  getYouTubeStats: async (channelId: string): Promise<SocialStats> => {
+    return request<SocialStats>(`/api/social/youtube/stats/${channelId}`);
   },
 
   // Contact
@@ -545,8 +665,8 @@ export const api = {
     phone?: string;
     message: string;
     type?: 'general' | 'callback' | 'business';
-  }): Promise<any> => {
-    return request<any>('/api/contact', {
+  }): Promise<{ message: string }> => {
+    return request<{ message: string }>('/api/contact', {
       method: 'POST',
       body: JSON.stringify(data),
     });

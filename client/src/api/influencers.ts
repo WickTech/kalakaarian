@@ -3,7 +3,7 @@ import { Influencer } from "@/lib/store";
 
 export interface InfluencerFilters {
   platform?: "instagram" | "youtube";
-  tier?: "nano" | "micro" | "macro" | "celebrity";
+  tier?: "nano" | "micro" | "mid" | "macro" | "mega";
   genre?: string;
   city?: string;
   minFollowers?: number;

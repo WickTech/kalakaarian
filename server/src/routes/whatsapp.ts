@@ -1,15 +1,15 @@
 import { Router, Request, Response } from 'express';
 import User from '../models/User';
-import { auth } from '../middleware/auth';
+import { auth, AuthRequest } from '../middleware/auth';
 import { whatsappService } from '../services/whatsapp';
 
 const router = Router();
 
-router.get('/status', auth, async (req: Request, res: Response) => {
+router.get('/status', auth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.user!.userId;
     const user = await User.findById(userId).select('whatsappNotifications phone phoneVerified');
-    
+
     res.json({
       enabled: user?.whatsappNotifications?.enabled || false,
       phone: user?.phone,
@@ -21,9 +21,9 @@ router.get('/status', auth, async (req: Request, res: Response) => {
   }
 });
 
-router.put('/preferences', auth, async (req: Request, res: Response) => {
+router.put('/preferences', auth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.user!.userId;
     const { enabled, campaigns, proposals, messages, payments } = req.body;
 
     const updateData: any = {};
@@ -40,9 +40,9 @@ router.put('/preferences', auth, async (req: Request, res: Response) => {
   }
 });
 
-router.post('/send-test', auth, async (req: Request, res: Response) => {
+router.post('/send-test', auth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.user!.userId;
     const user = await User.findById(userId);
 
     if (!user?.phone) {

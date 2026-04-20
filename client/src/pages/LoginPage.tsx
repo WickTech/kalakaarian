@@ -46,7 +46,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
     console.log('Google credential received:', credentialResponse);
     try {
       setError("");

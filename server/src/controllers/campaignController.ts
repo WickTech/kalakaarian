@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Campaign from '../models/Campaign';
-import Proposal from '../models/Proposal';
+import Proposal from '../models/Proposal'; // used in deleteCampaign
 import { AuthRequest } from '../middleware/auth';
 
 export const getCampaigns = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -14,6 +14,8 @@ export const getCampaigns = async (req: AuthRequest, res: Response): Promise<voi
 
     const query: any = {};
 
+    const clampedLimit = Math.min(Number(limit) || 20, 100);
+
     if (req.user.role === 'brand') {
       query.brandId = req.user.userId;
     } else if (req.user.role === 'influencer') {
@@ -24,12 +26,12 @@ export const getCampaigns = async (req: AuthRequest, res: Response): Promise<voi
     if (genre) query.genre = { $in: Array.isArray(genre) ? genre : [genre] };
     if (platform) query.platform = { $in: Array.isArray(platform) ? platform : [platform] };
 
-    const skip = (Number(page) - 1) * Number(limit);
+    const skip = (Number(page) - 1) * clampedLimit;
 
     const campaigns = await Campaign.find(query)
       .populate('brandId', 'name email')
       .skip(skip)
-      .limit(Number(limit))
+      .limit(clampedLimit)
       .sort({ createdAt: -1 });
 
     const total = await Campaign.countDocuments(query);
@@ -38,9 +40,9 @@ export const getCampaigns = async (req: AuthRequest, res: Response): Promise<voi
       campaigns,
       pagination: {
         page: Number(page),
-        limit: Number(limit),
+        limit: clampedLimit,
         total,
-        pages: Math.ceil(total / Number(limit)),
+        pages: Math.ceil(total / clampedLimit),
       },
     });
   } catch (error) {
@@ -55,6 +57,8 @@ export const getOpenCampaigns = async (req: AuthRequest, res: Response): Promise
 
     const query: any = { status: 'open' };
 
+    const clampedLimit = Math.min(Number(limit) || 20, 100);
+
     if (genre) query.genre = { $in: Array.isArray(genre) ? genre : [genre] };
     if (platform) query.platform = { $in: Array.isArray(platform) ? platform : [platform] };
     if (budgetMin || budgetMax) {
@@ -63,12 +67,12 @@ export const getOpenCampaigns = async (req: AuthRequest, res: Response): Promise
       if (budgetMax) query.budget.$lte = Number(budgetMax);
     }
 
-    const skip = (Number(page) - 1) * Number(limit);
+    const skip = (Number(page) - 1) * clampedLimit;
 
     const campaigns = await Campaign.find(query)
       .populate('brandId', 'name email')
       .skip(skip)
-      .limit(Number(limit))
+      .limit(clampedLimit)
       .sort({ createdAt: -1 });
 
     const total = await Campaign.countDocuments(query);
@@ -77,9 +81,9 @@ export const getOpenCampaigns = async (req: AuthRequest, res: Response): Promise
       campaigns,
       pagination: {
         page: Number(page),
-        limit: Number(limit),
+        limit: clampedLimit,
         total,
-        pages: Math.ceil(total / Number(limit)),
+        pages: Math.ceil(total / clampedLimit),
       },
     });
   } catch (error) {
@@ -195,125 +199,3 @@ export const deleteCampaign = async (req: AuthRequest, res: Response): Promise<v
   }
 };
 
-export const submitProposal = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    if (!req.user || req.user.role !== 'influencer') {
-      res.status(403).json({ message: 'Only influencers can submit proposals' });
-      return;
-    }
-
-    const { id } = req.params;
-    const { message, price } = req.body;
-
-    const campaign = await Campaign.findById(id);
-    if (!campaign) {
-      res.status(404).json({ message: 'Campaign not found' });
-      return;
-    }
-
-    if (campaign.status !== 'open') {
-      res.status(400).json({ message: 'Campaign is not accepting proposals' });
-      return;
-    }
-
-    const existingProposal = await Proposal.findOne({
-      campaignId: id,
-      influencerId: req.user.userId,
-    });
-    if (existingProposal) {
-      res.status(400).json({ message: 'You have already submitted a proposal' });
-      return;
-    }
-
-    const proposal = await Proposal.create({
-      campaignId: id,
-      influencerId: req.user.userId,
-      message,
-      price,
-      status: 'pending',
-    });
-
-    await proposal.populate('influencerId', 'name email');
-    await proposal.populate('campaignId', 'title');
-
-    res.status(201).json({ proposal });
-  } catch (error) {
-    console.error('Submit proposal error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-export const getProposals = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ message: 'Unauthorized' });
-      return;
-    }
-
-    const { campaignId } = req.query;
-
-    if (req.user.role === 'brand') {
-      const campaigns = await Campaign.find({ brandId: req.user.userId }).select('_id');
-      const campaignIds = campaigns.map((c) => c._id);
-
-      const query: any = { campaignId: { $in: campaignIds } };
-      if (campaignId) query.campaignId = campaignId;
-
-      const proposals = await Proposal.find(query)
-        .populate('influencerId', 'name email')
-        .populate('campaignId', 'title')
-        .sort({ createdAt: -1 });
-
-      res.json({ proposals });
-    } else {
-      const proposals = await Proposal.find({ influencerId: req.user.userId })
-        .populate('campaignId', 'title')
-        .sort({ createdAt: -1 });
-
-      res.json({ proposals });
-    }
-  } catch (error) {
-    console.error('Get proposals error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-export const updateProposalStatus = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    if (!req.user || req.user.role !== 'brand') {
-      res.status(403).json({ message: 'Only brands can update proposal status' });
-      return;
-    }
-
-    const { proposalId } = req.params;
-    const { status } = req.body;
-
-    const proposal = await Proposal.findById(proposalId).populate('campaignId');
-    if (!proposal) {
-      res.status(404).json({ message: 'Proposal not found' });
-      return;
-    }
-
-    const campaign = await Campaign.findById(proposal.campaignId);
-    if (!campaign || campaign.brandId.toString() !== req.user.userId) {
-      res.status(403).json({ message: 'Not authorized' });
-      return;
-    }
-
-    proposal.status = status;
-    await proposal.save();
-
-    if (status === 'accepted') {
-      campaign.status = 'in_progress';
-      await campaign.save();
-    }
-
-    await proposal.populate('influencerId', 'name email');
-    await proposal.populate('campaignId', 'title');
-
-    res.json({ proposal });
-  } catch (error) {
-    console.error('Update proposal status error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};

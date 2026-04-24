@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
+import path from 'path';
 import dotenv from 'dotenv';
 import User from '../models/User';
 import InfluencerProfile from '../models/InfluencerProfile';
 
 // Look for .env in repo root (one level above server/)
-dotenv.config({ path: require('path').resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config(); // fallback to cwd
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/kalakaarian';
@@ -105,6 +106,14 @@ const creators = [
   },
 ];
 
+/**
+ * SEED-ONLY accounts — these User documents have no password, googleId, or phone.
+ * They cannot be authenticated via any login path and exist solely to back
+ * the InfluencerProfile documents for marketplace display.
+ * The @kalakaarian.internal domain is not a real domain; it is safe to use as
+ * a namespace but will block legitimate registration if a real person tries the
+ * same address. Keep these addresses consistent and do not reuse them for real users.
+ */
 const seed = async () => {
   await mongoose.connect(MONGODB_URI);
   console.log('Connected to MongoDB:', MONGODB_URI.replace(/:([^:@]+)@/, ':****@'));
@@ -149,10 +158,12 @@ const seed = async () => {
 
   const total = await InfluencerProfile.countDocuments();
   console.log(`\nDone — ${created} added, ${skipped} skipped. Total in DB: ${total}`);
+  await mongoose.disconnect();
   process.exit(0);
 };
 
-seed().catch((e) => {
+seed().catch(async (e) => {
   console.error(e);
+  await mongoose.disconnect();
   process.exit(1);
 });

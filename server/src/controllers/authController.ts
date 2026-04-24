@@ -130,7 +130,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const token = generateToken(user._id.toString(), user.role);
     res.json({
       message: 'Login successful',
-      user: { id: user._id, email: user.email, username: user.username, name: user.name, role: user.role },
+      user: { _id: user._id, id: user._id, email: user.email, username: user.username, name: user.name, role: user.role },
       token,
     });
   } catch (error) {
@@ -165,14 +165,15 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
       if (role === 'brand') {
         await BrandProfile.create({ userId: user._id, companyName: companyName || googleUser.name, industry: industry || '' });
       } else if (role === 'influencer') {
-        await InfluencerProfile.create({ userId: user._id, city: city || '', genre: genre || [], platform: platform || [], tier: tier || 'micro' });
+        // `genre` is accepted from old clients for backward compat but stored as `niches`
+        await InfluencerProfile.create({ userId: user._id, bio: '', city: city || '', niches: genre || [], platform: platform || [], tier: tier || 'micro' });
       }
     }
 
     const token = generateToken(user._id.toString(), user.role);
     res.json({
       message: 'Google login successful',
-      user: { id: user._id, email: user.email, name: user.name, role: user.role },
+      user: { _id: user._id, id: user._id, email: user.email, name: user.name, role: user.role },
       token,
     });
   } catch (error) {

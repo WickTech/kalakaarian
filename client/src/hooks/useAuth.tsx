@@ -31,7 +31,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (storedToken && storedUser) {
           setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          // Normalise legacy stored users that only have `id` (pre-fix sessions)
+          const parsed = JSON.parse(storedUser) as User & { id?: string };
+          const hydrated: User = { ...parsed, _id: parsed._id || parsed.id || "" };
+          setUser(hydrated);
         }
       } catch (err) {
         console.error("Failed to parse stored auth data:", err);
@@ -49,13 +52,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const response: LoginResponse = await api.login(email, password);
+      // Normalise: server login returns `id` not `_id`; ensure _id is always set
+      const rawLogin = response.user as User & { id?: string };
+      const resolvedLoginId = rawLogin._id || rawLogin.id;
+      if (!resolvedLoginId) throw new Error("Server response missing user id");
+      const loginUser: User = { ...rawLogin, _id: resolvedLoginId };
       localStorage.setItem(TOKEN_KEY, response.token);
-      localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+      localStorage.setItem(USER_KEY, JSON.stringify(loginUser));
       setToken(response.token);
-      setUser(response.user);
+      setUser(loginUser);
     } catch (err) {
       const message = err instanceof ApiError ? err.message : "Login failed";
-      if (email === "demo@brand.com" || email === "demo@influencer.com") {
+      // Demo bypass only for network failures (no server response), not auth errors
+      if (!(err instanceof ApiError) && (email === "demo@brand.com" || email === "demo@influencer.com")) {
         const isBrand = email === "demo@brand.com";
         const mockUser: User = {
           _id: "demo-id",
@@ -92,7 +101,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response: LoginResponse = await api.register(data);
       // Normalise: server returns both `id` and `_id`; ensure _id is always set
       const raw = response.user as User & { id?: string };
-      const user: User = { ...raw, _id: raw._id || raw.id || "" };
+      const resolvedId = raw._id || raw.id;
+      if (!resolvedId) throw new Error("Server response missing user id");
+      const user: User = { ...raw, _id: resolvedId };
       localStorage.setItem(TOKEN_KEY, response.token);
       localStorage.setItem(USER_KEY, JSON.stringify(user));
       setToken(response.token);
@@ -111,10 +122,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       const response: LoginResponse = await api.googleLogin(googleToken);
+      // Normalise: server googleLogin returns `id` not `_id`; ensure _id is always set
+      const rawGoogle = response.user as User & { id?: string };
+      const resolvedGoogleId = rawGoogle._id || rawGoogle.id;
+      if (!resolvedGoogleId) throw new Error("Server response missing user id");
+      const googleUser: User = { ...rawGoogle, _id: resolvedGoogleId };
       localStorage.setItem(TOKEN_KEY, response.token);
-      localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+      localStorage.setItem(USER_KEY, JSON.stringify(googleUser));
       setToken(response.token);
-      setUser(response.user);
+      setUser(googleUser);
     } catch (err) {
       console.error('Google login API error:', err);
       const message = err instanceof ApiError ? err.message : "Google login failed";

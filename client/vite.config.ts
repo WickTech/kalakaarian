@@ -6,7 +6,7 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: "./",
+  base: "/",
   server: {
     host: "::",
     port: 8080,
@@ -33,21 +33,15 @@ export default defineConfig(({ mode }) => ({
         icons: [
           {
             src: "/k-logo.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any maskable",
-          },
-          {
-            src: "/k-logo.png",
-            sizes: "512x512",
+            sizes: "610x610",
             type: "image/png",
             purpose: "any maskable",
           },
         ],
       },
       workbox: {
-        navigateFallback: null,
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/api\//, /\/[^/?]+\.[^/]+$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

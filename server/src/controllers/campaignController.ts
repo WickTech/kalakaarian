@@ -28,13 +28,14 @@ export const getCampaigns = async (req: AuthRequest, res: Response): Promise<voi
 
     const skip = (Number(page) - 1) * clampedLimit;
 
-    const campaigns = await Campaign.find(query)
-      .populate('brandId', 'name email')
-      .skip(skip)
-      .limit(clampedLimit)
-      .sort({ createdAt: -1 });
-
-    const total = await Campaign.countDocuments(query);
+    const [campaigns, total] = await Promise.all([
+      Campaign.find(query)
+        .populate('brandId', 'name email')
+        .skip(skip)
+        .limit(clampedLimit)
+        .sort({ createdAt: -1 }),
+      Campaign.countDocuments(query),
+    ]);
 
     res.json({
       campaigns,
@@ -69,13 +70,14 @@ export const getOpenCampaigns = async (req: AuthRequest, res: Response): Promise
 
     const skip = (Number(page) - 1) * clampedLimit;
 
-    const campaigns = await Campaign.find(query)
-      .populate('brandId', 'name email')
-      .skip(skip)
-      .limit(clampedLimit)
-      .sort({ createdAt: -1 });
-
-    const total = await Campaign.countDocuments(query);
+    const [campaigns, total] = await Promise.all([
+      Campaign.find(query)
+        .populate('brandId', 'name email')
+        .skip(skip)
+        .limit(clampedLimit)
+        .sort({ createdAt: -1 }),
+      Campaign.countDocuments(query),
+    ]);
 
     res.json({
       campaigns,

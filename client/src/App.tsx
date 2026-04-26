@@ -1,34 +1,43 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useTheme } from "@/hooks/useTheme";
 import { useCart } from "@/hooks/useCart";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { CartDrawer } from "@/components/CartDrawer";
 import Landing from "./pages/Landing";
-import Marketplace from "./pages/Marketplace";
-import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/LoginPage";
-import RoleSelectPage from "./pages/RoleSelectPage";
-import InfluencerRegisterPage from "./pages/InfluencerRegisterPage";
-import BrandRegisterPage from "./pages/BrandRegisterPage";
-import BrandCampaignPage from "./pages/BrandCampaignPage";
-import Dashboard from "./pages/Dashboard";
-import BrandDashboard from "./pages/BrandDashboard";
-import CreateCampaign from "./pages/CreateCampaign";
-import InfluencerDashboard from "./pages/InfluencerDashboard";
-import BrowseCampaigns from "./pages/BrowseCampaigns";
-import CampaignDetails from "./pages/CampaignDetails";
-import SubmitProposal from "./pages/SubmitProposal";
-import MyProfile from "./pages/MyProfile";
-import EditInfluencerProfile from "./pages/EditInfluencerProfile";
-import EditBrandProfile from "./pages/EditBrandProfile";
-import Messages from "./pages/Messages";
-import InfluencerProfile from "./pages/InfluencerProfile";
-import ContactPage from "./pages/ContactPage";
-import Feed from "./pages/Feed";
+import NotFound from "./pages/NotFound";
 import { InstallPrompt } from "@/components/InstallPrompt";
+
+const Marketplace = lazy(() => import("./pages/Marketplace"));
+const RoleSelectPage = lazy(() => import("./pages/RoleSelectPage"));
+const InfluencerRegisterPage = lazy(() => import("./pages/InfluencerRegisterPage"));
+const BrandRegisterPage = lazy(() => import("./pages/BrandRegisterPage"));
+const BrandCampaignPage = lazy(() => import("./pages/BrandCampaignPage"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const BrandDashboard = lazy(() => import("./pages/BrandDashboard"));
+const CreateCampaign = lazy(() => import("./pages/CreateCampaign"));
+const InfluencerDashboard = lazy(() => import("./pages/InfluencerDashboard"));
+const BrowseCampaigns = lazy(() => import("./pages/BrowseCampaigns"));
+const CampaignDetails = lazy(() => import("./pages/CampaignDetails"));
+const SubmitProposal = lazy(() => import("./pages/SubmitProposal"));
+const MyProfile = lazy(() => import("./pages/MyProfile"));
+const EditInfluencerProfile = lazy(() => import("./pages/EditInfluencerProfile"));
+const EditBrandProfile = lazy(() => import("./pages/EditBrandProfile"));
+const Messages = lazy(() => import("./pages/Messages"));
+const InfluencerProfile = lazy(() => import("./pages/InfluencerProfile"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const Feed = lazy(() => import("./pages/Feed"));
+
+function PageLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700" />
+    </div>
+  );
+}
 
 const queryClient = new QueryClient();
 
@@ -123,6 +132,7 @@ function AppContent() {
 
   return (
     <>
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route
           path="/"
@@ -255,6 +265,7 @@ function AppContent() {
         />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
       <CartDrawer
         open={cartOpen}
         onClose={() => setCartOpen(false)}

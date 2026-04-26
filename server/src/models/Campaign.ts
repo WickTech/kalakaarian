@@ -26,5 +26,6 @@ const campaignSchema = new Schema(
 
 campaignSchema.index({ brandId: 1, status: 1 });
 campaignSchema.index({ status: 1, deadline: 1 });
+campaignSchema.index({ status: 1, createdAt: -1 });
 
 export default mongoose.model<ICampaignDocument>('Campaign', campaignSchema);

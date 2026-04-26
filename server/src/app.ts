@@ -35,10 +35,17 @@ if (process.env.SENTRY_DSN) {
   });
 }
 
-// Fail fast on boot if critical env vars are missing
-['JWT_SECRET', 'MONGODB_URI', 'GOOGLE_CLIENT_ID'].forEach((k) => {
+// Fail fast on boot if truly critical env vars are missing
+(['JWT_SECRET', 'MONGODB_URI'] as const).forEach((k) => {
   if (!process.env[k]) throw new Error(`Missing required env var: ${k}`);
 });
+// Google OAuth is optional — server starts without it but /auth/google will fail
+if (!process.env.GOOGLE_CLIENT_ID) {
+  console.warn('GOOGLE_CLIENT_ID not set — Google OAuth disabled');
+}
+if (!process.env.CORS_ORIGINS) {
+  console.warn('CORS_ORIGINS not set — all browser origins will be blocked');
+}
 
 const app = express();
 

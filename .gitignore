@@ -25,3 +25,6 @@ dist-ssr
 client/.env
 server/.env
 *.env
+
+# NotebookLM state (tracks uploaded sources + notebook id)
+.notebooklm_state.json

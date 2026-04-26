@@ -52,5 +52,8 @@ const influencerProfileSchema = new Schema(
 );
 
 influencerProfileSchema.index({ niches: 1, tier: 1 });
+influencerProfileSchema.index({ platform: 1, tier: 1 });
+influencerProfileSchema.index({ city: 1 });
+influencerProfileSchema.index({ createdAt: -1 });
 
 export default mongoose.model<IInfluencerProfileDocument>('InfluencerProfile', influencerProfileSchema);

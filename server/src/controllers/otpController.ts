@@ -1,37 +1,42 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import User from '../models/User';
-import OtpCode from '../models/OtpCode';
-import { generateToken } from '../utils/jwt';
+import { createHash, randomInt } from 'crypto';
+import { adminClient } from '../config/supabase';
 import { sendOtpEmail } from '../services/emailService';
 
 const OTP_EXPIRY_MS = 10 * 60 * 1000;
 
+// Fast hash — OTP is short-lived and rate-limited so bcrypt's slowness is unnecessary.
+// We use SHA-256 + a per-row salt (the phone number) for collision resistance.
+const hashOtp = (otp: string, salt: string) =>
+  createHash('sha256').update(`${salt}:${otp}`).digest('hex');
+
 const generateOTP = (): string =>
-  Math.floor(100000 + Math.random() * 900000).toString();
+  randomInt(100000, 999999).toString();
 
 export const sendOTP = async (req: Request, res: Response): Promise<void> => {
   try {
     const { phone } = req.body;
-    if (!phone) {
-      res.status(400).json({ message: 'Phone number is required' });
-      return;
-    }
+    if (!phone) { res.status(400).json({ message: 'Phone number is required' }); return; }
     const normalizedPhone = phone.replace(/\D/g, '');
-    const otp = generateOTP();
-    const otpHash = await bcrypt.hash(otp, 10);
-    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
 
-    await OtpCode.findOneAndReplace(
-      { phone: normalizedPhone },
-      { phone: normalizedPhone, otpHash, expiresAt, attempts: 0 },
-      { upsert: true }
+    const otp = generateOTP();
+    const otpHash = hashOtp(otp, normalizedPhone);
+    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS).toISOString();
+
+    await adminClient.from('otp_codes').upsert(
+      { phone: normalizedPhone, otp_hash: otpHash, expires_at: expiresAt, attempts: 0 },
+      { onConflict: 'phone' }
     );
 
-    // Email fallback: send OTP to user's email if RESEND_API_KEY is set
-    const user = await User.findOne({ phone: normalizedPhone }).select('email');
-    if (user?.email) {
-      sendOtpEmail(user.email, otp).catch((e) => console.error('OTP email failed:', e));
+    // Send OTP to user's registered email
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('email')
+      .eq('phone', normalizedPhone)
+      .single();
+
+    if (profile?.email) {
+      sendOtpEmail(profile.email, otp).catch((e) => console.error('OTP email failed:', e));
     }
 
     res.json({
@@ -47,42 +52,42 @@ export const sendOTP = async (req: Request, res: Response): Promise<void> => {
 export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
   try {
     const { phone, otp } = req.body;
-    if (!phone || !otp) {
-      res.status(400).json({ message: 'Phone and OTP are required' });
-      return;
-    }
+    if (!phone || !otp) { res.status(400).json({ message: 'Phone and OTP are required' }); return; }
     const normalizedPhone = phone.replace(/\D/g, '');
-    const record = await OtpCode.findOne({ phone: normalizedPhone });
 
-    if (!record) {
-      res.status(400).json({ message: 'OTP not found or expired' });
-      return;
-    }
-    if (record.expiresAt < new Date()) {
-      await OtpCode.deleteOne({ phone: normalizedPhone });
-      res.status(400).json({ message: 'OTP expired' });
-      return;
-    }
-    const isMatch = await bcrypt.compare(otp, record.otpHash);
-    if (!isMatch) {
-      res.status(400).json({ message: 'Invalid OTP' });
-      return;
-    }
-    await OtpCode.deleteOne({ phone: normalizedPhone });
+    const { data: record } = await adminClient
+      .from('otp_codes')
+      .select('otp_hash, expires_at')
+      .eq('phone', normalizedPhone)
+      .single();
 
-    const user = await User.findOne({ phone: normalizedPhone });
-    if (!user) {
-      res.status(404).json({ message: 'User not found. Please register first.' });
-      return;
+    if (!record) { res.status(400).json({ message: 'OTP not found or expired' }); return; }
+    if (new Date(record.expires_at) < new Date()) {
+      await adminClient.from('otp_codes').delete().eq('phone', normalizedPhone);
+      res.status(400).json({ message: 'OTP expired' }); return;
     }
-    user.phoneVerified = true;
-    await user.save();
+    if (hashOtp(otp, normalizedPhone) !== record.otp_hash) {
+      res.status(400).json({ message: 'Invalid OTP' }); return;
+    }
 
-    const token = generateToken(user._id.toString(), user.role);
+    await adminClient.from('otp_codes').delete().eq('phone', normalizedPhone);
+
+    // Mark phone verified
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .update({ phone_verified: true })
+      .eq('phone', normalizedPhone)
+      .select('id, email, name, role')
+      .single();
+
+    if (!profile) { res.status(404).json({ message: 'User not found. Please register first.' }); return; }
+
+    // Phone OTP only verifies the number — client should sign in with email+password or Google to get a session.
     res.json({
-      message: 'OTP verified successfully',
-      user: { id: user._id, email: user.email, name: user.name, role: user.role },
-      token,
+      message: 'Phone verified successfully. Please sign in to continue.',
+      user: { id: profile.id, email: profile.email, name: profile.name, role: profile.role },
+      phoneVerified: true,
+      token: '',
     });
   } catch (error) {
     console.error('Verify OTP error:', error);
@@ -90,18 +95,25 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// Called internally by login when isPhoneLogin=true
 export const sendLoginOTP = async (phone: string): Promise<void> => {
   const normalizedPhone = phone.replace(/\D/g, '');
   const otp = generateOTP();
-  const otpHash = await bcrypt.hash(otp, 10);
-  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
-  await OtpCode.findOneAndReplace(
-    { phone: normalizedPhone },
-    { phone: normalizedPhone, otpHash, expiresAt, attempts: 0 },
-    { upsert: true }
+  const otpHash = hashOtp(otp, normalizedPhone);
+  const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS).toISOString();
+
+  await adminClient.from('otp_codes').upsert(
+    { phone: normalizedPhone, otp_hash: otpHash, expires_at: expiresAt, attempts: 0 },
+    { onConflict: 'phone' }
   );
-  const user = await User.findOne({ phone: normalizedPhone }).select('email');
-  if (user?.email) {
-    sendOtpEmail(user.email, otp).catch((e) => console.error('Login OTP email failed:', e));
+
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('email')
+    .eq('phone', normalizedPhone)
+    .single();
+
+  if (profile?.email) {
+    sendOtpEmail(profile.email, otp).catch((e) => console.error('Login OTP email failed:', e));
   }
 };

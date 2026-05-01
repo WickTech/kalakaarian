@@ -1,5 +1,5 @@
-import { Router, Request, Response } from 'express';
-import CampaignVideo from '../models/CampaignVideo';
+import { Router, Response } from 'express';
+import { adminClient } from '../config/supabase';
 import { auth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -7,58 +7,43 @@ const router = Router();
 router.post('/', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { campaignId, videoUrl, platform } = req.body;
-    const userId = req.user?.userId;
-
-    const video = new CampaignVideo({
-      influencerId: userId,
-      campaignId,
-      videoUrl,
+    const { data, error } = await adminClient.from('campaign_videos').insert({
+      influencer_id: req.user!.userId,
+      campaign_id: campaignId,
+      video_url: videoUrl,
       platform: platform || 'file',
-    });
-
-    await video.save();
-    res.json(video);
-  } catch (error) {
-    res.status(500).json({ message: 'Error uploading video' });
-  }
+    }).select().single();
+    if (error || !data) { res.status(500).json({ message: 'Error uploading video' }); return; }
+    res.json(data);
+  } catch { res.status(500).json({ message: 'Error uploading video' }); }
 });
 
 router.get('/campaign/:campaignId', auth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    const videos = await CampaignVideo.find({ 
-      campaignId: req.params.campaignId,
-      influencerId: userId 
-    });
-    res.json(videos);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching videos' });
-  }
+    const { data } = await adminClient.from('campaign_videos')
+      .select('*').eq('campaign_id', req.params.campaignId).eq('influencer_id', req.user!.userId);
+    res.json(data ?? []);
+  } catch { res.status(500).json({ message: 'Error fetching videos' }); }
 });
 
 router.get('/my', auth, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    const videos = await CampaignVideo.find({ influencerId: userId })
-      .populate('campaignId', 'title');
-    res.json(videos);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching videos' });
-  }
+    const { data } = await adminClient.from('campaign_videos')
+      .select('*, campaigns!campaign_videos_campaign_id_fkey(title)')
+      .eq('influencer_id', req.user!.userId)
+      .order('created_at', { ascending: false });
+    res.json(data ?? []);
+  } catch { res.status(500).json({ message: 'Error fetching videos' }); }
 });
 
 router.put('/:id/review', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { status, feedback } = req.body;
-    const video = await CampaignVideo.findByIdAndUpdate(
-      req.params.id,
-      { status, feedback },
-      { new: true }
-    );
-    res.json(video);
-  } catch (error) {
-    res.status(500).json({ message: 'Error reviewing video' });
-  }
+    const { data, error } = await adminClient.from('campaign_videos')
+      .update({ status, feedback: feedback || null }).eq('id', req.params.id).select().single();
+    if (error || !data) { res.status(404).json({ message: 'Video not found' }); return; }
+    res.json(data);
+  } catch { res.status(500).json({ message: 'Error reviewing video' }); }
 });
 
 export default router;

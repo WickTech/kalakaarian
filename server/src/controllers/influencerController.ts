@@ -1,65 +1,39 @@
 import { Request, Response } from 'express';
-import InfluencerProfile from '../models/InfluencerProfile';
+import { adminClient } from '../config/supabase';
 import { AuthRequest } from '../middleware/auth';
 import { applyPlatformMargin } from '../utils/pricing';
 
-const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
 const ALLOWED_GENDERS = ['male', 'female', 'non_binary', 'prefer_not_to_say'] as const;
 
-// Fields needed for list views — excludes heavy arrays like instagramPosts/youtubeVideos
-const LIST_SELECT = 'userId bio city gender niches socialHandles profileImage platform tier pricing verified isOnline lastSeenAt';
-
-const formatInfluencer = (inf: any) => ({
-  id: inf._id,
-  name: inf.userId?.name || 'Unknown',
-  bio: inf.bio || '',
-  city: inf.city || '',
-  gender: inf.gender,
-  niches: inf.niches || [],
-  socialHandles: inf.socialHandles || {},
-  profileImage: inf.profileImage,
-  platform: inf.platform || [],
-  tier: inf.tier,
-  verified: inf.verified,
-  isOnline: !!inf.isOnline,
-  lastSeenAt: inf.lastSeenAt,
-  pricing: applyPlatformMargin(inf.pricing),
+const formatInfluencer = (row: any) => ({
+  id: row.id,
+  name: row.profiles?.name ?? 'Unknown',
+  bio: row.bio ?? '',
+  city: row.city ?? '',
+  gender: row.gender,
+  niches: row.niches ?? [],
+  instagram_handle: row.instagram_handle,
+  youtube_handle: row.youtube_handle,
+  platforms: row.platforms ?? [],
+  tier: row.tier,
+  is_verified: !!row.is_verified,
+  is_online: !!row.is_online,
+  last_seen_at: row.last_seen_at,
+  avatar_url: row.avatar_url ?? row.profiles?.avatar_url,
+  portfolio: row.portfolio ?? [],
+  pricing: applyPlatformMargin(row.influencer_pricing ?? []),
 });
 
-function buildQuery(params: {
-  tier?: any; city?: any; genre?: any; platform?: any; gender?: any; q?: any;
-}): Record<string, any> {
-  const query: Record<string, any> = {};
-  if (params.tier) query.tier = params.tier;
-  if (typeof params.city === 'string') query.city = { $regex: escapeRegex(params.city), $options: 'i' };
-  if (params.genre) query.niches = { $in: Array.isArray(params.genre) ? params.genre : [params.genre] };
-  if (params.platform) query.platform = { $in: Array.isArray(params.platform) ? params.platform : [params.platform] };
-  if (typeof params.gender === 'string' && (ALLOWED_GENDERS as readonly string[]).includes(params.gender)) {
-    query.gender = params.gender;
-  }
-  if (typeof params.q === 'string') {
-    const safe = escapeRegex(params.q);
-    query.$or = [
-      { bio: { $regex: safe, $options: 'i' } },
-      { city: { $regex: safe, $options: 'i' } },
-      { niches: { $regex: safe, $options: 'i' } },
-    ];
-  }
-  return query;
-}
-
-export const getTierCounts = async (req: Request, res: Response): Promise<void> => {
+export const getTierCounts = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const counts = await InfluencerProfile.aggregate([
-      { $group: { _id: '$tier', count: { $sum: 1 } } },
-    ]);
-    const tierCounts: Record<string, number> = { nano: 0, micro: 0, mid: 0, macro: 0, mega: 0 };
-    counts.forEach((item) => {
-      if (item._id && Object.prototype.hasOwnProperty.call(tierCounts, item._id)) {
-        tierCounts[item._id] = item.count;
-      }
-    });
+    const tiers = ['nano', 'micro', 'mid', 'macro', 'mega'];
+    const results = await Promise.all(
+      tiers.map(t =>
+        adminClient.from('influencer_profiles').select('id', { count: 'exact', head: true }).eq('tier', t)
+      )
+    );
+    const tierCounts: Record<string, number> = {};
+    tiers.forEach((t, i) => { tierCounts[t] = results[i].count ?? 0; });
     res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
     res.json(tierCounts);
   } catch (error) {
@@ -68,48 +42,48 @@ export const getTierCounts = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+const buildInfluencerQuery = (params: Record<string, any>) => {
+  let q = adminClient
+    .from('influencer_profiles')
+    .select('*, profiles!influencer_profiles_id_fkey(name, avatar_url), influencer_pricing(platform, content_type, price)');
+
+  if (params.tier) q = q.eq('tier', params.tier);
+  if (params.city) q = q.ilike('city', `%${params.city}%`);
+  if (params.gender && (ALLOWED_GENDERS as readonly string[]).includes(params.gender)) q = q.eq('gender', params.gender);
+  if (params.genre) {
+    const arr = Array.isArray(params.genre) ? params.genre : [params.genre];
+    q = q.overlaps('niches', arr);
+  }
+  if (params.platform) {
+    const arr = Array.isArray(params.platform) ? params.platform : [params.platform];
+    q = q.overlaps('platforms', arr);
+  }
+  if (params.q) q = q.textSearch('fts', params.q, { type: 'websearch' });
+
+  return q;
+};
+
 export const getInfluencers = async (req: Request, res: Response): Promise<void> => {
   try {
     const { tier, city, genre, platform, gender, page = 1, limit = 20 } = req.query;
     const clampedLimit = Math.min(Number(limit) || 20, 100);
-    const skip = (Number(page) - 1) * clampedLimit;
-    const query = buildQuery({ tier, city, genre, platform, gender });
+    const from = (Number(page) - 1) * clampedLimit;
+    const to = from + clampedLimit - 1;
 
-    const [influencers, total] = await Promise.all([
-      InfluencerProfile.find(query)
-        .select(LIST_SELECT)
-        .populate('userId', 'name')
-        .skip(skip)
-        .limit(clampedLimit)
-        .sort({ createdAt: -1 })
-        .lean(),
-      InfluencerProfile.countDocuments(query),
-    ]);
+    const query = buildInfluencerQuery({ tier, city, genre, platform, gender })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    const { data, count, error } = await query;
+    if (error) throw error;
 
     res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     res.json({
-      influencers: influencers.map(formatInfluencer),
-      pagination: { page: Number(page), limit: clampedLimit, total, pages: Math.ceil(total / clampedLimit) },
+      influencers: (data ?? []).map(formatInfluencer),
+      pagination: { page: Number(page), limit: clampedLimit, total: count ?? 0, pages: Math.ceil((count ?? 0) / clampedLimit) },
     });
   } catch (error) {
     console.error('Get influencers error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-export const getInfluencerById = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const influencer = await InfluencerProfile.findById(req.params.id)
-      .populate('userId', 'name')
-      .lean();
-    if (!influencer) {
-      res.status(404).json({ message: 'Influencer not found' });
-      return;
-    }
-    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
-    res.json({ influencer: formatInfluencer(influencer) });
-  } catch (error) {
-    console.error('Get influencer error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -118,23 +92,17 @@ export const searchInfluencers = async (req: Request, res: Response): Promise<vo
   try {
     const { q, tier, city, genre, platform, gender, page = 1, limit = 20 } = req.query;
     const clampedLimit = Math.min(Number(limit) || 20, 100);
-    const skip = (Number(page) - 1) * clampedLimit;
-    const query = buildQuery({ q, tier, city, genre, platform, gender });
+    const from = (Number(page) - 1) * clampedLimit;
+    const to = from + clampedLimit - 1;
 
-    const [influencers, total] = await Promise.all([
-      InfluencerProfile.find(query)
-        .select(LIST_SELECT)
-        .populate('userId', 'name')
-        .skip(skip)
-        .limit(clampedLimit)
-        .sort({ createdAt: -1 })
-        .lean(),
-      InfluencerProfile.countDocuments(query),
-    ]);
+    const { data, count, error } = await buildInfluencerQuery({ q, tier, city, genre, platform, gender })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    if (error) throw error;
 
     res.json({
-      influencers: influencers.map(formatInfluencer),
-      pagination: { page: Number(page), limit: clampedLimit, total, pages: Math.ceil(total / clampedLimit) },
+      influencers: (data ?? []).map(formatInfluencer),
+      pagination: { page: Number(page), limit: clampedLimit, total: count ?? 0, pages: Math.ceil((count ?? 0) / clampedLimit) },
     });
   } catch (error) {
     console.error('Search influencers error:', error);
@@ -142,20 +110,34 @@ export const searchInfluencers = async (req: Request, res: Response): Promise<vo
   }
 };
 
+export const getInfluencerById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { data, error } = await adminClient
+      .from('influencer_profiles')
+      .select('*, profiles!influencer_profiles_id_fkey(name, avatar_url), influencer_pricing(platform, content_type, price)')
+      .eq('id', req.params.id)
+      .single();
+    if (error || !data) { res.status(404).json({ message: 'Influencer not found' }); return; }
+    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
+    res.json({ influencer: formatInfluencer(data) });
+  } catch (error) {
+    console.error('Get influencer error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const getOwnProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user || req.user.role !== 'influencer') {
-      res.status(403).json({ message: 'Only influencers can view their own profile' });
-      return;
+      res.status(403).json({ message: 'Only influencers can view their own profile' }); return;
     }
-    const influencer = await InfluencerProfile.findOne({ userId: req.user.userId })
-      .populate('userId', 'name')
-      .lean();
-    if (!influencer) {
-      res.status(404).json({ message: 'Influencer profile not found' });
-      return;
-    }
-    res.json({ influencer: formatInfluencer(influencer) });
+    const { data, error } = await adminClient
+      .from('influencer_profiles')
+      .select('*, profiles!influencer_profiles_id_fkey(name, avatar_url), influencer_pricing(platform, content_type, price)')
+      .eq('id', req.user.userId)
+      .single();
+    if (error || !data) { res.status(404).json({ message: 'Influencer profile not found' }); return; }
+    res.json({ influencer: formatInfluencer(data) });
   } catch (error) {
     console.error('Get own profile error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -165,41 +147,96 @@ export const getOwnProfile = async (req: AuthRequest, res: Response): Promise<vo
 export const updateInfluencerProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user || req.user.role !== 'influencer') {
-      res.status(403).json({ message: 'Only influencers can update their profile' });
-      return;
+      res.status(403).json({ message: 'Only influencers can update their profile' }); return;
+    }
+    const { bio, city, gender, niches, platform, tier, pricing, portfolio, instagramPosts, youtubeVideos, instagramHandle, youtubeHandle } = req.body;
+    const update: Record<string, unknown> = {};
+    if (bio !== undefined) update.bio = bio;
+    if (city) update.city = city;
+    if (typeof gender === 'string' && (ALLOWED_GENDERS as readonly string[]).includes(gender)) update.gender = gender;
+    if (niches) update.niches = niches;
+    if (platform) update.platforms = platform;
+    if (tier) update.tier = tier;
+    if (portfolio) update.portfolio = portfolio;
+    if (instagramPosts) update.instagram_posts = instagramPosts;
+    if (youtubeVideos) update.youtube_videos = youtubeVideos;
+    if (instagramHandle !== undefined) update.instagram_handle = instagramHandle;
+    if (youtubeHandle !== undefined) update.youtube_handle = youtubeHandle;
+
+    if (Object.keys(update).length > 0) {
+      await adminClient.from('influencer_profiles').update(update).eq('id', req.user.userId);
     }
 
-    const { bio, city, gender, niches, platform, tier, followers, pricing, portfolio, instagramPosts, youtubeVideos } = req.body;
-
-    const updateData: any = {};
-    if (bio !== undefined) updateData.bio = bio;
-    if (city) updateData.city = city;
-    if (typeof gender === 'string' && (ALLOWED_GENDERS as readonly string[]).includes(gender)) {
-      updateData.gender = gender;
-    }
-    if (niches) updateData.niches = niches;
-    if (platform) updateData.platform = platform;
-    if (tier) updateData.tier = tier;
-    if (followers) updateData.followers = followers;
-    if (pricing) updateData.pricing = pricing;
-    if (portfolio) updateData.portfolio = portfolio;
-    if (instagramPosts) updateData.instagramPosts = instagramPosts;
-    if (youtubeVideos) updateData.youtubeVideos = youtubeVideos;
-
-    const profile = await InfluencerProfile.findOneAndUpdate(
-      { userId: req.user.userId },
-      updateData,
-      { new: true }
-    ).populate('userId', 'name email');
-
-    if (!profile) {
-      res.status(404).json({ message: 'Profile not found' });
-      return;
+    if (pricing) {
+      const rows = ['reel', 'story', 'video', 'post']
+        .filter(t => pricing[t] != null)
+        .map(t => ({ influencer_id: req.user!.userId, platform: 'general', content_type: t, price: pricing[t] }));
+      if (rows.length > 0) {
+        await adminClient.from('influencer_pricing').upsert(rows, { onConflict: 'influencer_id,platform,content_type' });
+      }
     }
 
-    res.json({ profile });
+    const { data } = await adminClient
+      .from('influencer_profiles')
+      .select('*, profiles!influencer_profiles_id_fkey(name, avatar_url), influencer_pricing(platform, content_type, price)')
+      .eq('id', req.user.userId)
+      .single();
+
+    res.json({ profile: data ? formatInfluencer(data) : null });
   } catch (error) {
     console.error('Update influencer profile error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updatePresence = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'influencer') {
+      res.status(403).json({ message: 'Only influencers can update presence' }); return;
+    }
+    const { isOnline } = req.body;
+    await adminClient.from('influencer_profiles').update({
+      is_online: !!isOnline,
+      last_seen_at: isOnline ? null : new Date().toISOString(),
+    }).eq('id', req.user.userId);
+    res.json({ message: 'Presence updated' });
+  } catch (error) {
+    console.error('Update presence error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateProfileImage = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) { res.status(401).json({ message: 'Unauthorized' }); return; }
+    const { imageUrl } = req.body;
+    if (!imageUrl) { res.status(400).json({ message: 'imageUrl required' }); return; }
+    await adminClient.from('profiles').update({ avatar_url: imageUrl }).eq('id', req.params.id || req.user.userId);
+    res.json({ message: 'Profile image updated', imageUrl });
+  } catch (error) {
+    console.error('Update profile image error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const connectSocial = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'influencer') {
+      res.status(403).json({ message: 'Only influencers can connect social accounts' }); return;
+    }
+    const { platform: socialPlatform, handle } = req.body;
+    if (!socialPlatform || !handle) { res.status(400).json({ message: 'Platform and handle required' }); return; }
+
+    const update: Record<string, string> = {};
+    if (socialPlatform === 'instagram') update.instagram_handle = handle;
+    else if (socialPlatform === 'youtube') update.youtube_handle = handle;
+    else { res.status(400).json({ message: 'Platform must be instagram or youtube' }); return; }
+
+    const { error } = await adminClient.from('influencer_profiles').update(update).eq('id', req.user.userId);
+    if (error) throw error;
+    res.json({ message: `${socialPlatform} connected` });
+  } catch (error) {
+    console.error('Connect social error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { auth, optionalAuth } from '../middleware/auth';
-import InfluencerProfile from '../models/InfluencerProfile';
+import { adminClient } from '../config/supabase';
+import { optionalAuth } from '../middleware/auth';
 import { getInstagramStats, getInstagramPosts, getYouTubeStats, getYouTubeVideos } from '../services/socialMediaService';
 import { calculateAnalytics } from '../services/analyticsService';
 
@@ -9,27 +9,16 @@ const router = Router();
 router.get('/stats/:userId', optionalAuth, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const profile = await InfluencerProfile.findOne({ userId });
-
-    if (!profile) {
-      res.status(404).json({ message: 'Profile not found' });
-      return;
-    }
-
-    const { socialHandles } = profile;
+    const { data: profile } = await adminClient.from('influencer_profiles')
+      .select('instagram_handle, youtube_handle').eq('id', userId).single();
+    if (!profile) { res.status(404).json({ message: 'Profile not found' }); return; }
 
     const [instagramStats, youtubeStats] = await Promise.all([
-      socialHandles?.instagram ? getInstagramStats(socialHandles.instagram) : Promise.resolve(null),
-      socialHandles?.youtube ? getYouTubeStats(socialHandles.youtube) : Promise.resolve(null),
+      profile.instagram_handle ? getInstagramStats(profile.instagram_handle) : Promise.resolve(null),
+      profile.youtube_handle ? getYouTubeStats(profile.youtube_handle) : Promise.resolve(null),
     ]);
 
-    const analytics = calculateAnalytics(instagramStats, youtubeStats);
-
-    res.json({
-      instagram: instagramStats,
-      youtube: youtubeStats,
-      analytics,
-    });
+    res.json({ instagram: instagramStats, youtube: youtubeStats, analytics: calculateAnalytics(instagramStats, youtubeStats) });
   } catch (error) {
     console.error('Social stats error:', error);
     res.status(500).json({ message: 'Error fetching social stats' });
@@ -38,50 +27,30 @@ router.get('/stats/:userId', optionalAuth, async (req: Request, res: Response) =
 
 router.get('/instagram/:handle/posts', async (req: Request, res: Response) => {
   try {
-    const { handle } = req.params;
-    const limit = parseInt(req.query.limit as string) || 9;
-    
-    const posts = await getInstagramPosts(handle, limit);
+    const posts = await getInstagramPosts(req.params.handle, parseInt(req.query.limit as string) || 9);
     res.json(posts);
-  } catch (error) {
-    console.error('Instagram posts error:', error);
-    res.status(500).json({ message: 'Error fetching Instagram posts' });
-  }
+  } catch { res.status(500).json({ message: 'Error fetching Instagram posts' }); }
 });
 
 router.get('/youtube/:channelId/videos', async (req: Request, res: Response) => {
   try {
-    const { channelId } = req.params;
-    const limit = parseInt(req.query.limit as string) || 10;
-    
-    const videos = await getYouTubeVideos(channelId, limit);
+    const videos = await getYouTubeVideos(req.params.channelId, parseInt(req.query.limit as string) || 10);
     res.json(videos);
-  } catch (error) {
-    console.error('YouTube videos error:', error);
-    res.status(500).json({ message: 'Error fetching YouTube videos' });
-  }
+  } catch { res.status(500).json({ message: 'Error fetching YouTube videos' }); }
 });
 
 router.get('/instagram/stats/:handle', async (req: Request, res: Response) => {
   try {
-    const { handle } = req.params;
-    const stats = await getInstagramStats(handle);
+    const stats = await getInstagramStats(req.params.handle);
     res.json(stats);
-  } catch (error) {
-    console.error('Instagram stats error:', error);
-    res.status(500).json({ message: 'Error fetching Instagram stats' });
-  }
+  } catch { res.status(500).json({ message: 'Error fetching Instagram stats' }); }
 });
 
 router.get('/youtube/stats/:channelId', async (req: Request, res: Response) => {
   try {
-    const { channelId } = req.params;
-    const stats = await getYouTubeStats(channelId);
+    const stats = await getYouTubeStats(req.params.channelId);
     res.json(stats);
-  } catch (error) {
-    console.error('YouTube stats error:', error);
-    res.status(500).json({ message: 'Error fetching YouTube stats' });
-  }
+  } catch { res.status(500).json({ message: 'Error fetching YouTube stats' }); }
 });
 
 export default router;

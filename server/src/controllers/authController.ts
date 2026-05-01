@@ -1,40 +1,17 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import { OAuth2Client } from 'google-auth-library';
-import User from '../models/User';
-import InfluencerProfile from '../models/InfluencerProfile';
-import BrandProfile from '../models/BrandProfile';
-import { generateToken } from '../utils/jwt';
+import { adminClient } from '../config/supabase';
 import { sendLoginOTP } from './otpController';
 import { sendWelcomeEmail } from '../services/emailService';
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-interface GoogleUserInfo { id: string; email: string; name: string; picture?: string }
-
-const getGoogleUserInfo = async (code: string): Promise<GoogleUserInfo> => {
-  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALLBACK_URL } = process.env;
-  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      code, client_id: GOOGLE_CLIENT_ID!, client_secret: GOOGLE_CLIENT_SECRET!,
-      redirect_uri: GOOGLE_CALLBACK_URL!, grant_type: 'authorization_code',
-    }),
-  });
-  const tokens = await tokenRes.json() as { access_token: string };
-  const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-    headers: { Authorization: `Bearer ${tokens.access_token}` },
-  });
-  return userRes.json() as Promise<GoogleUserInfo>;
-};
-
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, username, phone, password, name, role, companyName, industry, city, niches, platform, tier, bio, socialHandles, profileImage, pricing } = req.body;
+    const {
+      email, username, phone, password, name, role,
+      companyName, industry, city, niches, platform, tier, bio, pricing,
+    } = req.body;
 
-    if (!email && !phone && !username) {
-      res.status(400).json({ message: 'Email, phone, or username is required' }); return;
+    if (!email && !phone) {
+      res.status(400).json({ message: 'Email or phone is required' }); return;
     }
     if (!password || !name || !role) {
       res.status(400).json({ message: 'Password, name, and role are required' }); return;
@@ -42,55 +19,78 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     if (password.length < 8) {
       res.status(400).json({ message: 'Password must be at least 8 characters' }); return;
     }
-    if (email && await User.findOne({ email })) {
-      res.status(400).json({ message: 'User with this email already exists' }); return;
-    }
-    if (username && await User.findOne({ username })) {
-      res.status(400).json({ message: 'Username already taken' }); return;
-    }
-    if (phone && await User.findOne({ phone: phone.replace(/\D/g, '') })) {
-      res.status(400).json({ message: 'User with this phone already exists' }); return;
+
+    const normalizedPhone = phone ? phone.replace(/\D/g, '') : undefined;
+
+    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+      email: email || undefined,
+      phone: normalizedPhone,
+      password,
+      email_confirm: true,
+      phone_confirm: !!normalizedPhone,
+      user_metadata: { role, name, is_admin: false },
+    });
+
+    if (authError || !authData.user) {
+      const msg = authError?.message ?? 'Registration failed';
+      res.status(400).json({ message: msg }); return;
     }
 
-    const user = await User.create({
-      email, username,
-      phone: phone ? phone.replace(/\D/g, '') : undefined,
-      password: await bcrypt.hash(password, 10),
-      name, role,
-      phoneVerified: phone ? false : undefined,
+    const userId = authData.user.id;
+
+    await adminClient.from('profiles').insert({
+      id: userId,
+      role,
+      name,
+      email: email || null,
+      phone: normalizedPhone || null,
+      username: username || null,
     });
 
     if (role === 'brand') {
-      await BrandProfile.create({ userId: user._id, companyName: companyName || name, industry: industry || '' });
-    } else if (role === 'influencer') {
-      // Normalise pricing: client may send reelRate/storyRate/longVideoRate/shortsRate
-      // or the canonical reel/story/video/post — support both
-      const p = pricing || {};
-      const normalisedPricing = {
-        reel:  p.reel  ?? p.reelRate       ?? undefined,
-        story: p.story ?? p.storyRate      ?? undefined,
-        video: p.video ?? p.longVideoRate  ?? undefined,
-        post:  p.post  ?? p.shortsRate     ?? undefined,
-      };
-      await InfluencerProfile.create({
-        userId: user._id, bio: bio || '', city: city || '',
-        niches: niches || [], platform: platform || [], tier: tier || 'micro',
-        socialHandles: socialHandles || {}, profileImage: profileImage || undefined,
-        pricing: normalisedPricing,
+      await adminClient.from('brand_profiles').insert({
+        id: userId,
+        company_name: companyName || name,
+        industry: industry || '',
       });
+    } else if (role === 'influencer') {
+      await adminClient.from('influencer_profiles').insert({
+        id: userId,
+        bio: bio || '',
+        city: city || '',
+        niches: niches || [],
+        platforms: platform || [],
+        tier: tier || 'micro',
+      });
+
+      const p = pricing || {};
+      const pricingRows = [
+        { content_type: 'reel',  price: p.reel  ?? p.reelRate },
+        { content_type: 'story', price: p.story ?? p.storyRate },
+        { content_type: 'video', price: p.video ?? p.longVideoRate },
+        { content_type: 'post',  price: p.post  ?? p.shortsRate },
+      ].filter(r => r.price != null);
+
+      if (pricingRows.length > 0) {
+        await adminClient.from('influencer_pricing').insert(
+          pricingRows.map(r => ({ influencer_id: userId, platform: 'general', ...r }))
+        );
+      }
     }
 
-    const token = generateToken(user._id.toString(), user.role);
+    let token = '';
+    if (email) {
+      const { data: signIn } = await adminClient.auth.signInWithPassword({ email, password });
+      token = signIn?.session?.access_token ?? '';
+    }
 
-    if (user.email) {
-      sendWelcomeEmail(user.email, user.name, user.role).catch((e) =>
-        console.error('Welcome email failed:', e)
-      );
+    if (email) {
+      sendWelcomeEmail(email, name, role).catch((e) => console.error('Welcome email failed:', e));
     }
 
     res.status(201).json({
       message: 'User registered successfully',
-      user: { _id: user._id, id: user._id, email: user.email, username: user.username, phone: user.phone, name: user.name, role: user.role },
+      user: { id: userId, email: email || null, username: username || null, phone: normalizedPhone || null, name, role },
       token,
     });
   } catch (error) {
@@ -105,8 +105,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     if (isPhoneLogin && phone) {
       const normalizedPhone = phone.replace(/\D/g, '');
-      const user = await User.findOne({ phone: normalizedPhone });
-      if (!user) { res.status(400).json({ message: 'User not found with this phone' }); return; }
+      const { data: profileRow } = await adminClient
+        .from('profiles')
+        .select('id')
+        .eq('phone', normalizedPhone)
+        .single();
+      if (!profileRow) { res.status(400).json({ message: 'User not found with this phone' }); return; }
       await sendLoginOTP(normalizedPhone);
       res.json({
         message: 'OTP sent for login',
@@ -119,19 +123,28 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     if (!email && !username) { res.status(400).json({ message: 'Email or username is required' }); return; }
     if (!password) { res.status(400).json({ message: 'Password is required' }); return; }
 
-    const user = email ? await User.findOne({ email }) : await User.findOne({ username });
-    if (!user) { res.status(400).json({ message: 'Invalid credentials' }); return; }
-    if (!user.password) { res.status(400).json({ message: 'Please login with Google or OTP' }); return; }
+    let loginEmail = email;
+    if (!loginEmail && username) {
+      const { data: row } = await adminClient.from('profiles').select('email').eq('username', username).single();
+      if (!row?.email) { res.status(400).json({ message: 'Invalid credentials' }); return; }
+      loginEmail = row.email;
+    }
 
-    if (!await bcrypt.compare(password, user.password)) {
+    const { data, error } = await adminClient.auth.signInWithPassword({ email: loginEmail, password });
+    if (error || !data.session) {
       res.status(400).json({ message: 'Invalid credentials' }); return;
     }
 
-    const token = generateToken(user._id.toString(), user.role);
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('id, email, username, name, role')
+      .eq('id', data.user.id)
+      .single();
+
     res.json({
       message: 'Login successful',
-      user: { _id: user._id, id: user._id, email: user.email, username: user.username, name: user.name, role: user.role },
-      token,
+      user: profile,
+      token: data.session.access_token,
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -141,40 +154,65 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
 export const googleLogin = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { token: jwtToken, code, role, companyName, industry, city, genre, platform, tier } = req.body;
+    const { token: idToken, role, companyName, industry, city, genre, platform, tier } = req.body;
+    if (!idToken) { res.status(400).json({ message: 'Google ID token is required' }); return; }
 
-    let googleUser: GoogleUserInfo;
-
-    if (jwtToken) {
-      const ticket = await googleClient.verifyIdToken({ idToken: jwtToken, audience: process.env.GOOGLE_CLIENT_ID });
-      const payload = ticket.getPayload();
-      if (!payload) { res.status(400).json({ message: 'Invalid Google token' }); return; }
-      if (!payload.email_verified) { res.status(400).json({ message: 'Google email not verified' }); return; }
-      googleUser = { id: payload.sub!, email: payload.email!, name: payload.name!, picture: payload.picture };
-    } else if (code) {
-      googleUser = await getGoogleUserInfo(code);
-    } else {
-      res.status(400).json({ message: 'Token or code is required' }); return;
+    const { data, error } = await adminClient.auth.signInWithIdToken({
+      provider: 'google',
+      token: idToken,
+    });
+    if (error || !data.session || !data.user) {
+      res.status(400).json({ message: error?.message ?? 'Google login failed' }); return;
     }
 
-    let user = await User.findOne({ email: googleUser.email });
-    if (user && !user.googleId) { user.googleId = googleUser.id; await user.save(); }
+    const userId = data.user.id;
 
-    if (!user) {
-      user = await User.create({ email: googleUser.email, name: googleUser.name, googleId: googleUser.id, role: role || 'brand' });
-      if (role === 'brand') {
-        await BrandProfile.create({ userId: user._id, companyName: companyName || googleUser.name, industry: industry || '' });
-      } else if (role === 'influencer') {
-        // `genre` is accepted from old clients for backward compat but stored as `niches`
-        await InfluencerProfile.create({ userId: user._id, bio: '', city: city || '', niches: genre || [], platform: platform || [], tier: tier || 'micro' });
+    // Create profile rows if first login
+    const { data: existing } = await adminClient.from('profiles').select('id').eq('id', userId).single();
+    if (!existing) {
+      const userRole = role || 'brand';
+      const googleEmail = data.user.email ?? '';
+      const googleName = data.user.user_metadata?.full_name ?? data.user.user_metadata?.name ?? '';
+
+      await adminClient.from('profiles').insert({
+        id: userId,
+        role: userRole,
+        name: googleName,
+        email: googleEmail,
+        avatar_url: data.user.user_metadata?.avatar_url ?? null,
+      });
+      await adminClient.auth.admin.updateUserById(userId, {
+        user_metadata: { role: userRole, name: googleName, is_admin: false },
+      });
+
+      if (userRole === 'brand') {
+        await adminClient.from('brand_profiles').insert({
+          id: userId,
+          company_name: companyName || googleName,
+          industry: industry || '',
+        });
+      } else {
+        await adminClient.from('influencer_profiles').insert({
+          id: userId,
+          bio: '',
+          city: city || '',
+          niches: genre || [],
+          platforms: platform || [],
+          tier: tier || 'micro',
+        });
       }
     }
 
-    const token = generateToken(user._id.toString(), user.role);
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('id, email, name, role')
+      .eq('id', userId)
+      .single();
+
     res.json({
       message: 'Google login successful',
-      user: { _id: user._id, id: user._id, email: user.email, name: user.name, role: user.role },
-      token,
+      user: profile,
+      token: data.session.access_token,
     });
   } catch (error) {
     console.error('Google login error:', error);

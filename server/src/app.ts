@@ -3,9 +3,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import serverless from 'serverless-http';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const mongoSanitizeMiddleware = require('express-mongo-sanitize')() as import('express').RequestHandler;
-import connectDB from './config/database';
 import authRoutes from './routes/auth';
 import influencerRoutes from './routes/influencers';
 import campaignRoutes from './routes/campaigns';
@@ -36,13 +33,9 @@ if (process.env.SENTRY_DSN) {
 }
 
 // Fail fast on boot if truly critical env vars are missing
-(['JWT_SECRET', 'MONGODB_URI'] as const).forEach((k) => {
+(['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'] as const).forEach((k) => {
   if (!process.env[k]) throw new Error(`Missing required env var: ${k}`);
 });
-// Google OAuth is optional — server starts without it but /auth/google will fail
-if (!process.env.GOOGLE_CLIENT_ID) {
-  console.warn('GOOGLE_CLIENT_ID not set — Google OAuth disabled');
-}
 if (!process.env.CORS_ORIGINS) {
   console.warn('CORS_ORIGINS not set — all browser origins will be blocked');
 }
@@ -63,18 +56,6 @@ app.use(cors({
 app.use('/api/membership/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(mongoSanitizeMiddleware);
-
-app.use(async (req, res, next) => {
-  if (req.path === '/health') return next();
-  try {
-    await connectDB();
-    next();
-  } catch (e) {
-    console.error('DB connection error:', e);
-    res.status(503).json({ message: 'DB unavailable' });
-  }
-});
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

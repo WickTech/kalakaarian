@@ -1,57 +1,48 @@
 import { Router, Response } from 'express';
-import CampaignFile from '../models/CampaignFile';
-import Campaign from '../models/Campaign';
+import { adminClient } from '../config/supabase';
 import { auth, AuthRequest } from '../middleware/auth';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 router.post('/:campaignId/files', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { fileUrl, fileType, fileName } = req.body;
-    const campaignId = req.params.campaignId;
+    const { campaignId } = req.params;
     const userId = req.user!.userId;
 
-    const campaign = await Campaign.findOne({ _id: campaignId, brandId: userId });
-    if (!campaign) {
-      return res.status(403).json({ message: 'Not authorized' });
-    }
+    // Verify brand owns the campaign
+    const { data: campaign } = await adminClient.from('campaigns').select('id').eq('id', campaignId).eq('brand_id', userId).single();
+    if (!campaign) { res.status(403).json({ message: 'Not authorized' }); return; }
 
-    const file = new CampaignFile({
-      campaignId,
-      fileUrl,
-      fileType: fileType || 'brief',
-      fileName: fileName || 'Untitled',
-      uploadedBy: userId,
-    });
-
-    await file.save();
-    res.json(file);
-  } catch (error) {
-    res.status(500).json({ message: 'Error uploading file' });
-  }
+    const { data, error } = await adminClient.from('campaign_files').insert({
+      campaign_id: campaignId,
+      uploader_id: userId,
+      file_url: fileUrl,
+      file_type: fileType || 'brief',
+      file_name: fileName || 'Untitled',
+    }).select().single();
+    if (error || !data) { res.status(500).json({ message: 'Error uploading file' }); return; }
+    res.json(data);
+  } catch { res.status(500).json({ message: 'Error uploading file' }); }
 });
 
 router.get('/:campaignId/files', auth, async (req: AuthRequest, res: Response) => {
   try {
-    const files = await CampaignFile.find({ campaignId: req.params.campaignId })
-      .populate('uploadedBy', 'name email');
-    res.json(files);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching files' });
-  }
+    const { data } = await adminClient.from('campaign_files')
+      .select('*, profiles!campaign_files_uploader_id_fkey(name, email)')
+      .eq('campaign_id', req.params.campaignId);
+    res.json(data ?? []);
+  } catch { res.status(500).json({ message: 'Error fetching files' }); }
 });
 
 router.delete('/:campaignId/files/:fileId', auth, async (req: AuthRequest, res: Response) => {
   try {
-    await CampaignFile.findOneAndDelete({
-      _id: req.params.fileId,
-      campaignId: req.params.campaignId,
-      uploadedBy: req.user!.userId,
-    });
+    await adminClient.from('campaign_files').delete()
+      .eq('id', req.params.fileId)
+      .eq('campaign_id', req.params.campaignId)
+      .eq('uploader_id', req.user!.userId);
     res.json({ message: 'File deleted' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error deleting file' });
-  }
+  } catch { res.status(500).json({ message: 'Error deleting file' }); }
 });
 
 export default router;

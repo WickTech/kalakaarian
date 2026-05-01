@@ -23,9 +23,8 @@ if (process.env.LOCAL_LISTEN === '1') {
 
 ## Environment (fail-fast)
 At boot, `app.ts` throws if any of these are missing:
-- `JWT_SECRET`
-- `MONGODB_URI`
-- `GOOGLE_CLIENT_ID`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
 Optional but commonly needed:
 - `CORS_ORIGINS` (comma-separated; without it, all browser origins are blocked)

@@ -1,7 +1,5 @@
 import { Router, Request, Response } from 'express';
-import CampaignVideo from '../models/CampaignVideo';
-import InfluencerProfile from '../models/InfluencerProfile';
-import User from '../models/User';
+import { adminClient } from '../config/supabase';
 
 const router = Router();
 
@@ -9,87 +7,77 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(24, parseInt(req.query.limit as string) || 12);
-    const skip = (page - 1) * limit;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
     const tierFilter = req.query.tier as string | undefined;
     const genreFilter = req.query.genre as string | undefined;
 
-    // 1. Get approved campaign videos with influencer info
-    const videoAgg = await CampaignVideo.aggregate([
-      { $match: { status: 'approved' } },
-      {
-        $lookup: {
-          from: 'influencerprofiles',
-          localField: 'influencerId',
-          foreignField: 'userId',
-          as: 'profile',
-        },
-      },
-      { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'influencerId',
-          foreignField: '_id',
-          as: 'user',
-        },
-      },
-      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-      ...(tierFilter ? [{ $match: { 'profile.tier': tierFilter } }] : []),
-      ...(genreFilter ? [{ $match: { 'profile.niches': genreFilter } }] : []),
-      {
-        $project: {
-          _id: 1,
-          contentUrl: '$videoUrl',
-          platform: 1,
-          submittedAt: '$uploadedAt',
-          creatorName: '$user.name',
-          avatar: { $ifNull: ['$profile.profileImage', 'https://api.dicebear.com/7.x/avataaars/svg?seed=anon'] },
-          handle: { $ifNull: ['$profile.socialHandles.instagram', '$profile.socialHandles.youtube', ''] },
-          tier: { $ifNull: ['$profile.tier', 'micro'] },
-          genre: { $arrayElemAt: ['$profile.niches', 0] },
-          likes: { $literal: 0 },
-          type: { $literal: 'video' },
-        },
-      },
-    ]);
+    // Approved campaign videos
+    let videoQuery = adminClient
+      .from('campaign_videos')
+      .select('id, video_url, platform, uploaded_at, influencer_id, influencer_profiles!campaign_videos_influencer_id_fkey(tier, niches, instagram_handle, youtube_handle, avatar_url, profiles!influencer_profiles_id_fkey(name))')
+      .eq('status', 'approved');
 
-    // 2. Pull portfolio posts from InfluencerProfile when video feed is sparse
-    let portfolioPosts: object[] = [];
-    if (videoAgg.length < 6) {
-      const profileQuery: Record<string, unknown> = { 'instagramPosts.0': { $exists: true } };
-      if (tierFilter) profileQuery.tier = tierFilter;
-      if (genreFilter) profileQuery.niches = genreFilter;
+    if (tierFilter) videoQuery = videoQuery.eq('influencer_profiles.tier', tierFilter);
 
-      const profiles = await InfluencerProfile.find(profileQuery)
-        .populate('userId', 'name')
-        .limit(10)
-        .lean();
+    const { data: videos } = await videoQuery.order('uploaded_at', { ascending: false });
 
-      portfolioPosts = profiles.flatMap((p) =>
-        (p.instagramPosts || []).slice(0, 2).map((post) => ({
-          _id: post.postId || String(Math.random()),
+    const videoFeed = (videos ?? []).map((v: any) => {
+      const profile = v.influencer_profiles ?? {};
+      const name = profile.profiles?.name ?? 'Creator';
+      return {
+        id: v.id,
+        contentUrl: v.video_url,
+        platform: v.platform,
+        submittedAt: v.uploaded_at,
+        creatorName: name,
+        avatar: profile.avatar_url ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${v.influencer_id}`,
+        handle: profile.instagram_handle ?? profile.youtube_handle ?? '',
+        tier: profile.tier ?? 'micro',
+        genre: profile.niches?.[0] ?? '',
+        likes: 0,
+        type: 'video',
+      };
+    });
+
+    // Supplement with instagram_posts from influencer_profiles when video feed is sparse
+    let portfolioFeed: object[] = [];
+    if (videoFeed.length < 6) {
+      let profileQuery = adminClient
+        .from('influencer_profiles')
+        .select('id, tier, niches, instagram_handle, avatar_url, instagram_posts, profiles!influencer_profiles_id_fkey(name)')
+        .not('instagram_posts', 'eq', '[]')
+        .limit(10);
+      if (tierFilter) profileQuery = profileQuery.eq('tier', tierFilter);
+      if (genreFilter) profileQuery = profileQuery.contains('niches', [genreFilter]);
+      const { data: profiles } = await profileQuery;
+
+      portfolioFeed = (profiles ?? []).flatMap((p: any) => {
+        const posts: any[] = Array.isArray(p.instagram_posts) ? p.instagram_posts : [];
+        return posts.slice(0, 2).map(post => ({
+          id: post.postId ?? Math.random().toString(36).slice(2),
           contentUrl: post.url,
           thumbnailUrl: post.thumbnail,
           platform: 'instagram',
-          caption: post.caption || '',
-          submittedAt: p.updatedAt,
-          creatorName: (p.userId as { name?: string })?.name || 'Creator',
-          avatar: p.profileImage,
-          handle: p.socialHandles?.instagram || '',
-          tier: p.tier || 'micro',
-          genre: p.niches?.[0] || '',
+          caption: post.caption ?? '',
+          submittedAt: post.publishedAt ?? null,
+          creatorName: p.profiles?.name ?? 'Creator',
+          avatar: p.avatar_url,
+          handle: p.instagram_handle ?? '',
+          tier: p.tier ?? 'micro',
+          genre: p.niches?.[0] ?? '',
           likes: 0,
           type: 'image',
-        }))
-      );
+        }));
+      });
     }
 
-    const allPosts = [...videoAgg, ...portfolioPosts].sort(
-      (a, b) => new Date((b as { submittedAt: string }).submittedAt).getTime() - new Date((a as { submittedAt: string }).submittedAt).getTime()
-    );
+    const allPosts = [...videoFeed, ...portfolioFeed]
+      .filter(p => !genreFilter || (p as any).genre === genreFilter)
+      .sort((a, b) => new Date((b as any).submittedAt ?? 0).getTime() - new Date((a as any).submittedAt ?? 0).getTime());
 
     const total = allPosts.length;
-    const posts = allPosts.slice(skip, skip + limit);
+    const posts = allPosts.slice(from, to + 1);
 
     res.json({ posts, total, page, pages: Math.ceil(total / limit) });
   } catch (error) {

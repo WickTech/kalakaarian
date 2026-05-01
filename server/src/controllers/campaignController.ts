@@ -1,50 +1,34 @@
 import { Request, Response } from 'express';
-import Campaign from '../models/Campaign';
-import Proposal from '../models/Proposal'; // used in deleteCampaign
+import { adminClient } from '../config/supabase';
 import { AuthRequest } from '../middleware/auth';
+
+const CAMPAIGN_SELECT = '*, profiles!campaigns_brand_id_fkey(name, email)';
 
 export const getCampaigns = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user) {
-      res.status(401).json({ message: 'Unauthorized' });
-      return;
-    }
-
+    if (!req.user) { res.status(401).json({ message: 'Unauthorized' }); return; }
     const { status, genre, platform, page = 1, limit = 20 } = req.query;
-
-    const query: any = {};
-
     const clampedLimit = Math.min(Number(limit) || 20, 100);
+    const from = (Number(page) - 1) * clampedLimit;
+    const to = from + clampedLimit - 1;
+
+    let q = adminClient.from('campaigns').select(CAMPAIGN_SELECT, { count: 'exact' });
 
     if (req.user.role === 'brand') {
-      query.brandId = req.user.userId;
-    } else if (req.user.role === 'influencer') {
-      query.status = 'open';
+      q = q.eq('brand_id', req.user.userId);
+      if (status) q = q.eq('status', status as string);
+    } else {
+      q = q.eq('status', 'open');
     }
+    if (genre) q = q.overlaps('niches', Array.isArray(genre) ? genre : [genre]);
+    if (platform) q = q.overlaps('platforms', Array.isArray(platform) ? platform : [platform]);
 
-    if (status && req.user.role === 'brand') query.status = status;
-    if (genre) query.genre = { $in: Array.isArray(genre) ? genre : [genre] };
-    if (platform) query.platform = { $in: Array.isArray(platform) ? platform : [platform] };
-
-    const skip = (Number(page) - 1) * clampedLimit;
-
-    const [campaigns, total] = await Promise.all([
-      Campaign.find(query)
-        .populate('brandId', 'name email')
-        .skip(skip)
-        .limit(clampedLimit)
-        .sort({ createdAt: -1 }),
-      Campaign.countDocuments(query),
-    ]);
+    const { data, count, error } = await q.order('created_at', { ascending: false }).range(from, to);
+    if (error) throw error;
 
     res.json({
-      campaigns,
-      pagination: {
-        page: Number(page),
-        limit: clampedLimit,
-        total,
-        pages: Math.ceil(total / clampedLimit),
-      },
+      campaigns: data ?? [],
+      pagination: { page: Number(page), limit: clampedLimit, total: count ?? 0, pages: Math.ceil((count ?? 0) / clampedLimit) },
     });
   } catch (error) {
     console.error('Get campaigns error:', error);
@@ -55,38 +39,22 @@ export const getCampaigns = async (req: AuthRequest, res: Response): Promise<voi
 export const getOpenCampaigns = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { genre, platform, budgetMin, budgetMax, page = 1, limit = 20 } = req.query;
-
-    const query: any = { status: 'open' };
-
     const clampedLimit = Math.min(Number(limit) || 20, 100);
+    const from = (Number(page) - 1) * clampedLimit;
+    const to = from + clampedLimit - 1;
 
-    if (genre) query.genre = { $in: Array.isArray(genre) ? genre : [genre] };
-    if (platform) query.platform = { $in: Array.isArray(platform) ? platform : [platform] };
-    if (budgetMin || budgetMax) {
-      query.budget = {};
-      if (budgetMin) query.budget.$gte = Number(budgetMin);
-      if (budgetMax) query.budget.$lte = Number(budgetMax);
-    }
+    let q = adminClient.from('campaigns').select(CAMPAIGN_SELECT, { count: 'exact' }).eq('status', 'open');
+    if (genre) q = q.overlaps('niches', Array.isArray(genre) ? genre : [genre]);
+    if (platform) q = q.overlaps('platforms', Array.isArray(platform) ? platform : [platform]);
+    if (budgetMin) q = q.gte('budget', Number(budgetMin));
+    if (budgetMax) q = q.lte('budget', Number(budgetMax));
 
-    const skip = (Number(page) - 1) * clampedLimit;
-
-    const [campaigns, total] = await Promise.all([
-      Campaign.find(query)
-        .populate('brandId', 'name email')
-        .skip(skip)
-        .limit(clampedLimit)
-        .sort({ createdAt: -1 }),
-      Campaign.countDocuments(query),
-    ]);
+    const { data, count, error } = await q.order('created_at', { ascending: false }).range(from, to);
+    if (error) throw error;
 
     res.json({
-      campaigns,
-      pagination: {
-        page: Number(page),
-        limit: clampedLimit,
-        total,
-        pages: Math.ceil(total / clampedLimit),
-      },
+      campaigns: data ?? [],
+      pagination: { page: Number(page), limit: clampedLimit, total: count ?? 0, pages: Math.ceil((count ?? 0) / clampedLimit) },
     });
   } catch (error) {
     console.error('Get open campaigns error:', error);
@@ -96,15 +64,9 @@ export const getOpenCampaigns = async (req: AuthRequest, res: Response): Promise
 
 export const getCampaignById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
-
-    const campaign = await Campaign.findById(id).populate('brandId', 'name email');
-    if (!campaign) {
-      res.status(404).json({ message: 'Campaign not found' });
-      return;
-    }
-
-    res.json({ campaign });
+    const { data, error } = await adminClient.from('campaigns').select(CAMPAIGN_SELECT).eq('id', req.params.id).single();
+    if (error || !data) { res.status(404).json({ message: 'Campaign not found' }); return; }
+    res.json({ campaign: data });
   } catch (error) {
     console.error('Get campaign error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -114,27 +76,22 @@ export const getCampaignById = async (req: Request, res: Response): Promise<void
 export const createCampaign = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user || req.user.role !== 'brand') {
-      res.status(403).json({ message: 'Only brands can create campaigns' });
-      return;
+      res.status(403).json({ message: 'Only brands can create campaigns' }); return;
     }
-
     const { title, description, genre, platform, budget, deadline, requirements } = req.body;
-
-    const campaign = await Campaign.create({
-      brandId: req.user.userId,
+    const { data, error } = await adminClient.from('campaigns').insert({
+      brand_id: req.user.userId,
       title,
-      description,
-      genre: genre || [],
-      platform: platform || [],
-      budget,
-      deadline,
+      description: description || '',
+      niches: genre || [],
+      platforms: platform || [],
+      budget: budget || null,
+      deadline: deadline || null,
       requirements: requirements || '',
       status: 'open',
-    });
-
-    await campaign.populate('brandId', 'name email');
-
-    res.status(201).json({ campaign });
+    }).select(CAMPAIGN_SELECT).single();
+    if (error || !data) { res.status(500).json({ message: 'Failed to create campaign' }); return; }
+    res.status(201).json({ campaign: data });
   } catch (error) {
     console.error('Create campaign error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -144,32 +101,27 @@ export const createCampaign = async (req: AuthRequest, res: Response): Promise<v
 export const updateCampaign = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user || req.user.role !== 'brand') {
-      res.status(403).json({ message: 'Only brands can update campaigns' });
-      return;
+      res.status(403).json({ message: 'Only brands can update campaigns' }); return;
     }
-
-    const { id } = req.params;
     const { title, description, genre, platform, budget, deadline, requirements, status } = req.body;
+    const update: Record<string, unknown> = {};
+    if (title) update.title = title;
+    if (description) update.description = description;
+    if (genre) update.niches = genre;
+    if (platform) update.platforms = platform;
+    if (budget) update.budget = budget;
+    if (deadline) update.deadline = deadline;
+    if (requirements !== undefined) update.requirements = requirements;
+    if (status) update.status = status;
 
-    const campaign = await Campaign.findOne({ _id: id, brandId: req.user.userId });
-    if (!campaign) {
-      res.status(404).json({ message: 'Campaign not found' });
-      return;
-    }
-
-    if (title) campaign.title = title;
-    if (description) campaign.description = description;
-    if (genre) campaign.genre = genre;
-    if (platform) campaign.platform = platform;
-    if (budget) campaign.budget = budget;
-    if (deadline) campaign.deadline = deadline;
-    if (requirements !== undefined) campaign.requirements = requirements;
-    if (status) campaign.status = status;
-
-    await campaign.save();
-    await campaign.populate('brandId', 'name email');
-
-    res.json({ campaign });
+    const { data, error } = await adminClient.from('campaigns')
+      .update(update)
+      .eq('id', req.params.id)
+      .eq('brand_id', req.user.userId)
+      .select(CAMPAIGN_SELECT)
+      .single();
+    if (error || !data) { res.status(404).json({ message: 'Campaign not found' }); return; }
+    res.json({ campaign: data });
   } catch (error) {
     console.error('Update campaign error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -179,25 +131,17 @@ export const updateCampaign = async (req: AuthRequest, res: Response): Promise<v
 export const deleteCampaign = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user || req.user.role !== 'brand') {
-      res.status(403).json({ message: 'Only brands can delete campaigns' });
-      return;
+      res.status(403).json({ message: 'Only brands can delete campaigns' }); return;
     }
-
-    const { id } = req.params;
-
-    const campaign = await Campaign.findOne({ _id: id, brandId: req.user.userId });
-    if (!campaign) {
-      res.status(404).json({ message: 'Campaign not found' });
-      return;
-    }
-
-    await Proposal.deleteMany({ campaignId: id });
-    await Campaign.findByIdAndDelete(id);
-
+    // Cascades delete proposals via FK constraint
+    const { error } = await adminClient.from('campaigns')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('brand_id', req.user.userId);
+    if (error) { res.status(404).json({ message: 'Campaign not found' }); return; }
     res.json({ message: 'Campaign deleted successfully' });
   } catch (error) {
     console.error('Delete campaign error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
-

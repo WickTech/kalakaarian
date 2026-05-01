@@ -1,48 +1,39 @@
 import { Router, Response } from 'express';
-import Campaign from '../models/Campaign';
-import Proposal from '../models/Proposal';
-import { auth } from '../middleware/auth';
-import { AuthRequest } from '../middleware/auth';
+import { adminClient } from '../config/supabase';
+import { auth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
 router.get('/brand', auth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (req.user!.role !== 'brand') {
-      res.status(403).json({ message: 'Only brands can view this analytics' });
-      return;
-    }
-
+    if (req.user!.role !== 'brand') { res.status(403).json({ message: 'Only brands can view this analytics' }); return; }
     const userId = req.user!.userId;
 
-    const totalCampaigns = await Campaign.countDocuments({ brandId: userId });
-    const openCampaigns = await Campaign.countDocuments({ brandId: userId, status: 'open' });
-    const inProgressCampaigns = await Campaign.countDocuments({ brandId: userId, status: 'in_progress' });
-    const completedCampaigns = await Campaign.countDocuments({ brandId: userId, status: 'completed' });
+    const [total, open, closed] = await Promise.all([
+      adminClient.from('campaigns').select('id', { count: 'exact', head: true }).eq('brand_id', userId),
+      adminClient.from('campaigns').select('id', { count: 'exact', head: true }).eq('brand_id', userId).eq('status', 'open'),
+      adminClient.from('campaigns').select('id', { count: 'exact', head: true }).eq('brand_id', userId).eq('status', 'closed'),
+    ]);
 
-    const campaigns = await Campaign.find({ brandId: userId });
-    const campaignIds = campaigns.map(c => c._id);
+    // Get proposals for brand's campaigns
+    const { data: brandCampaigns } = await adminClient.from('campaigns').select('id').eq('brand_id', userId);
+    const campaignIds = (brandCampaigns ?? []).map((c: { id: string }) => c.id);
 
-    const totalProposals = await Proposal.countDocuments({ campaignId: { $in: campaignIds } });
-    const acceptedProposals = await Proposal.countDocuments({ campaignId: { $in: campaignIds }, status: 'accepted' });
-    const pendingProposals = await Proposal.countDocuments({ campaignId: { $in: campaignIds }, status: 'pending' });
-    const rejectedProposals = await Proposal.countDocuments({ campaignId: { $in: campaignIds }, status: 'rejected' });
+    const [totalProps, acceptedProps, rejectedProps] = await Promise.all([
+      adminClient.from('proposals').select('id', { count: 'exact', head: true }).in('campaign_id', campaignIds),
+      adminClient.from('proposals').select('bid_amount').in('campaign_id', campaignIds).eq('status', 'accepted'),
+      adminClient.from('proposals').select('id', { count: 'exact', head: true }).in('campaign_id', campaignIds).eq('status', 'rejected'),
+    ]);
 
-    const acceptedProposalData = await Proposal.find({ campaignId: { $in: campaignIds }, status: 'accepted' });
-    const totalSpent = acceptedProposalData.reduce((sum, p) => sum + (p.bidAmount || 0), 0);
+    const totalSpent = (acceptedProps.data ?? []).reduce((sum: number, p: { bid_amount?: number | null }) => sum + (p.bid_amount ?? 0), 0);
 
     res.json({
-      campaigns: {
-        total: totalCampaigns,
-        open: openCampaigns,
-        inProgress: inProgressCampaigns,
-        completed: completedCampaigns,
-      },
+      campaigns: { total: total.count ?? 0, open: open.count ?? 0, inProgress: 0, completed: closed.count ?? 0 },
       proposals: {
-        total: totalProposals,
-        accepted: acceptedProposals,
-        pending: pendingProposals,
-        rejected: rejectedProposals,
+        total: totalProps.count ?? 0,
+        accepted: (acceptedProps.data ?? []).length,
+        pending: Math.max(0, (totalProps.count ?? 0) - (acceptedProps.data ?? []).length - (rejectedProps.count ?? 0)),
+        rejected: rejectedProps.count ?? 0,
       },
       spend: totalSpent,
     });
@@ -54,30 +45,28 @@ router.get('/brand', auth, async (req: AuthRequest, res: Response): Promise<void
 
 router.get('/influencer', auth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (req.user!.role !== 'influencer') {
-      res.status(403).json({ message: 'Only influencers can view this analytics' });
-      return;
-    }
-
+    if (req.user!.role !== 'influencer') { res.status(403).json({ message: 'Only influencers can view this analytics' }); return; }
     const userId = req.user!.userId;
 
-    const totalProposals = await Proposal.countDocuments({ influencerId: userId });
-    const acceptedProposals = await Proposal.countDocuments({ influencerId: userId, status: 'accepted' });
-    const pendingProposals = await Proposal.countDocuments({ influencerId: userId, status: 'pending' });
-    const rejectedProposals = await Proposal.countDocuments({ influencerId: userId, status: 'rejected' });
+    const [total, accepted, rejected] = await Promise.all([
+      adminClient.from('proposals').select('id', { count: 'exact', head: true }).eq('influencer_id', userId),
+      adminClient.from('proposals').select('bid_amount').eq('influencer_id', userId).eq('status', 'accepted'),
+      adminClient.from('proposals').select('id', { count: 'exact', head: true }).eq('influencer_id', userId).eq('status', 'rejected'),
+    ]);
 
-    const acceptedProposalData = await Proposal.find({ influencerId: userId, status: 'accepted' });
-    const totalEarnings = acceptedProposalData.reduce((sum, p) => sum + (p.bidAmount || 0), 0);
+    const totalCount = total.count ?? 0;
+    const acceptedCount = (accepted.data ?? []).length;
+    const totalEarnings = (accepted.data ?? []).reduce((sum: number, p: { bid_amount?: number | null }) => sum + (p.bid_amount ?? 0), 0);
 
     res.json({
       proposals: {
-        total: totalProposals,
-        accepted: acceptedProposals,
-        pending: pendingProposals,
-        rejected: rejectedProposals,
+        total: totalCount,
+        accepted: acceptedCount,
+        pending: Math.max(0, totalCount - acceptedCount - (rejected.count ?? 0)),
+        rejected: rejected.count ?? 0,
       },
       earnings: totalEarnings,
-      acceptedRate: totalProposals > 0 ? Math.round((acceptedProposals / totalProposals) * 100) : 0,
+      acceptedRate: totalCount > 0 ? Math.round((acceptedCount / totalCount) * 100) : 0,
     });
   } catch (error) {
     console.error('Influencer analytics error:', error);

@@ -1,135 +1,186 @@
-import mongoose from 'mongoose';
+// All IDs are UUIDs (string), fields use snake_case matching Supabase schema.
 
 export interface IUser {
-  email?: string;
-  username?: string;
-  phone?: string;
-  phoneVerified?: boolean;
-  password?: string;
-  googleId?: string;
+  id: string;
   role: 'brand' | 'influencer';
-  isAdmin?: boolean;
   name: string;
-  isPhoneLogin?: boolean;
-  whatsappNotifications?: {
+  email?: string | null;
+  username?: string | null;
+  phone?: string | null;
+  phone_verified?: boolean;
+  is_phone_login?: boolean;
+  is_admin?: boolean;
+  avatar_url?: string | null;
+  referral_code?: string;
+  referred_by?: string | null;
+  whatsapp_notifications?: {
     enabled: boolean;
     campaigns: boolean;
     proposals: boolean;
     messages: boolean;
     payments: boolean;
   };
-  createdAt?: Date;
-  updatedAt?: Date;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface IInfluencerProfile {
-  userId: mongoose.Types.ObjectId;
-  bio: string;
-  city: string;
+  id: string;               // FK → profiles.id
+  bio?: string;
+  city?: string;
   gender?: 'male' | 'female' | 'non_binary' | 'prefer_not_to_say';
   niches: string[];
-  socialHandles: {
-    instagram?: string;
-    youtube?: string;
-  };
-  profileImage?: string;
-  platform: ('instagram' | 'youtube')[];
-  tier: 'nano' | 'micro' | 'mid' | 'macro' | 'mega';
-  isOnline?: boolean;
-  lastSeenAt?: Date;
-  pricing: {
-    story?: number;
-    reel?: number;
-    video?: number;
-    post?: number;
-  };
-  portfolio: string[];
-  verified: boolean;
-  instagramPosts: {
-    postId: string;
-    url: string;
-    thumbnail: string;
-    caption: string;
-  }[];
-  youtubeVideos: {
-    videoId: string;
-    url: string;
-    thumbnail: string;
-    title: string;
-    views: number;
-    publishedAt: Date;
-  }[];
-  createdAt?: Date;
-  updatedAt?: Date;
+  platforms: string[];
+  instagram_handle?: string | null;
+  youtube_handle?: string | null;
+  avatar_url?: string | null;
+  tier?: 'nano' | 'micro' | 'mid' | 'macro' | 'mega';
+  is_online?: boolean;
+  is_verified?: boolean;
+  last_seen_at?: string | null;
+  followers_count?: number;
+  engagement_rate?: number | null;
+  portfolio?: string[];
+  portfolio_url?: string | null;
+  instagram_posts?: InstagramPost[];
+  youtube_videos?: YoutubeVideo[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface InstagramPost {
+  postId: string;
+  url: string;
+  thumbnail: string;
+  caption: string;
+}
+
+export interface YoutubeVideo {
+  videoId: string;
+  url: string;
+  thumbnail: string;
+  title: string;
+  views: number;
+  publishedAt: string;
+}
+
+export interface IInfluencerPricing {
+  id: string;
+  influencer_id: string;
+  platform: string;
+  content_type: 'reel' | 'story' | 'video' | 'post';
+  price: number;
+  created_at?: string;
 }
 
 export interface IBrandProfile {
-  userId: mongoose.Types.ObjectId;
-  companyName: string;
-  industry: string;
-  website?: string;
-  logo?: string;
-  description: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  id: string;               // FK → profiles.id
+  company_name: string;
+  industry?: string | null;
+  contact_name?: string | null;
+  website?: string | null;
+  logo_url?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ICampaign {
-  brandId: mongoose.Types.ObjectId;
+  id: string;
+  brand_id: string;
   title: string;
-  description: string;
-  deliverables: string;
-  genre: string[];
-  platform: string[];
-  budget: number;
-  deadline: Date;
-  requirements: string;
-  status: 'draft' | 'open' | 'in_progress' | 'completed' | 'cancelled';
-  createdAt?: Date;
-  updatedAt?: Date;
+  description?: string | null;
+  requirements?: string | null;
+  budget?: number | null;
+  platforms: string[];
+  niches: string[];
+  status: 'open' | 'closed' | 'archived';
+  deadline?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface IProposal {
-  campaignId: mongoose.Types.ObjectId;
-  influencerId: mongoose.Types.ObjectId;
-  message: string;
-  bidAmount: number;
-  timeline?: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'negotiating';
-  createdAt?: Date;
-  updatedAt?: Date;
+  id: string;
+  campaign_id: string;
+  influencer_id: string;
+  message?: string | null;
+  bid_amount?: number | null;
+  status: 'submitted' | 'accepted' | 'rejected' | 'withdrawn';
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ICartItem {
-  influencerId: mongoose.Types.ObjectId;
-  campaignId?: mongoose.Types.ObjectId;
+  id: string;
+  brand_id: string;
+  influencer_id: string;
+  campaign_id?: string | null;
   price: number;
-  addedAt: Date;
-}
-
-export interface ICart {
-  userId: mongoose.Types.ObjectId;
-  items: ICartItem[];
-  totalAmount: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  added_at?: string;
+  created_at?: string;
 }
 
 export interface ITransaction {
-  brandId: mongoose.Types.ObjectId;
-  influencerId: mongoose.Types.ObjectId;
-  campaignId: mongoose.Types.ObjectId;
+  id: string;
+  brand_id: string;
+  influencer_id: string;
+  campaign_id: string;
   amount: number;
   status: 'pending' | 'completed' | 'failed' | 'refunded';
-  paymentMethod?: string;
-  transactionId?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  payment_method?: string | null;
+  transaction_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface AuthRequest extends Express.Request {
-  user?: {
-    userId: string;
-    role: string;
-  };
+export interface IMembership {
+  id: string;
+  user_id: string;
+  tier: 'regular' | 'silver' | 'gold';
+  status: 'active' | 'expired' | 'cancelled';
+  starts_at: string;
+  ends_at?: string | null;
+  auto_renew: boolean;
+  payment_id?: string | null;
+  razorpay_subscription_id?: string | null;
+  created_at?: string;
 }
+
+export interface IReferral {
+  id: string;
+  referrer_id: string;
+  referred_id: string;
+  referral_code: string;
+  status: 'pending' | 'completed' | 'rewarded';
+  reward_tier?: string | null;
+  created_at?: string;
+}
+
+export interface IMessage {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  is_read: boolean;
+  created_at?: string;
+}
+
+export interface IConversation {
+  id: string;
+  participant_ids: string[];
+  last_message_at?: string | null;
+  created_at?: string;
+}
+
+export interface INotification {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  body?: string | null;
+  data?: Record<string, unknown> | null;
+  is_read: boolean;
+  created_at?: string;
+}
+
+export type { AuthRequest } from '../middleware/auth';

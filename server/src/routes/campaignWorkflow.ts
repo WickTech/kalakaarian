@@ -1,121 +1,85 @@
-import { Router, Request, Response } from 'express';
-import CampaignWorkflow from '../models/CampaignWorkflow';
-import Campaign from '../models/Campaign';
-import Proposal from '../models/Proposal';
-import { auth } from '../middleware/auth';
+import { Router, Response } from 'express';
+import { adminClient } from '../config/supabase';
+import { auth, AuthRequest } from '../middleware/auth';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
-router.get('/:campaignId/workflow', auth, async (req: Request, res: Response) => {
+router.get('/:campaignId/workflow', auth, async (req: AuthRequest, res: Response) => {
   try {
-    let workflow = await CampaignWorkflow.findOne({ campaignId: req.params.campaignId })
-      .populate('selectedCreators', 'name email profileImage')
-      .populate('videos.influencerId', 'name profileImage');
+    const { campaignId } = req.params;
+    let { data: workflow } = await adminClient.from('campaign_workflow').select('*').eq('campaign_id', campaignId).single();
 
     if (!workflow) {
-      const campaign = await Campaign.findById(req.params.campaignId);
-      if (!campaign) {
-        return res.status(404).json({ message: 'Campaign not found' });
-      }
+      const { data: campaign } = await adminClient.from('campaigns').select('id').eq('id', campaignId).single();
+      if (!campaign) { res.status(404).json({ message: 'Campaign not found' }); return; }
 
-      const acceptedProposals = await Proposal.find({
-        campaignId: req.params.campaignId,
-        status: 'accepted',
-      }).populate('influencerId', 'name email');
+      const { data: accepted } = await adminClient.from('proposals')
+        .select('influencer_id').eq('campaign_id', campaignId).eq('status', 'accepted');
 
-      workflow = await CampaignWorkflow.create({
-        campaignId: req.params.campaignId,
-        selectedCreators: acceptedProposals.map(p => p.influencerId),
-      });
+      const { data: created } = await adminClient.from('campaign_workflow').insert({
+        campaign_id: campaignId,
+        selected_creators: (accepted ?? []).map((p: { influencer_id: string }) => p.influencer_id),
+      }).select().single();
+      workflow = created;
     }
 
     res.json(workflow);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching workflow' });
-  }
+  } catch { res.status(500).json({ message: 'Error fetching workflow' }); }
 });
 
-router.put('/:campaignId/workflow/stage', auth, async (req: Request, res: Response) => {
+router.put('/:campaignId/workflow/stage', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { stage } = req.body;
-    const campaignId = req.params.campaignId;
+    const { campaignId } = req.params;
+    const now = new Date().toISOString();
 
-    const update: any = {};
-    switch (stage) {
-      case 'shooting':
-        update.shooting = true;
-        update.shootingAt = new Date();
-        break;
-      case 'uploaded':
-        update.uploaded = true;
-        update.uploadedAt = new Date();
-        break;
-      case 'payment':
-        update.paymentDone = true;
-        update.paymentAt = new Date();
-        break;
-      default:
-        return res.status(400).json({ message: 'Invalid stage' });
-    }
+    const update: Record<string, unknown> = {};
+    if (stage === 'shooting')  { update.shooting = true; update.shooting_at = now; }
+    else if (stage === 'uploaded') { update.uploaded = true; update.uploaded_at = now; }
+    else if (stage === 'payment')  { update.payment_done = true; update.payment_at = now; }
+    else { res.status(400).json({ message: 'Invalid stage' }); return; }
 
-    const workflow = await CampaignWorkflow.findOneAndUpdate(
-      { campaignId },
-      { $set: update },
-      { new: true, upsert: true }
-    );
-
-    res.json(workflow);
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating workflow stage' });
-  }
+    const { data, error } = await adminClient.from('campaign_workflow')
+      .update(update).eq('campaign_id', campaignId).select().single();
+    if (error || !data) { res.status(404).json({ message: 'Workflow not found' }); return; }
+    res.json(data);
+  } catch { res.status(500).json({ message: 'Error updating workflow stage' }); }
 });
 
-router.post('/:campaignId/videos', auth, async (req: Request, res: Response) => {
+router.post('/:campaignId/videos', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { videoUrl, platform, influencerId } = req.body;
-    const campaignId = req.params.campaignId;
+    const { campaignId } = req.params;
 
-    const workflow = await CampaignWorkflow.findOne({ campaignId });
-    if (!workflow) {
-      return res.status(404).json({ message: 'Workflow not found' });
-    }
+    const { data: workflow } = await adminClient.from('campaign_workflow').select('id, videos').eq('campaign_id', campaignId).single();
+    if (!workflow) { res.status(404).json({ message: 'Workflow not found' }); return; }
 
-    workflow.videos.push({
-      influencerId,
-      videoUrl,
-      platform: platform || 'file',
-      status: 'pending',
-      uploadedAt: new Date(),
-    });
+    const videos = Array.isArray(workflow.videos) ? workflow.videos : [];
+    videos.push({ influencerId, videoUrl, platform: platform || 'file', status: 'pending', uploadedAt: new Date().toISOString() });
 
-    await workflow.save();
-    res.json(workflow);
-  } catch (error) {
-    res.status(500).json({ message: 'Error adding video' });
-  }
+    const { data } = await adminClient.from('campaign_workflow').update({ videos }).eq('id', workflow.id).select().single();
+    res.json(data);
+  } catch { res.status(500).json({ message: 'Error adding video' }); }
 });
 
-router.put('/:campaignId/videos/:videoIndex', auth, async (req: Request, res: Response) => {
+router.put('/:campaignId/videos/:videoIndex', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { status, feedback } = req.body;
     const { campaignId, videoIndex } = req.params;
 
-    const workflow = await CampaignWorkflow.findOne({ campaignId });
-    if (!workflow) {
-      return res.status(404).json({ message: 'Workflow not found' });
-    }
+    const { data: workflow } = await adminClient.from('campaign_workflow').select('id, videos').eq('campaign_id', campaignId).single();
+    if (!workflow) { res.status(404).json({ message: 'Workflow not found' }); return; }
 
+    const videos = Array.isArray(workflow.videos) ? [...workflow.videos] : [];
     const idx = parseInt(videoIndex);
-    if (idx >= 0 && idx < workflow.videos.length) {
-      workflow.videos[idx].status = status;
-      if (feedback) workflow.videos[idx].feedback = feedback;
-      await workflow.save();
+    if (idx >= 0 && idx < videos.length) {
+      videos[idx] = { ...videos[idx], status };
+      if (feedback) videos[idx].feedback = feedback;
     }
 
-    res.json(workflow);
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating video' });
-  }
+    const { data } = await adminClient.from('campaign_workflow').update({ videos }).eq('id', workflow.id).select().single();
+    res.json(data);
+  } catch { res.status(500).json({ message: 'Error updating video' }); }
 });
 
 export default router;

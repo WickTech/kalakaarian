@@ -1,8 +1,6 @@
-import { Router, Request, Response } from 'express';
-import Message from '../models/Message';
-import Conversation from '../models/Conversation';
-import { auth } from '../middleware/auth';
-import { AuthRequest } from '../middleware/auth';
+import { Router, Response } from 'express';
+import { adminClient } from '../config/supabase';
+import { auth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -10,39 +8,38 @@ router.post('/send', auth, async (req: AuthRequest, res: Response): Promise<void
   try {
     const { receiverId, content } = req.body;
     const senderId = req.user!.userId;
-    const senderRole = req.user!.role;
-
     if (!receiverId || !content) {
-      res.status(400).json({ message: 'Receiver ID and content are required' });
-      return;
+      res.status(400).json({ message: 'Receiver ID and content are required' }); return;
     }
 
-    const receiverRole = senderRole === 'brand' ? 'influencer' : 'brand';
-
-    let conversation = await Conversation.findOne({
-      participants: { $all: [senderId, receiverId] }
-    });
+    // Find or create conversation (participant_ids stored sorted via DB trigger)
+    const sorted = [senderId, receiverId].sort();
+    let { data: conversation } = await adminClient
+      .from('conversations')
+      .select('id')
+      .contains('participant_ids', sorted)
+      .single();
 
     if (!conversation) {
-      conversation = await Conversation.create({
-        participants: [senderId, receiverId],
-      });
+      const { data: newConv, error: convErr } = await adminClient
+        .from('conversations')
+        .insert({ participant_ids: sorted })
+        .select('id')
+        .single();
+      if (convErr || !newConv) { res.status(500).json({ message: 'Failed to create conversation' }); return; }
+      conversation = newConv;
     }
 
-    const message = await Message.create({
-      conversationId: conversation._id.toString(),
-      senderId,
-      senderRole,
-      receiverId,
-      receiverRole,
+    const { data: message, error: msgErr } = await adminClient.from('messages').insert({
+      conversation_id: conversation.id,
+      sender_id: senderId,
       content,
-    });
+    }).select().single();
+    if (msgErr || !message) { res.status(500).json({ message: 'Failed to send message' }); return; }
 
-    conversation.lastMessage = message._id;
-    conversation.lastMessageAt = new Date();
-    await conversation.save();
+    await adminClient.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', conversation.id);
 
-    res.status(201).json({ message, conversation });
+    res.status(201).json({ message, conversationId: conversation.id });
   } catch (error) {
     console.error('Send message error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -52,15 +49,13 @@ router.post('/send', auth, async (req: AuthRequest, res: Response): Promise<void
 router.get('/conversations', auth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-
-    const conversations = await Conversation.find({
-      participants: userId
-    })
-      .populate('participants', 'name email role')
-      .populate('lastMessage')
-      .sort({ updatedAt: -1 });
-
-    res.json({ conversations });
+    const { data, error } = await adminClient
+      .from('conversations')
+      .select('*, messages!conversations_id_fkey(id, content, sender_id, is_read, created_at)')
+      .contains('participant_ids', [userId])
+      .order('last_message_at', { ascending: false, nullsFirst: false });
+    if (error) throw error;
+    res.json({ conversations: data ?? [] });
   } catch (error) {
     console.error('Get conversations error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -72,21 +67,17 @@ router.get('/conversations/:conversationId', auth, async (req: AuthRequest, res:
     const { conversationId } = req.params;
     const userId = req.user!.userId;
 
-    const conversation = await Conversation.findById(conversationId);
-    if (!conversation) {
-      res.status(404).json({ message: 'Conversation not found' });
-      return;
-    }
+    const { data: conversation } = await adminClient.from('conversations').select('id, participant_ids').eq('id', conversationId).single();
+    if (!conversation) { res.status(404).json({ message: 'Conversation not found' }); return; }
+    if (!conversation.participant_ids.includes(userId)) { res.status(403).json({ message: 'Not authorized' }); return; }
 
-    if (!conversation.participants.some(p => p.toString() === userId)) {
-      res.status(403).json({ message: 'Not authorized to view this conversation' });
-      return;
-    }
+    const { data: messages } = await adminClient
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
 
-    const messages = await Message.find({ conversationId })
-      .sort({ createdAt: 1 });
-
-    res.json({ conversation, messages });
+    res.json({ conversation, messages: messages ?? [] });
   } catch (error) {
     console.error('Get messages error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -97,12 +88,11 @@ router.put('/conversations/:conversationId/read', auth, async (req: AuthRequest,
   try {
     const { conversationId } = req.params;
     const userId = req.user!.userId;
-
-    await Message.updateMany(
-      { conversationId, receiverId: userId, read: false },
-      { read: true }
-    );
-
+    await adminClient.from('messages')
+      .update({ is_read: true })
+      .eq('conversation_id', conversationId)
+      .neq('sender_id', userId)
+      .eq('is_read', false);
     res.json({ success: true });
   } catch (error) {
     console.error('Mark read error:', error);

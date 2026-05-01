@@ -539,21 +539,6 @@ export const api = {
     });
   },
 
-  generateReferralCode: async (): Promise<{ code: string }> => {
-    return request<{ code: string }>('/api/referrals/generate', { method: 'POST' });
-  },
-
-  useReferralCode: async (code: string): Promise<{ message: string }> => {
-    return request<{ message: string }>('/api/referrals/use', {
-      method: 'POST',
-      body: JSON.stringify({ code }),
-    });
-  },
-
-  getReferralStats: async (): Promise<{ code: string | null; usedCount: number; goldUnlocked: boolean; silverUnlocked: boolean }> => {
-    return request('/api/referrals/stats');
-  },
-
   // Campaign Files
   getCampaignFiles: async (campaignId: string): Promise<CampaignFile[]> => {
     return request<CampaignFile[]>(`/api/campaigns/${campaignId}/files`);

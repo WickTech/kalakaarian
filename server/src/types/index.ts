@@ -11,8 +11,6 @@ export interface IUser {
   is_phone_login?: boolean;
   is_admin?: boolean;
   avatar_url?: string | null;
-  referral_code?: string;
-  referred_by?: string | null;
   whatsapp_notifications?: {
     enabled: boolean;
     campaigns: boolean;
@@ -143,16 +141,6 @@ export interface IMembership {
   auto_renew: boolean;
   payment_id?: string | null;
   razorpay_subscription_id?: string | null;
-  created_at?: string;
-}
-
-export interface IReferral {
-  id: string;
-  referrer_id: string;
-  referred_id: string;
-  referral_code: string;
-  status: 'pending' | 'completed' | 'rewarded';
-  reward_tier?: string | null;
   created_at?: string;
 }
 

@@ -9,7 +9,6 @@ import { ProfileHeader } from '@/components/ProfileHeader';
 import { AnalyticsCard } from '@/components/AnalyticsCard';
 import { MembershipUpgradeCard } from '@/components/MembershipBadge';
 import { VideoGrid } from '@/components/VideoGrid';
-import { ReferralCard } from '@/components/ReferralCard';
 import { SocialConnect } from '@/components/SocialConnect';
 import { openRazorpayCheckout } from '@/lib/razorpay';
 
@@ -23,7 +22,6 @@ export default function InfluencerProfile() {
   const [membership, setMembership] = useState<{ tier: string }>({ tier: 'regular' });
   const [analytics, setAnalytics] = useState<InfluencerAnalytics | null>(null);
   const [videos, setVideos] = useState<VideoItem[]>([]);
-  const [referralStats, setReferralStats] = useState({ code: null as string | null, usedCount: 0, goldUnlocked: false, silverUnlocked: false });
   const [socialStats, setSocialStats] = useState<SocialStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,14 +35,12 @@ export default function InfluencerProfile() {
         const [membershipData, videosData, referralData, socialStatsData] = await Promise.all([
           isOwnProfile ? api.getMembershipStatus() : Promise.resolve({ tier: 'regular' }),
           isOwnProfile ? api.getMyVideos() : Promise.resolve([]),
-          isOwnProfile ? api.getReferralStats() : Promise.resolve({ code: null, usedCount: 0, goldUnlocked: false, silverUnlocked: false }),
           api.getSocialStats(profileData?.userId || id!),
         ]);
 
         setProfile(profileData);
         setMembership(membershipData);
         setVideos(videosData);
-        setReferralStats(referralData);
         setSocialStats(socialStatsData);
         setAnalytics(socialStatsData?.analytics || null);
       } catch (err) {
@@ -108,25 +104,6 @@ export default function InfluencerProfile() {
       toast({ title: 'Success', description: 'Video uploaded successfully' });
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to upload video', variant: 'destructive' });
-    }
-  };
-
-  const handleGenerateReferral = async () => {
-    try {
-      const { code } = await api.generateReferralCode();
-      setReferralStats({ ...referralStats, code });
-      toast({ title: 'Success', description: 'Referral code generated!' });
-    } catch (err) {
-      toast({ title: 'Error', description: 'Failed to generate code', variant: 'destructive' });
-    }
-  };
-
-  const handleUseReferral = async (code: string) => {
-    try {
-      await api.useReferralCode(code);
-      toast({ title: 'Success', description: 'Referral code applied!' });
-    } catch (err) {
-      toast({ title: 'Error', description: 'Invalid or already used code', variant: 'destructive' });
     }
   };
 
@@ -228,7 +205,6 @@ export default function InfluencerProfile() {
 
         <VideoGrid videos={videos} isOwnProfile={isOwnProfile} onUpload={handleVideoUpload} />
 
-        <ReferralCard stats={referralStats} isOwnProfile={isOwnProfile} onGenerateCode={handleGenerateReferral} onUseCode={handleUseReferral} />
       </div>
     </div>
   );

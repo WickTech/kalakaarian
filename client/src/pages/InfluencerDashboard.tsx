@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Edit, Copy, ExternalLink } from "lucide-react";
+import { Edit, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { api, Proposal, InfluencerProfile, InfluencerAnalytics } from "@/lib/api";
@@ -28,7 +28,6 @@ export default function InfluencerDashboard() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [profile, setProfile] = useState<InfluencerProfile | null>(null);
   const [analytics, setAnalytics] = useState<InfluencerAnalytics | null>(null);
-  const [referralCode, setReferralCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadLink, setUploadLink] = useState("");
   const [uploadPlatform, setUploadPlatform] = useState<"instagram" | "youtube">("instagram");
@@ -44,11 +43,9 @@ export default function InfluencerDashboard() {
       api.getInfluencerProfile().catch(() => null),
       api.getInfluencerAnalytics().catch(() => null),
       api.getMembershipStatus().catch(() => null),
-      api.getReferralStats().catch(() => null),
-    ]).then(([p, prof, ana, mem, ref]) => {
+    ]).then(([p, prof, ana, mem]) => {
       setProposals(p); setProfile(prof); setAnalytics(ana);
       setMembershipStatus(mem); setIsOnline(prof?.isOnline || false);
-      setReferralCode((ref as Record<string, string>)?.code || null);
     }).catch(() => toast({ title: "Error", description: "Failed to load data", variant: "destructive" }))
       .finally(() => setLoading(false));
   }, []);
@@ -57,10 +54,6 @@ export default function InfluencerDashboard() {
     const next = !isOnline;
     await api.updatePresence(next);
     setIsOnline(next);
-  };
-
-  const copyCode = () => {
-    if (referralCode) { navigator.clipboard.writeText(referralCode); toast({ title: "Copied!" }); }
   };
 
   const submitUpload = async () => {
@@ -169,16 +162,6 @@ export default function InfluencerDashboard() {
                 </table>
               )}
             </div>
-            {referralCode && (
-              <div className="bento-card p-4">
-                <h2 className="font-display font-bold text-chalk text-sm mb-3">🎁 Refer & Earn</h2>
-                <div className="flex items-center gap-3">
-                  <code className="flex-1 bg-obsidian px-3 py-2 rounded-lg text-gold text-sm font-mono">{referralCode}</code>
-                  <button onClick={copyCode} className="p-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk transition-colors"><Copy className="w-4 h-4" /></button>
-                </div>
-                <p className="text-xs text-chalk-dim mt-2">Refer 10 creators → Get 1 Year Free Gold</p>
-              </div>
-            )}
           </div>
         )}
 

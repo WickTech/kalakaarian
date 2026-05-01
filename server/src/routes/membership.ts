@@ -1,7 +1,6 @@
 import { Router, Response, Request } from 'express';
 import { adminClient } from '../config/supabase';
 import { auth, AuthRequest } from '../middleware/auth';
-import { checkAndGrantGoldReward } from '../services/referralRewards';
 import { sendMembershipInvoice } from '../services/emailService';
 import {
   createOrder,
@@ -34,10 +33,6 @@ const activateMembership = async (userId: string, tier: string, paymentId: strin
     auto_renew: true,
     payment_id: paymentId,
   }).select().single();
-
-  if (tier === 'gold') {
-    checkAndGrantGoldReward(userId).catch((e) => console.error('Referral Gold reward check failed:', e));
-  }
 
   const { data: profile } = await adminClient.from('profiles').select('email, name').eq('id', userId).single();
   if (profile?.email) {

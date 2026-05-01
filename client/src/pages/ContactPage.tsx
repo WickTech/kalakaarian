@@ -84,14 +84,19 @@ export default function ContactPage() {
   };
 
   return (
-    <main className="min-h-screen bg-obsidian">
+    <main className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       {/* Hero */}
-      <div className="border-b border-white/5 px-4 py-14 text-center">
-        <p className="text-xs text-gold uppercase tracking-widest font-medium mb-3">Support</p>
-        <h1 className="font-display text-3xl sm:text-4xl font-bold text-chalk mb-3">Get in Touch</h1>
-        <p className="text-chalk-dim text-sm max-w-sm mx-auto">
-          Our team typically responds within 24 hours. You can also chat with our AI assistant for instant answers.
-        </p>
+      <div className="relative border-b border-white/5 px-4 py-14 text-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-fuchsia-600/10 to-pink-600/10" />
+        <div className="absolute top-0 left-10 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-10 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl" />
+        <div className="relative">
+          <p className="text-xs text-gold uppercase tracking-widest font-medium mb-3">Support</p>
+          <h1 className="font-display text-3xl sm:text-4xl font-bold text-chalk mb-3">Get in Touch</h1>
+          <p className="text-chalk-dim text-sm max-w-sm mx-auto">
+            Our team typically responds within 24 hours. You can also chat with our AI assistant for instant answers.
+          </p>
+        </div>
       </div>
 
       <div className="mx-auto max-w-5xl px-4 py-12 space-y-12">

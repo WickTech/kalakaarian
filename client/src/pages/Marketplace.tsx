@@ -14,10 +14,10 @@ interface MarketplaceProps {
   addToCart: (i: Influencer) => void;
 }
 
-const TIERS = ["nano", "micro", "mid", "macro", "mega"] as const;
+const TIERS = ["nano", "micro", "macro", "mega"] as const;
 type Tier = (typeof TIERS)[number];
 const TIER_CLASS: Record<string, string> = {
-  nano: "tier-nano", micro: "tier-micro", mid: "tier-macro", macro: "tier-macro", mega: "tier-celebrity",
+  nano: "tier-nano", micro: "tier-micro", macro: "tier-macro", mega: "tier-celebrity",
 };
 const GENRES = ["Fashion", "Tech", "Food", "Fitness", "Travel", "Beauty", "Gaming", "Education", "Comedy", "Lifestyle"];
 const GENDERS = ["all", "male", "female"] as const;

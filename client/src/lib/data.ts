@@ -17,18 +17,18 @@ function rand(min: number, max: number) {
   return Math.floor(Math.random() + (max - min) * Math.random()) + min;
 }
 
-function generateInfluencer(index: number, tier: "nano" | "micro" | "macro" | "celebrity", platform: "instagram" | "youtube"): Influencer {
+function generateInfluencer(index: number, tier: "nano" | "micro" | "macro" | "mega", platform: "instagram" | "youtube"): Influencer {
   const followerRanges = {
-    nano: [2000, 30000],
-    micro: [31000, 250000],
-    macro: [251000, 5000000],
-    celebrity: [5000001, 50000000],
+    nano: [2000, 20000],
+    micro: [21000, 200000],
+    macro: [200001, 3000000],
+    mega: [3000001, 50000000],
   };
-  const priceRanges = {
+  const priceRanges: Record<string, [number, number] | null> = {
     nano: [1000, 10000],
     micro: [11000, 100000],
     macro: [100000, 1000000],
-    celebrity: null,
+    mega: null,
   };
 
   const [minF, maxF] = followerRanges[tier];
@@ -62,13 +62,13 @@ function generateInfluencer(index: number, tier: "nano" | "micro" | "macro" | "c
 }
 
 const allInfluencers: Influencer[] = [];
-const tiers: Array<"nano" | "micro" | "macro" | "celebrity"> = ["nano", "micro", "macro", "celebrity"];
+const tiers: Array<"nano" | "micro" | "macro" | "mega"> = ["nano", "micro", "macro", "mega"];
 const platforms: Array<"instagram" | "youtube"> = ["instagram", "youtube"];
 
 let idx = 0;
 for (const tier of tiers) {
   for (const platform of platforms) {
-    const count = tier === "celebrity" ? 5 : 15;
+    const count = tier === "mega" ? 5 : 15;
     for (let i = 0; i < count; i++) {
       allInfluencers.push(generateInfluencer(idx, tier, platform));
       idx++;

@@ -26,7 +26,7 @@ const formatInfluencer = (row: any) => ({
 
 export const getTierCounts = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const tiers = ['nano', 'micro', 'mid', 'macro', 'mega'];
+    const tiers = ['nano', 'micro', 'macro', 'mega'];
     const results = await Promise.all(
       tiers.map(t =>
         adminClient.from('influencer_profiles').select('id', { count: 'exact', head: true }).eq('tier', t)

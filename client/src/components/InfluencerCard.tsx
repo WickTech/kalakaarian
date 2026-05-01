@@ -7,7 +7,6 @@ const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
 const tierColors: Record<string, string> = {
   nano: "bg-nano",
   micro: "bg-micro",
-  mid: "bg-micro",
   macro: "bg-macro",
   mega: "bg-macro",
 };

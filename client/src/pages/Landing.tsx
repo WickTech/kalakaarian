@@ -40,19 +40,19 @@ export default function Landing({ dark, toggleTheme }: LandingProps) {
     {
       key: "nano",
       label: "Nano Creator",
-      range: "2K - 25K Followers",
+      range: "2K - 20K Followers",
       count: tierCounts.nano,
     },
     {
       key: "micro",
       label: "Micro Creator",
-      range: "26K - 250K Followers",
+      range: "21K - 200K Followers",
       count: tierCounts.micro,
     },
     {
       key: "macro",
       label: "Macro Creator",
-      range: "251K - 3M Followers",
+      range: "200K - 3M Followers",
       count: tierCounts.macro,
     },
     {

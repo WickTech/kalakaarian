@@ -3,7 +3,7 @@ import { Bell, Check, MessageSquare, FileText, DollarSign, Info } from 'lucide-r
 import { api } from '@/lib/api';
 
 interface Notification {
-  _id: string;
+  id: string;
   type: 'proposal' | 'campaign' | 'message' | 'payment' | 'system';
   title: string;
   message: string;
@@ -30,6 +30,8 @@ export function NotificationBell({ className }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem('kalakariaan_token');
+    if (!token) return;
     fetchNotifications();
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
@@ -117,7 +119,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
                   const Icon = typeIcons[notification.type] || Info;
                   return (
                     <div
-                      key={notification._id}
+                      key={notification.id}
                       className={`p-3 border-b border-border last:border-0 hover:bg-secondary/50 ${
                         !notification.read ? 'bg-primary/5' : ''
                       }`}
@@ -133,7 +135,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
                         </div>
                         {!notification.read && (
                           <button
-                            onClick={() => markAsRead(notification._id)}
+                            onClick={() => markAsRead(notification.id)}
                             className="p-1 hover:bg-secondary rounded"
                             title="Mark as read"
                           >

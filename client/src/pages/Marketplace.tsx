@@ -40,9 +40,9 @@ const parseUrlTier = (raw: string | null): Tier | "all" => {
 
 export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart }: MarketplaceProps) {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tier: Tier | "all" = parseUrlTier(searchParams.get("tier"));
   const [platform, setPlatform] = useState<"all" | "instagram" | "youtube">("all");
-  const [tier, setTier] = useState<Tier | "all">(() => parseUrlTier(searchParams.get("tier")));
   const [gender, setGender] = useState<"all" | "male" | "female">("all");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [priceMin, setPriceMin] = useState("");
@@ -53,6 +53,8 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const genreKey = selectedGenres.join(',');
 
   useEffect(() => {
     const load = async () => {
@@ -66,12 +68,12 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
           genre: selectedGenres.length === 1 ? selectedGenres[0] : undefined,
         });
         const transformed: Influencer[] = (Array.isArray(data) ? data : []).map((inf: InfluencerProfile) => ({
-          id: inf._id || inf.id || "",
+          id: inf.id ?? inf._id ?? "",
           name: inf.name || "",
           handle: inf.socialHandles?.instagram || inf.socialHandles?.youtube || "",
           photo: inf.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${inf.name}`,
           platform: (inf.platform as "instagram" | "youtube") || "instagram",
-          tier: (inf.tier as Tier) || "micro",
+          tier: (inf.tier as Tier) || "nano",
           genre: inf.niches?.[0] || "",
           city: inf.city || "",
           followers: inf.followerCount || 0, activeFollowers: 0, fakeFollowers: 0,
@@ -84,7 +86,8 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
       finally { setLoading(false); }
     };
     load();
-  }, [gender, tier, platform, location, selectedGenres]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gender, tier, platform, location, genreKey]);
 
   const filtered = useMemo(() => {
     let r = influencers;
@@ -94,13 +97,12 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
         return p.length === 0 || p.includes(platform);
       });
     }
-    if (tier !== "all") r = r.filter((i) => i.tier === tier);
     if (selectedGenres.length) r = r.filter((i) => selectedGenres.includes(i.genre));
     if (location) r = r.filter((i) => i.city?.toLowerCase().includes(location.toLowerCase()));
     if (priceMin) r = r.filter((i) => i.price != null && i.price >= parseInt(priceMin));
     if (priceMax) r = r.filter((i) => i.price != null && i.price <= parseInt(priceMax));
     return r;
-  }, [influencers, platform, tier, selectedGenres, location, priceMin, priceMax]);
+  }, [influencers, platform, selectedGenres, location, priceMin, priceMax]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -188,7 +190,12 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
           {/* Tier pills */}
           <div className="flex flex-wrap gap-1.5">
             {(["all", ...TIERS] as const).map((t) => (
-              <button key={t} onClick={() => { setTier(t); setPage(1); }}
+              <button key={t} onClick={() => {
+                const next = new URLSearchParams(searchParams);
+                if (t === "all") next.delete("tier"); else next.set("tier", t);
+                setSearchParams(next, { replace: true });
+                setPage(1);
+              }}
                 className={`px-3 py-1.5 rounded-full text-xs border transition-all ${tier === t ? "border-gold text-gold bg-gold/10" : "border-white/10 text-chalk-dim hover:text-chalk"}`}>
                 {TIER_LABEL[t] ?? t}
               </button>

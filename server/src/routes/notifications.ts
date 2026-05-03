@@ -4,6 +4,17 @@ import { auth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
+const mapNotification = (n: Record<string, unknown>) => ({
+  id: n.id,
+  userId: n.user_id,
+  type: n.type,
+  title: n.title,
+  message: n.message,
+  read: n.is_read,
+  link: n.link ?? undefined,
+  createdAt: n.created_at,
+});
+
 router.get('/', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { data } = await adminClient.from('notifications')
@@ -11,7 +22,7 @@ router.get('/', auth, async (req: AuthRequest, res: Response) => {
       .eq('user_id', req.user!.userId)
       .order('created_at', { ascending: false })
       .limit(50);
-    res.json(data ?? []);
+    res.json((data ?? []).map(mapNotification));
   } catch { res.status(500).json({ message: 'Error fetching notifications' }); }
 });
 

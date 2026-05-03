@@ -33,7 +33,7 @@ if (process.env.SENTRY_DSN) {
   if (!process.env[k]) throw new Error(`Missing required env var: ${k}`);
 });
 if (!process.env.CORS_ORIGINS) {
-  console.warn('CORS_ORIGINS not set — all browser origins will be blocked');
+  console.warn('CORS_ORIGINS not set — only hardcoded production/dev origins will be allowed');
 }
 
 const app = express();

@@ -180,12 +180,13 @@ export interface CampaignWorkflow {
   updatedAt?: string;
 }
 export interface AppNotification {
-  _id: string;
+  id: string;
   userId: string;
   title: string;
   message: string;
   read: boolean;
   type: string;
+  link?: string;
   createdAt: string;
 }
 export interface SocialStats {
@@ -422,8 +423,7 @@ export const api = {
     if (filters?.minFollowers) params.append("minFollowers", filters.minFollowers.toString());
     if (filters?.maxFollowers) params.append("maxFollowers", filters.maxFollowers.toString());
     if (filters?.gender) params.append("gender", filters.gender);
-    const query = `?${params.toString()}`;
-    const response = await request<{ influencers: InfluencerProfile[]; pagination: Pagination }>(`/api/influencers${query}`);
+    const response = await request<{ influencers: InfluencerProfile[]; pagination: Pagination }>(`/api/influencers/search?${params}`);
     return response.influencers || response as unknown as InfluencerProfile[];
   },
 

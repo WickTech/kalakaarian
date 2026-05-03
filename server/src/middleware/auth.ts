@@ -29,7 +29,8 @@ export const auth = async (req: AuthRequest, res: Response, next: NextFunction):
 export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
   if (token) {
-    const { data: { user } } = await adminClient.auth.getUser(token);
+    const { data: { user }, error } = await adminClient.auth.getUser(token);
+    if (error) console.warn('optionalAuth: invalid token ignored', error.message);
     if (user) {
       req.user = {
         userId: user.id,

@@ -64,8 +64,8 @@ export default function Landing() {
         <div className="absolute bottom-10 right-10 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl" />
 
         <div className="relative max-w-6xl mx-auto text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm font-medium">
-            <Sparkles className="h-4 w-4" />
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-medium mb-4">
+            <Sparkles className="h-3 w-3" />
             India&apos;s First AI-Powered Marketplace of Kalakaar (Creators)
           </div>
 

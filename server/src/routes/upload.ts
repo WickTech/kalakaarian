@@ -26,7 +26,8 @@ router.post('/presign', auth, async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const ext = fileName.split('.').pop() ?? 'bin';
+    const rawExt = fileName.split('.').pop() ?? '';
+    const ext = rawExt.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'bin';
     const key = `${purpose}/${req.user!.userId}/${crypto.randomUUID()}.${ext}`;
 
     const result = await getPresignedUploadUrl(key, contentType);

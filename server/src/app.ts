@@ -1,6 +1,7 @@
 import './env'; // MUST be first — loads dotenv before Supabase client initializes
 import * as Sentry from '@sentry/node';
 import express from 'express';
+import helmet from 'helmet';
 import { Request, Response, NextFunction } from 'express';
 import authRoutes from './routes/auth';
 import influencerRoutes from './routes/influencers';
@@ -37,6 +38,10 @@ if (!process.env.CORS_ORIGINS) {
 }
 
 const app = express();
+
+// Security headers (X-Frame-Options, X-Content-Type-Options, HSTS, etc.)
+// CSP is disabled because the API serves JSON only — CSP is for HTML responses.
+app.use(helmet({ contentSecurityPolicy: false }));
 
 const PROD_ORIGINS = [
   'https://kalakaarian.com',

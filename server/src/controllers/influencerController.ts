@@ -36,7 +36,7 @@ const formatInfluencer = (row: any) => {
 
 export const getTierCounts = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const tiers = ['nano', 'micro', 'macro', 'mega'];
+    const tiers = ['nano', 'micro', 'macro', 'celeb'];
     const results = await Promise.all(
       tiers.map(t =>
         adminClient.from('influencer_profiles').select('id', { count: 'exact', head: true }).eq('tier', t)
@@ -52,12 +52,22 @@ export const getTierCounts = async (_req: Request, res: Response): Promise<void>
   }
 };
 
+const VALID_TIERS = new Set(['nano', 'micro', 'macro', 'celeb']);
+
+const normalizeTier = (t: unknown): string | undefined => {
+  if (!t || typeof t !== 'string') return undefined;
+  const lower = t.toLowerCase();
+  if (lower === 'mega') return 'celeb'; // backwards-compat alias
+  return VALID_TIERS.has(lower) ? lower : undefined;
+};
+
 const buildInfluencerQuery = (params: Record<string, any>) => {
   let q = adminClient
     .from('influencer_profiles')
     .select('*, profiles(name, avatar_url), influencer_pricing(platform, content_type, price)');
 
-  if (params.tier) q = q.eq('tier', params.tier);
+  const tier = normalizeTier(params.tier);
+  if (tier) q = q.eq('tier', tier);
   if (params.city) q = q.ilike('city', `%${params.city}%`);
   if (params.gender && (ALLOWED_GENDERS as readonly string[]).includes(params.gender)) q = q.eq('gender', params.gender);
   if (params.genre) {

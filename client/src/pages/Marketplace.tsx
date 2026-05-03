@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { ShoppingCart, Instagram, Youtube, ArrowLeft, SlidersHorizontal, CheckSquare, Square, Megaphone } from "lucide-react";
 import { api, InfluencerProfile } from "@/lib/api";
 import { Influencer } from "@/lib/store";
@@ -15,10 +15,13 @@ interface MarketplaceProps {
   addToCart: (i: Influencer) => void;
 }
 
-const TIERS = ["nano", "micro", "macro", "mega"] as const;
+const TIERS = ["nano", "micro", "macro", "celeb"] as const;
 type Tier = (typeof TIERS)[number];
 const TIER_CLASS: Record<string, string> = {
-  nano: "tier-nano", micro: "tier-micro", macro: "tier-macro", mega: "tier-celebrity",
+  nano: "tier-nano", micro: "tier-micro", macro: "tier-macro", celeb: "tier-celebrity",
+};
+const TIER_LABEL: Record<string, string> = {
+  all: "All", nano: "Nano", micro: "Micro", macro: "Macro", celeb: "Celebrity",
 };
 const PER_PAGE = 12;
 
@@ -27,10 +30,19 @@ const BANNERS = [
   { id: 1, label: "Advertise your brand here", cta: "Learn More", gradient: "from-purple-600/30 to-pink-600/30" },
 ];
 
+const parseUrlTier = (raw: string | null): Tier | "all" => {
+  if (!raw) return "all";
+  const lower = raw.toLowerCase();
+  if (lower === "mega") return "celeb"; // backwards-compat alias
+  if ((TIERS as readonly string[]).includes(lower)) return lower as Tier;
+  return "all";
+};
+
 export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart }: MarketplaceProps) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [platform, setPlatform] = useState<"all" | "instagram" | "youtube">("all");
-  const [tier, setTier] = useState<Tier | "all">("all");
+  const [tier, setTier] = useState<Tier | "all">(() => parseUrlTier(searchParams.get("tier")));
   const [gender, setGender] = useState<"all" | "male" | "female">("all");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [priceMin, setPriceMin] = useState("");
@@ -178,7 +190,7 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
             {(["all", ...TIERS] as const).map((t) => (
               <button key={t} onClick={() => { setTier(t); setPage(1); }}
                 className={`px-3 py-1.5 rounded-full text-xs border transition-all ${tier === t ? "border-gold text-gold bg-gold/10" : "border-white/10 text-chalk-dim hover:text-chalk"}`}>
-                {t.charAt(0).toUpperCase() + t.slice(1)}
+                {TIER_LABEL[t] ?? t}
               </button>
             ))}
           </div>
@@ -261,7 +273,7 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TIER_CLASS[inf.tier] || ""}`}>{inf.tier.toUpperCase()}</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TIER_CLASS[inf.tier] || ""}`}>{(TIER_LABEL[inf.tier] ?? inf.tier).toUpperCase()}</span>
                     {inf.genre && <span className="text-[10px] text-chalk-faint border border-white/10 px-2 py-0.5 rounded-full">{inf.genre}</span>}
                     {inf.isOnline && <span className="ml-auto w-2 h-2 rounded-full bg-green-400 shrink-0" title="Online" />}
                   </div>

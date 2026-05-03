@@ -5,7 +5,7 @@ export interface Influencer {
   handle: string;
   photo: string;
   platform: "instagram" | "youtube";
-  tier: "nano" | "micro" | "mid" | "macro" | "mega";
+  tier: "nano" | "micro" | "macro" | "celeb";
   genre: string;
   city: string;
   followers: number;

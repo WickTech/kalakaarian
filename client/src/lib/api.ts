@@ -50,7 +50,7 @@ export interface InfluencerProfile {
   bio?: string;
   niches?: string[];
   city?: string;
-  tier?: 'nano' | 'micro' | 'macro' | 'mega';
+  tier?: 'nano' | 'micro' | 'macro' | 'celeb';
   gender?: 'male' | 'female' | 'non_binary' | 'prefer_not_to_say';
   platform?: string[];
   socialHandles?: {

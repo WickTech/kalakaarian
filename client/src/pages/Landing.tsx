@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 
 export default function Landing() {
   const navigate = useNavigate();
-  const [tierCounts, setTierCounts] = useState<Record<string, number>>({ nano: 0, micro: 0, macro: 0, mega: 0 });
+  const [tierCounts, setTierCounts] = useState<Record<string, number>>({ nano: 0, micro: 0, macro: 0, celeb: 0 });
   const [loadingCounts, setLoadingCounts] = useState(true);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export default function Landing() {
           nano: counts.nano || 0,
           micro: counts.micro || 0,
           macro: counts.macro || 0,
-          mega: counts.mega || 0,
+          celeb: counts.celeb || 0,
         });
       } catch (error) {
         console.error("Failed to fetch tier counts:", error);
@@ -34,7 +34,7 @@ export default function Landing() {
     { key: "nano",  label: "Nano Creator",  range: "2K - 20K Followers",   count: tierCounts.nano },
     { key: "micro", label: "Micro Creator", range: "21K - 200K Followers",  count: tierCounts.micro },
     { key: "macro", label: "Macro Creator", range: "200K - 3M Followers",   count: tierCounts.macro },
-    { key: "mega",  label: "Celebrity",     range: "3M+ Followers",         count: tierCounts.mega },
+    { key: "celeb", label: "Celebrity",      range: "3M+ Followers",         count: tierCounts.celeb },
   ];
 
   const whyKalakaarian = [

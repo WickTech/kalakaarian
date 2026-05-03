@@ -121,10 +121,10 @@ export function calculateCostPerView(
 }
 
 export function getTierFromFollowers(followers: number): {
-  tier: 'nano' | 'micro' | 'macro' | 'mega';
+  tier: 'nano' | 'micro' | 'macro' | 'celeb';
   label: string;
 } {
-  if (followers >= 3000000) return { tier: 'mega', label: 'Celebrity' };
+  if (followers >= 3000000) return { tier: 'celeb', label: 'Celebrity' };
   if (followers >= 200000) return { tier: 'macro', label: 'Macro Influencer' };
   if (followers >= 21000) return { tier: 'micro', label: 'Micro Influencer' };
   return { tier: 'nano', label: 'Nano Influencer' };

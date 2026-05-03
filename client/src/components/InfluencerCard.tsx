@@ -8,7 +8,7 @@ const tierColors: Record<string, string> = {
   nano: "bg-nano",
   micro: "bg-micro",
   macro: "bg-macro",
-  mega: "bg-macro",
+  celeb: "bg-macro",
 };
 
 interface InfluencerCardProps {

@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { adminClient } from '../config/supabase';
 import { AuthRequest } from '../middleware/auth';
+import { PLATFORM_FEE_RATE } from '../utils/pricing';
+import { createOrder } from '../services/razorpayService';
 
 const CART_SELECT = '*, influencer_profiles!cart_items_influencer_id_fkey(id, profiles!influencer_profiles_id_fkey(name, email)), campaigns!cart_items_campaign_id_fkey(id, title)';
 
@@ -91,6 +93,29 @@ export const updateCartItem = async (req: AuthRequest, res: Response): Promise<v
     res.json({ cart: toCartResponse(data ?? []) });
   } catch (error) {
     console.error('Update cart item error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const checkout = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) { res.status(401).json({ message: 'Unauthorized' }); return; }
+    const { data } = await getCartItems(req.user.userId);
+    const items = data ?? [];
+    if (items.length === 0) { res.status(400).json({ message: 'Cart is empty' }); return; }
+
+    const subtotalRupees = items.reduce((sum: number, item: any) => sum + (item.price || 0), 0);
+    const feeRupees = Math.round(subtotalRupees * PLATFORM_FEE_RATE);
+    const totalPaise = Math.round((subtotalRupees + feeRupees) * 100);
+
+    const order = await createOrder(totalPaise, `cart-${req.user.userId}-${Date.now()}`, { userId: req.user.userId });
+    if (!order) {
+      res.json({ orderId: null, amount: totalPaise, currency: 'INR', keyId: null });
+      return;
+    }
+    res.json({ orderId: order.id, amount: order.amount, currency: order.currency, keyId: process.env.RAZORPAY_KEY_ID });
+  } catch (error) {
+    console.error('Cart checkout error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

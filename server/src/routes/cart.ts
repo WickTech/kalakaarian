@@ -6,6 +6,7 @@ import {
   removeFromCart,
   clearCart,
   updateCartItem,
+  checkout,
 } from '../controllers/cartController';
 import { auth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
@@ -30,5 +31,7 @@ router.delete('/remove/:influencerId', auth, removeFromCart);
 router.delete('/clear', auth, clearCart);
 
 router.put('/update/:influencerId', auth, updateCartItem);
+
+router.post('/checkout', auth, checkout);
 
 export default router;

@@ -46,7 +46,13 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
     const load = async () => {
       setLoading(true);
       try {
-        const data = await api.searchInfluencers({ gender: gender !== "all" ? gender : undefined });
+        const data = await api.searchInfluencers({
+          gender: gender !== "all" ? gender : undefined,
+          tier: tier !== "all" ? tier : undefined,
+          platform: platform !== "all" ? platform : undefined,
+          city: location || undefined,
+          genre: selectedGenres.length === 1 ? selectedGenres[0] : undefined,
+        });
         const transformed: Influencer[] = (Array.isArray(data) ? data : []).map((inf: InfluencerProfile) => ({
           id: inf._id || inf.id || "",
           name: inf.name || "",
@@ -56,7 +62,7 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
           tier: (inf.tier as Tier) || "micro",
           genre: inf.niches?.[0] || "",
           city: inf.city || "",
-          followers: 0, activeFollowers: 0, fakeFollowers: 0,
+          followers: inf.followerCount || 0, activeFollowers: 0, fakeFollowers: 0,
           avgViews: 0, avgLikes: 0,
           genderSplit: { male: 45, female: 52, other: 3 },
           price: null, isOnline: inf.isOnline, lastSeenAt: inf.lastSeenAt,
@@ -66,7 +72,7 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
       finally { setLoading(false); }
     };
     load();
-  }, [gender]);
+  }, [gender, tier, platform, location, selectedGenres]);
 
   const filtered = useMemo(() => {
     let r = influencers;

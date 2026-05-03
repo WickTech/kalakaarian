@@ -1,7 +1,7 @@
+import './env'; // MUST be first — loads dotenv before Supabase client initializes
 import * as Sentry from '@sentry/node';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import serverless from 'serverless-http';
 import authRoutes from './routes/auth';
 import influencerRoutes from './routes/influencers';
@@ -20,8 +20,6 @@ import socialStatsRoutes from './routes/socialStats';
 import contactRoutes from './routes/contact';
 import uploadRoutes from './routes/upload';
 import feedRoutes from './routes/feed';
-
-dotenv.config();
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -42,10 +40,13 @@ if (!process.env.CORS_ORIGINS) {
 const app = express();
 
 const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').filter(Boolean);
+const isDev = process.env.NODE_ENV !== 'production';
 app.use(cors({
   origin: (origin, cb) => {
-    // Allow requests with no origin (e.g. server-to-server, curl)
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    if (!origin) return cb(null, true); // server-to-server, curl
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    // Allow any localhost port in dev (Vite may pick 5173, 5174, etc.)
+    if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return cb(null, true);
     cb(new Error('CORS: origin not allowed'));
   },
   credentials: true,
@@ -83,5 +84,10 @@ if (process.env.SENTRY_DSN) {
 }
 
 const handler = serverless(app);
+
+if (process.env.LOCAL_LISTEN === '1') {
+  const port = Number(process.env.PORT) || 4000;
+  app.listen(port, () => console.log(`local: http://localhost:${port}`));
+}
 
 export { handler };

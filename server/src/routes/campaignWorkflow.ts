@@ -67,6 +67,9 @@ router.put('/:campaignId/videos/:videoIndex', auth, async (req: AuthRequest, res
     const { status, feedback } = req.body;
     const { campaignId, videoIndex } = req.params;
 
+    const { data: campaign } = await adminClient.from('campaigns').select('brand_id').eq('id', campaignId).single();
+    if (!campaign || campaign.brand_id !== req.user!.userId) { res.status(403).json({ message: 'Not authorized' }); return; }
+
     const { data: workflow } = await adminClient.from('campaign_workflow').select('id, videos').eq('campaign_id', campaignId).single();
     if (!workflow) { res.status(404).json({ message: 'Workflow not found' }); return; }
 

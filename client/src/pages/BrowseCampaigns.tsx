@@ -147,7 +147,7 @@ export default function BrowseCampaigns() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {filteredCampaigns.map((campaign) => (
-              <Card key={campaign._id} className="hover:shadow-lg transition-shadow">
+              <Card key={campaign.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -176,7 +176,7 @@ export default function BrowseCampaigns() {
                     )}
                   </div>
                   <Button asChild className="w-full">
-                    <Link to={`/campaign/${campaign._id}`}>View Details</Link>
+                    <Link to={`/campaign/${campaign.id}`}>View Details</Link>
                   </Button>
                 </CardContent>
               </Card>

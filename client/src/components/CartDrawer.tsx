@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, ShoppingCart, Plus, FileText } from "lucide-react";
 import { CartItem } from "@/lib/store";
 import { api } from "@/lib/api";
+import { openRazorpayCheckout } from "@/lib/razorpay";
 
 interface CartDrawerProps {
   open: boolean;
@@ -22,9 +23,10 @@ function formatPrice(n: number) {
 }
 
 export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, total, campaignName, campaignId, setCampaign }: CartDrawerProps) {
-  const [campaigns, setCampaigns] = useState<Array<{ _id: string; title: string }>>([]);
+  const [campaigns, setCampaigns] = useState<Array<{ id: string; title: string }>>([]);
   const [newCampaignName, setNewCampaignName] = useState("");
   const [showNewCampaign, setShowNewCampaign] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -45,6 +47,34 @@ export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, to
     }
   };
 
+  const handleCheckout = async () => {
+    setCheckingOut(true);
+    try {
+      const order = await api.cartCheckout();
+      if (!order.orderId || !order.keyId) {
+        clearCart();
+        onClose();
+        return;
+      }
+      await openRazorpayCheckout({
+        orderId: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        keyId: order.keyId,
+        name: "Kalakaarian — Cart Checkout",
+        onSuccess: async () => {
+          clearCart();
+          onClose();
+        },
+        onDismiss: () => {},
+      });
+    } catch {
+      // no-op — user stays in cart
+    } finally {
+      setCheckingOut(false);
+    }
+  };
+
   if (!open) return null;
 
   return (
@@ -60,7 +90,7 @@ export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, to
             <X className="w-4 h-4" />
           </button>
         </div>
-        
+
         {/* Campaign Selector */}
         <div className="border-b border-border p-4 space-y-2">
           <div className="flex items-center gap-2">
@@ -98,14 +128,14 @@ export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, to
               {campaigns.length > 0 && (
                 <select
                   onChange={(e) => {
-                    const camp = campaigns.find(c => c._id === e.target.value);
-                    if (camp) handleSelectCampaign(camp._id, camp.title);
+                    const camp = campaigns.find(c => c.id === e.target.value);
+                    if (camp) handleSelectCampaign(camp.id, camp.title);
                   }}
                   className="w-full px-3 py-2 text-sm border border-border rounded-md bg-card focus:outline-none focus:border-primary"
                 >
                   <option value="">Select existing campaign...</option>
                   {campaigns.map(c => (
-                    <option key={c._id} value={c._id}>{c.title}</option>
+                    <option key={c.id} value={c.id}>{c.title}</option>
                   ))}
                 </select>
               )}
@@ -159,6 +189,13 @@ export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, to
               <span className="font-mono text-lg text-terminal font-bold">{formatPrice(Math.round(total * 1.08))}</span>
             </div>
           </div>
+          <button
+            onClick={handleCheckout}
+            disabled={items.length === 0 || checkingOut}
+            className="w-full border border-terminal py-2 font-mono text-xs uppercase tracking-widest text-terminal hover:bg-terminal hover:text-background transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {checkingOut ? "Processing..." : "Checkout →"}
+          </button>
           <button
             onClick={clearCart}
             className="w-full border border-border py-2 font-mono text-xs uppercase tracking-widest text-muted-foreground hover:border-destructive hover:text-destructive transition-colors"

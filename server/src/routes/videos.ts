@@ -39,6 +39,11 @@ router.get('/my', auth, async (req: AuthRequest, res: Response) => {
 router.put('/:id/review', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { status, feedback } = req.body;
+    const { data: video } = await adminClient.from('campaign_videos').select('campaign_id').eq('id', req.params.id).single();
+    if (!video) { res.status(404).json({ message: 'Video not found' }); return; }
+    const { data: campaign } = await adminClient.from('campaigns').select('brand_id').eq('id', video.campaign_id).single();
+    if (!campaign || campaign.brand_id !== req.user!.userId) { res.status(403).json({ message: 'Not authorized' }); return; }
+
     const { data, error } = await adminClient.from('campaign_videos')
       .update({ status, feedback: feedback || null }).eq('id', req.params.id).select().single();
     if (error || !data) { res.status(404).json({ message: 'Video not found' }); return; }

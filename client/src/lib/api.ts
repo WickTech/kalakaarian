@@ -2,7 +2,7 @@ const RAW_API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 const API_BASE_URL = RAW_API_URL.replace(/\/api\/?$/, "").replace(/\/$/, "");
 
 export interface User {
-  _id: string;
+  id: string;
   email?: string;
   username?: string;
   phone?: string;
@@ -23,14 +23,14 @@ export interface BrandProfile {
 }
 
 export interface Campaign {
-  _id: string;
+  id: string;
   brandId: string;
   title: string;
   description: string;
   genre: string;
   budget: number;
   deadline: string;
-  status: "draft" | "open" | "in_progress" | "completed" | "cancelled";
+  status: "open" | "closed" | "archived";
   createdAt: string;
   deliverables?: string;
   platform?: string;
@@ -50,7 +50,7 @@ export interface InfluencerProfile {
   bio?: string;
   niches?: string[];
   city?: string;
-  tier?: 'nano' | 'micro' | 'mid' | 'macro' | 'mega';
+  tier?: 'nano' | 'micro' | 'macro' | 'mega';
   gender?: 'male' | 'female' | 'non_binary' | 'prefer_not_to_say';
   platform?: string[];
   socialHandles?: {
@@ -77,11 +77,6 @@ export interface UpdateInfluencerProfileData {
     instagram?: string;
     youtube?: string;
   };
-  followers?: {
-    instagram?: number;
-    youtube?: number;
-    total?: number;
-  };
   engagementRate?: number;
   instagramPosts?: Array<{ url: string; thumbnail?: string; caption?: string }>;
   youtubeVideos?: Array<{ url: string; thumbnail?: string; title?: string }>;
@@ -103,7 +98,7 @@ export interface Proposal {
   influencerId: string;
   campaignTitle: string;
   influencerName: string;
-  status: "pending" | "accepted" | "rejected";
+  status: "submitted" | "accepted" | "rejected";
   bidAmount: number;
   message?: string;
   createdAt: string;
@@ -140,11 +135,9 @@ export interface Conversation {
   unreadCount?: number;
 }
 export interface BrandAnalytics {
-  totalCampaigns: number;
-  activeCampaigns: number;
-  totalProposals: number;
-  acceptedProposals: number;
-  totalSpend?: number;
+  campaigns: { total: number; open: number; inProgress: number; completed: number };
+  proposals: { total: number; accepted: number; pending: number; rejected: number };
+  spend: number;
 }
 export interface InfluencerAnalytics {
   totalProposals: number;
@@ -257,7 +250,7 @@ class ApiError extends Error {
 }
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("kalakariaan_token");
   
   const headers: HeadersInit = {
     "Content-Type": "application/json",
@@ -315,15 +308,18 @@ export const api = {
   },
 
   getCurrentUser: async (): Promise<User> => {
-    return request<User>("/api/auth/profile");
+    const res = await request<{ user: User; profile: unknown }>("/api/auth/profile");
+    return res.user;
   },
 
   getBrandProfile: async (): Promise<BrandProfile> => {
-    return request<BrandProfile>("/api/auth/profile");
+    const res = await request<{ user: unknown; profile: BrandProfile }>("/api/auth/profile");
+    return res.profile;
   },
 
   getCampaigns: async (): Promise<Campaign[]> => {
-    return request<Campaign[]>("/api/campaigns");
+    const res = await request<{ campaigns: Campaign[] }>("/api/campaigns");
+    return res.campaigns;
   },
 
   updateCampaign: async (id: string, data: Partial<Campaign>): Promise<Campaign> => {
@@ -352,7 +348,8 @@ export const api = {
   },
 
   getProposals: async (): Promise<Proposal[]> => {
-    return request<Proposal[]>("/api/proposals/my");
+    const res = await request<{ proposals: Proposal[] }>("/api/proposals/my");
+    return res.proposals;
   },
 
   getOpenCampaigns: async (filters?: CampaignFilters): Promise<Campaign[]> => {
@@ -361,11 +358,13 @@ export const api = {
     if (filters?.minBudget) params.append("minBudget", filters.minBudget.toString());
     if (filters?.maxBudget) params.append("maxBudget", filters.maxBudget.toString());
     const query = params.toString() ? `?${params.toString()}` : "";
-    return request<Campaign[]>(`/api/campaigns/open${query}`);
+    const res = await request<{ campaigns: Campaign[] }>(`/api/campaigns/open${query}`);
+    return res.campaigns;
   },
 
   getCampaignById: async (id: string): Promise<Campaign> => {
-    return request<Campaign>(`/api/campaigns/${id}`);
+    const res = await request<{ campaign: Campaign }>(`/api/campaigns/${id}`);
+    return res.campaign;
   },
 
   submitProposal: async (campaignId: string, message: string, bidAmount: number): Promise<Proposal> => {
@@ -380,7 +379,8 @@ export const api = {
   },
 
   getProposalsForCampaign: async (campaignId: string): Promise<Proposal[]> => {
-    return request<Proposal[]>(`/api/campaigns/${campaignId}/proposals`);
+    const res = await request<{ proposals: Proposal[] }>(`/api/campaigns/${campaignId}/proposals`);
+    return res.proposals;
   },
 
   respondToProposal: async (proposalId: string, status: "accepted" | "rejected"): Promise<Proposal> => {
@@ -407,7 +407,7 @@ export const api = {
   googleLogin: async (googleToken: string): Promise<LoginResponse> => {
     return request<LoginResponse>("/api/auth/google", {
       method: "POST",
-      body: JSON.stringify({ jwtToken: googleToken }),
+      body: JSON.stringify({ token: googleToken }),
     });
   },
 
@@ -490,6 +490,10 @@ export const api = {
     return request<Cart>("/api/cart/clear", {
       method: "DELETE",
     });
+  },
+
+  cartCheckout: async (): Promise<{ orderId: string | null; amount: number; currency: string; keyId: string | null }> => {
+    return request('/api/cart/checkout', { method: 'POST' });
   },
 
   updateCartItem: async (influencerId: string, campaignId: string, price: number): Promise<Cart> => {

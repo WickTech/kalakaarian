@@ -48,6 +48,7 @@ router.post('/purchase', auth, async (req: AuthRequest, res: Response) => {
     const { tier, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
     const userId = req.user?.userId;
     if (!userId) { res.status(401).json({ message: 'Unauthorized' }); return; }
+    if (!tier || !TIER_PRICES_PAISE[tier]) { res.status(400).json({ message: 'Invalid tier' }); return; }
     if (razorpayOrderId && !verifySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature)) {
       res.status(400).json({ message: 'Payment verification failed' }); return;
     }

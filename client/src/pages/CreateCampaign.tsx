@@ -57,7 +57,7 @@ export default function CreateCampaign() {
         niche: formData.niche,
       });
       for (const file of files) {
-        await api.uploadCampaignFile(campaign._id, file.fileUrl, file.fileName, file.fileType);
+        await api.uploadCampaignFile(campaign.id, file.fileUrl, file.fileName, file.fileType);
       }
       setCreatedTitle(formData.title);
       setDone(true);

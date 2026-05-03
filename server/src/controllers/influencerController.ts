@@ -5,24 +5,34 @@ import { applyPlatformMargin } from '../utils/pricing';
 
 const ALLOWED_GENDERS = ['male', 'female', 'non_binary', 'prefer_not_to_say'] as const;
 
-const formatInfluencer = (row: any) => ({
-  id: row.id,
-  name: row.profiles?.name ?? 'Unknown',
-  bio: row.bio ?? '',
-  city: row.city ?? '',
-  gender: row.gender,
-  niches: row.niches ?? [],
-  instagram_handle: row.instagram_handle,
-  youtube_handle: row.youtube_handle,
-  platforms: row.platforms ?? [],
-  tier: row.tier,
-  is_verified: !!row.is_verified,
-  is_online: !!row.is_online,
-  last_seen_at: row.last_seen_at,
-  avatar_url: row.avatar_url ?? row.profiles?.avatar_url,
-  portfolio: row.portfolio ?? [],
-  pricing: applyPlatformMargin(row.influencer_pricing ?? []),
-});
+const formatInfluencer = (row: any) => {
+  const pricingObj = (row.influencer_pricing ?? []).reduce(
+    (acc: Record<string, number>, r: any) => { acc[r.content_type] = r.price; return acc; },
+    {}
+  );
+  return {
+    id: row.id,
+    userId: row.id,
+    name: row.profiles?.name ?? 'Unknown',
+    bio: row.bio ?? '',
+    city: row.city ?? '',
+    gender: row.gender,
+    niches: row.niches ?? [],
+    platform: row.platforms ?? [],
+    tier: row.tier,
+    verified: !!row.is_verified,
+    isOnline: !!row.is_online,
+    lastSeenAt: row.last_seen_at,
+    profileImage: row.profiles?.avatar_url ?? row.avatar_url,
+    followerCount: row.followers_count ?? 0,
+    portfolio: row.portfolio ?? [],
+    socialHandles: {
+      instagram: row.instagram_handle ?? undefined,
+      youtube: row.youtube_handle ?? undefined,
+    },
+    pricing: applyPlatformMargin(pricingObj),
+  };
+};
 
 export const getTierCounts = async (_req: Request, res: Response): Promise<void> => {
   try {
@@ -45,7 +55,7 @@ export const getTierCounts = async (_req: Request, res: Response): Promise<void>
 const buildInfluencerQuery = (params: Record<string, any>) => {
   let q = adminClient
     .from('influencer_profiles')
-    .select('*, profiles!influencer_profiles_id_fkey(name, avatar_url), influencer_pricing(platform, content_type, price)');
+    .select('*, profiles(name, avatar_url), influencer_pricing(platform, content_type, price)');
 
   if (params.tier) q = q.eq('tier', params.tier);
   if (params.city) q = q.ilike('city', `%${params.city}%`);
@@ -114,7 +124,7 @@ export const getInfluencerById = async (req: Request, res: Response): Promise<vo
   try {
     const { data, error } = await adminClient
       .from('influencer_profiles')
-      .select('*, profiles!influencer_profiles_id_fkey(name, avatar_url), influencer_pricing(platform, content_type, price)')
+      .select('*, profiles(name, avatar_url), influencer_pricing(platform, content_type, price)')
       .eq('id', req.params.id)
       .single();
     if (error || !data) { res.status(404).json({ message: 'Influencer not found' }); return; }
@@ -133,7 +143,7 @@ export const getOwnProfile = async (req: AuthRequest, res: Response): Promise<vo
     }
     const { data, error } = await adminClient
       .from('influencer_profiles')
-      .select('*, profiles!influencer_profiles_id_fkey(name, avatar_url), influencer_pricing(platform, content_type, price)')
+      .select('*, profiles(name, avatar_url), influencer_pricing(platform, content_type, price)')
       .eq('id', req.user.userId)
       .single();
     if (error || !data) { res.status(404).json({ message: 'Influencer profile not found' }); return; }
@@ -149,7 +159,9 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
     if (!req.user || req.user.role !== 'influencer') {
       res.status(403).json({ message: 'Only influencers can update their profile' }); return;
     }
-    const { bio, city, gender, niches, platform, tier, pricing, portfolio, instagramPosts, youtubeVideos, instagramHandle, youtubeHandle } = req.body;
+    const { bio, city, gender, niches, platform, tier, pricing, portfolio, instagramPosts, youtubeVideos, socialHandles } = req.body;
+    const instagramHandle = req.body.instagramHandle ?? socialHandles?.instagram;
+    const youtubeHandle = req.body.youtubeHandle ?? socialHandles?.youtube;
     const update: Record<string, unknown> = {};
     if (bio !== undefined) update.bio = bio;
     if (city) update.city = city;
@@ -178,7 +190,7 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
 
     const { data } = await adminClient
       .from('influencer_profiles')
-      .select('*, profiles!influencer_profiles_id_fkey(name, avatar_url), influencer_pricing(platform, content_type, price)')
+      .select('*, profiles(name, avatar_url), influencer_pricing(platform, content_type, price)')
       .eq('id', req.user.userId)
       .single();
 
@@ -211,7 +223,7 @@ export const updateProfileImage = async (req: AuthRequest, res: Response): Promi
     if (!req.user) { res.status(401).json({ message: 'Unauthorized' }); return; }
     const { imageUrl } = req.body;
     if (!imageUrl) { res.status(400).json({ message: 'imageUrl required' }); return; }
-    await adminClient.from('profiles').update({ avatar_url: imageUrl }).eq('id', req.params.id || req.user.userId);
+    await adminClient.from('profiles').update({ avatar_url: imageUrl }).eq('id', req.user.userId);
     res.json({ message: 'Profile image updated', imageUrl });
   } catch (error) {
     console.error('Update profile image error:', error);

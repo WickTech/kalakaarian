@@ -25,14 +25,14 @@ export default function InfluencerProfile() {
   const [socialStats, setSocialStats] = useState<SocialStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isOwnProfile = user?._id === id || user?.role === 'influencer';
+  const isOwnProfile = user?.id === id;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const profileData = await api.getInfluencerById(id!);
         
-        const [membershipData, videosData, referralData, socialStatsData] = await Promise.all([
+        const [membershipData, videosData, socialStatsData] = await Promise.all([
           isOwnProfile ? api.getMembershipStatus() : Promise.resolve({ tier: 'regular' }),
           isOwnProfile ? api.getMyVideos() : Promise.resolve([]),
           api.getSocialStats(profileData?.userId || id!),
@@ -109,8 +109,9 @@ export default function InfluencerProfile() {
 
   const handleSocialConnect = async (platform: 'instagram' | 'youtube', handle: string) => {
     try {
-      const result = await api.connectSocialMedia(platform, handle);
-      setProfile({ ...profile, socialHandles: result.socialHandles });
+      await api.connectSocialMedia(platform, handle);
+      const refreshed = await api.getInfluencerById(id!);
+      setProfile(refreshed);
       toast({ title: 'Success', description: `${platform} connected successfully!` });
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to connect social media', variant: 'destructive' });

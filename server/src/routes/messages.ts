@@ -11,6 +11,9 @@ router.post('/send', auth, async (req: AuthRequest, res: Response): Promise<void
     if (!receiverId || !content) {
       res.status(400).json({ message: 'Receiver ID and content are required' }); return;
     }
+    if (typeof content === 'string' && content.length > 2000) {
+      res.status(400).json({ message: 'Message content cannot exceed 2000 characters' }); return;
+    }
 
     // Find or create conversation (participant_ids stored sorted via DB trigger)
     const sorted = [senderId, receiverId].sort();

@@ -57,7 +57,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
 
     const { data: record } = await adminClient
       .from('otp_codes')
-      .select('otp_hash, expires_at')
+      .select('otp_hash, expires_at, attempts')
       .eq('phone', normalizedPhone)
       .single();
 
@@ -66,7 +66,12 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
       await adminClient.from('otp_codes').delete().eq('phone', normalizedPhone);
       res.status(400).json({ message: 'OTP expired' }); return;
     }
+    if ((record.attempts ?? 0) >= 5) {
+      await adminClient.from('otp_codes').delete().eq('phone', normalizedPhone);
+      res.status(400).json({ message: 'Too many attempts. Request a new OTP.' }); return;
+    }
     if (hashOtp(otp, normalizedPhone) !== record.otp_hash) {
+      await adminClient.from('otp_codes').update({ attempts: (record.attempts ?? 0) + 1 }).eq('phone', normalizedPhone);
       res.status(400).json({ message: 'Invalid OTP' }); return;
     }
 

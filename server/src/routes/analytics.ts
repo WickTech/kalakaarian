@@ -9,15 +9,13 @@ router.get('/brand', auth, async (req: AuthRequest, res: Response): Promise<void
     if (req.user!.role !== 'brand') { res.status(403).json({ message: 'Only brands can view this analytics' }); return; }
     const userId = req.user!.userId;
 
-    const [total, open, closed] = await Promise.all([
+    const [total, open, closed, brandCampaignsResult] = await Promise.all([
       adminClient.from('campaigns').select('id', { count: 'exact', head: true }).eq('brand_id', userId),
       adminClient.from('campaigns').select('id', { count: 'exact', head: true }).eq('brand_id', userId).eq('status', 'open'),
       adminClient.from('campaigns').select('id', { count: 'exact', head: true }).eq('brand_id', userId).eq('status', 'closed'),
+      adminClient.from('campaigns').select('id').eq('brand_id', userId),
     ]);
-
-    // Get proposals for brand's campaigns
-    const { data: brandCampaigns } = await adminClient.from('campaigns').select('id').eq('brand_id', userId);
-    const campaignIds = (brandCampaigns ?? []).map((c: { id: string }) => c.id);
+    const campaignIds = (brandCampaignsResult.data ?? []).map((c: { id: string }) => c.id);
 
     const [totalProps, acceptedProps, rejectedProps] = await Promise.all([
       adminClient.from('proposals').select('id', { count: 'exact', head: true }).in('campaign_id', campaignIds),

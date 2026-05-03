@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/app.js",
-    "dev": "ts-node src/app.ts",
+    "dev": "LOCAL_LISTEN=1 ts-node src/app.ts",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "seed": "ts-node src/scripts/seed.ts",

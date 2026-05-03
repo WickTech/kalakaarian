@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { api, Proposal, InfluencerProfile, InfluencerAnalytics } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { openRazorpayCheckout } from "@/lib/razorpay";
 
 type Tab = "analytics" | "wallet" | "upload" | "membership" | "settings";
 
@@ -16,7 +17,7 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 
 const STATUS_STYLE: Record<string, string> = {
-  pending: "text-gold border-gold/30",
+  submitted: "text-gold border-gold/30",
   accepted: "text-green-400 border-green-400/30",
   rejected: "text-red-400 border-red-400/30",
 };
@@ -50,6 +51,36 @@ export default function InfluencerDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleMembershipUpgrade = async (plan: string) => {
+    try {
+      const order = await api.createMembershipOrder(plan);
+      if (!order.orderId || !order.keyId) {
+        await api.purchaseMembership(plan);
+        const updated = await api.getMembershipStatus();
+        setMembershipStatus(updated);
+        toast({ title: "Success", description: `${plan} membership activated!` });
+        return;
+      }
+      await openRazorpayCheckout({
+        orderId: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        keyId: order.keyId,
+        name: `Kalakaarian ${plan.charAt(0).toUpperCase() + plan.slice(1)} Membership`,
+        prefill: { name: user?.name, email: user?.email },
+        onSuccess: async (paymentId, orderId, signature) => {
+          await api.purchaseMembership(plan, { razorpayOrderId: orderId, razorpayPaymentId: paymentId, razorpaySignature: signature });
+          const updated = await api.getMembershipStatus();
+          setMembershipStatus(updated);
+          toast({ title: "Payment successful!", description: `${plan} membership activated.` });
+        },
+        onDismiss: () => toast({ title: "Payment cancelled" }),
+      });
+    } catch {
+      toast({ title: "Error", description: "Failed to process payment", variant: "destructive" });
+    }
+  };
+
   const togglePresence = async () => {
     const next = !isOnline;
     await api.updatePresence(next);
@@ -58,8 +89,13 @@ export default function InfluencerDashboard() {
 
   const submitUpload = async () => {
     if (!uploadLink || !uploadConfirmed) { toast({ title: "Please fill all fields", variant: "destructive" }); return; }
-    toast({ title: "Submitted!", description: "Your content is under review." });
-    setUploadLink(""); setUploadConfirmed(false);
+    try {
+      await api.uploadVideo(uploadLink, uploadPlatform);
+      toast({ title: "Submitted!", description: "Your content is under review." });
+      setUploadLink(""); setUploadConfirmed(false);
+    } catch {
+      toast({ title: "Error", description: "Failed to submit content", variant: "destructive" });
+    }
   };
 
   const stats = {
@@ -231,7 +267,7 @@ export default function InfluencerDashboard() {
                     </li>
                   ))}
                 </ul>
-                <button onClick={() => api.createMembershipOrder(plan)}
+                <button onClick={() => handleMembershipUpgrade(plan)}
                   className={`w-full py-2.5 text-sm rounded-full font-bold ${plan === "gold" ? "gold-pill" : "purple-pill"}`}>
                   {membershipStatus?.tier === plan && membershipStatus.active ? "✓ Active" : `Activate ${plan.charAt(0).toUpperCase() + plan.slice(1)}`}
                 </button>

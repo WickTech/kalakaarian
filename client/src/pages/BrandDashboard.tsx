@@ -8,11 +8,9 @@ import { useToast } from "@/hooks/use-toast";
 type Tab = "overview" | "campaigns" | "room";
 
 const STATUS_STYLE: Record<string, string> = {
-  draft: "text-chalk-dim border-white/20",
   open: "text-green-400 border-green-400/30",
-  in_progress: "text-gold border-gold/30",
-  completed: "text-blue-400 border-blue-400/30",
-  cancelled: "text-red-400 border-red-400/30",
+  closed: "text-blue-400 border-blue-400/30",
+  archived: "text-chalk-dim border-white/20",
 };
 
 const WORKFLOW_STEPS = ["Creators Selected", "Shooting Videos", "Uploaded", "Payment Done"];
@@ -50,9 +48,9 @@ export default function BrandDashboard() {
   };
 
   const statCards = [
-    { label: "Active Campaigns", value: campaigns.filter((c) => c.status === "open" || c.status === "in_progress").length, icon: "🚀" },
+    { label: "Active Campaigns", value: campaigns.filter((c) => c.status === "open").length, icon: "🚀" },
     { label: "Total Creators", value: analytics?.proposals?.accepted || 0, icon: "👥" },
-    { label: "Total Spent", value: `₹${((analytics as Record<string, unknown>)?.totalSpent as number || 0).toLocaleString("en-IN")}`, icon: "💰" },
+    { label: "Total Spent", value: `₹${(analytics?.spend || 0).toLocaleString("en-IN")}`, icon: "💰" },
     { label: "Proposals", value: analytics?.proposals?.total || 0, icon: "📊" },
   ];
 
@@ -109,16 +107,16 @@ export default function BrandDashboard() {
                   ))}
                 </div>
 
-                {campaigns.filter((c) => c.status === "in_progress" || c.status === "open").length > 0 && (
+                {campaigns.filter((c) => c.status === "open").length > 0 && (
                   <div className="bento-card p-5">
                     <h2 className="font-display font-bold text-chalk mb-4">Running Campaigns</h2>
-                    {campaigns.filter((c) => c.status !== "draft" && c.status !== "cancelled").slice(0, 3).map((c) => (
-                      <div key={c._id} className="mb-4 last:mb-0">
+                    {campaigns.filter((c) => c.status !== "archived").slice(0, 3).map((c) => (
+                      <div key={c.id} className="mb-4 last:mb-0">
                         <p className="text-sm font-medium text-chalk mb-2">{c.title}</p>
                         <div className="flex items-center gap-2">
                           {WORKFLOW_STEPS.map((step, i) => (
                             <div key={step} className="flex items-center gap-2">
-                              <div className={`text-xs flex items-center gap-1 ${i === 0 ? "status-done" : i === 1 && c.status === "in_progress" ? "status-pending" : "status-waiting"}`}>
+                              <div className={`text-xs flex items-center gap-1 ${i === 0 ? "status-done" : i === 1 && c.status === "closed" ? "status-pending" : "status-waiting"}`}>
                                 {i === 0 ? "✅" : "⏳"} {step}
                               </div>
                               {i < WORKFLOW_STEPS.length - 1 && <div className="w-3 h-px bg-white/10" />}
@@ -153,17 +151,17 @@ export default function BrandDashboard() {
                       </tr></thead>
                       <tbody>
                         {campaigns.map((c) => (
-                          <tr key={c._id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
+                          <tr key={c.id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
                             <td className="px-5 py-3 font-medium text-chalk">{c.title}</td>
                             <td className="px-5 py-3">
                               <span className={`text-xs px-2 py-0.5 rounded-full border ${STATUS_STYLE[c.status] || "text-chalk-dim border-white/10"}`}>
-                                {c.status === "in_progress" ? "In Progress" : c.status.charAt(0).toUpperCase() + c.status.slice(1)}
+                                {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
                               </span>
                             </td>
                             <td className="px-5 py-3 text-chalk-dim">₹{c.budget?.toLocaleString("en-IN") || "—"}</td>
                             <td className="px-5 py-3 text-chalk-dim">{c.deadline ? new Date(c.deadline).toLocaleDateString() : "—"}</td>
                             <td className="px-5 py-3">
-                              <button onClick={() => openProposals(c._id)} className="text-xs text-gold hover:underline flex items-center gap-1">
+                              <button onClick={() => openProposals(c.id)} className="text-xs text-gold hover:underline flex items-center gap-1">
                                 {proposalsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Users className="w-3 h-3" />} Proposals
                               </button>
                             </td>
@@ -213,7 +211,7 @@ export default function BrandDashboard() {
                       <p className="text-xs text-chalk-dim mt-1">{p.message}</p>
                       <p className="text-sm font-bold text-gold mt-2">₹{p.bidAmount.toLocaleString("en-IN")}</p>
                     </div>
-                    {p.status === "pending" ? (
+                    {p.status === "submitted" ? (
                       <div className="flex gap-2 ml-4">
                         <button onClick={() => respond(p._id, "accepted")} className="p-1.5 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors"><Check className="w-3.5 h-3.5" /></button>
                         <button onClick={() => respond(p._id, "rejected")} className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"><X className="w-3.5 h-3.5" /></button>

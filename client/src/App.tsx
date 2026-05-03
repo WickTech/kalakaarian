@@ -13,6 +13,7 @@ import TermsPage from "./pages/TermsPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { FloatingContactButton } from "@/components/FloatingContactButton";
 
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 const InfluencerRegisterPage = lazy(() => import("./pages/InfluencerRegisterPage"));
@@ -277,6 +278,7 @@ function AppContent() {
         setCampaign={cart.setCampaign}
       />
       <InstallPrompt />
+      <FloatingContactButton />
     </>
   );
 }

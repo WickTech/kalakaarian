@@ -1,0 +1,59 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  vibe-guard:
+    name: vibe-guard security scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Clone vibe-guard
+        run: git clone https://github.com/IAmUnbounded/vibe-guard.git /tmp/vibe-guard
+
+      - name: Install vibe-guard deps
+        run: cd /tmp/vibe-guard && npm install
+
+      - name: Scan server/src
+        run: |
+          node /tmp/vibe-guard/bin/vibe-guard.js scan server/src \
+            --min-severity medium \
+            --json > server-scan.json || true
+          node /tmp/vibe-guard/bin/vibe-guard.js scan server/src \
+            --min-severity medium
+
+      - name: Scan client/src
+        run: |
+          node /tmp/vibe-guard/bin/vibe-guard.js scan client/src \
+            --min-severity medium \
+            --json > client-scan.json || true
+          node /tmp/vibe-guard/bin/vibe-guard.js scan client/src \
+            --min-severity medium
+
+      # Only fail on CRITICAL — current HIGH/MEDIUM findings are audited false positives:
+      # - chart.tsx dangerouslySetInnerHTML: shadcn/ui generated component, config-only data
+      # - LOCAL_LISTEN in app.ts: dev HTTP listener, not an auth bypass
+      - name: Fail on critical findings
+        run: |
+          node /tmp/vibe-guard/bin/vibe-guard.js scan server/src client/src \
+            --fail-on critical \
+            --min-severity critical
+
+      - name: Upload scan reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vibe-guard-reports
+          path: |
+            server-scan.json
+            client-scan.json
+          retention-days: 30

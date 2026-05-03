@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Users, Target, TrendingUp, Sparkles } from "lucide-react";
+import { HeroText } from "@/components/HeroText";
 import { api } from "@/lib/api";
 
 export default function Landing() {
@@ -78,6 +79,8 @@ export default function Landing() {
               Growth.
             </span>
           </h1>
+
+          <HeroText />
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
             Bridge the gap between brands and influencers. Discover authentic partnerships

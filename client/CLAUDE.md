@@ -40,9 +40,8 @@
 | Influencer presence | Server returns `isOnline: boolean` + `lastSeenAt: ISOString`. | Show a green dot on cards when `isOnline`; otherwise show "last seen <relative time>". |
 | Gender filter | Allowed values: `male \| female \| non_binary \| prefer_not_to_say`. | Don't send free-form strings to `?gender=`; the server drops anything else silently. |
 | Pagination | Server caps `limit` to 100. | Page sizes >100 won't error but won't return more. |
-| Tier enum | Server enum: `nano \| micro \| mid \| macro \| mega`. | `lib/store.ts` has a stale `celebrity` tier — when wiring real data, normalise to the server enum. |
+| Tier enum | Server enum: `nano \| micro \| macro \| celeb`. | No `mid`, no `mega`. Use these exact values when sending `?tier=` or membership tier. |
 | Contact form | Public POST is rate-limited (5 / hour / IP). | Surface a friendly toast on 429; back off, don't retry. |
-| Referral Gold reward | Auto-grant happens server-side after a Gold purchase. | Refetch `/membership/status` after a successful purchase to surface the upgrade. |
 
 ## Routing & Pages
 - Pages live in `src/pages/*`. One page = one default export. Co-locate page-specific components in `src/pages/<Page>/`.

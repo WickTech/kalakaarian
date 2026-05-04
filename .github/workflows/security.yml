@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   vibe-guard:
     name: vibe-guard security scan
@@ -18,7 +21,9 @@ jobs:
           node-version: 20
 
       - name: Clone vibe-guard
-        run: git clone https://github.com/IAmUnbounded/vibe-guard.git /tmp/vibe-guard
+        run: |
+          git clone https://github.com/IAmUnbounded/vibe-guard.git /tmp/vibe-guard
+          git -C /tmp/vibe-guard checkout 01e4ac9c07d6f2a7a7fb6b59ee4c512d55f80e96
 
       - name: Install vibe-guard deps
         run: cd /tmp/vibe-guard && npm install

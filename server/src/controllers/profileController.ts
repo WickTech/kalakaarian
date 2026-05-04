@@ -10,10 +10,13 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
     const { data: user } = await adminClient.from('profiles').select('id, email, username, name, role, phone, avatar_url').eq('id', userId).single();
     if (!user) { res.status(404).json({ message: 'User not found' }); return; }
 
+    const { data: { user: authUser } } = await adminClient.auth.admin.getUserById(userId);
+    const isAdmin = authUser?.user_metadata?.is_admin ?? false;
+
     const table = role === 'brand' ? 'brand_profiles' : 'influencer_profiles';
     const { data: profile } = await adminClient.from(table).select('*').eq('id', userId).single();
 
-    res.json({ user, profile });
+    res.json({ user: { ...user, isAdmin }, profile });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error' });

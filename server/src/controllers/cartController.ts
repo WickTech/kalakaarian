@@ -100,6 +100,15 @@ export const updateCartItem = async (req: AuthRequest, res: Response): Promise<v
 export const checkout = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user) { res.status(401).json({ message: 'Unauthorized' }); return; }
+    const { campaignId, campaignDescription } = req.body || {};
+
+    if (campaignId && campaignDescription) {
+      await adminClient.from('campaigns')
+        .update({ description: campaignDescription })
+        .eq('id', campaignId)
+        .eq('brand_id', req.user.userId);
+    }
+
     const { data } = await getCartItems(req.user.userId);
     const items = data ?? [];
     if (items.length === 0) { res.status(400).json({ message: 'Cart is empty' }); return; }

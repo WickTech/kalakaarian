@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { X, ShoppingCart, Plus, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { CartItem } from "@/lib/store";
 import { api } from "@/lib/api";
-import { openRazorpayCheckout } from "@/lib/razorpay";
 
 interface CartDrawerProps {
   open: boolean;
@@ -13,7 +13,9 @@ interface CartDrawerProps {
   total: number;
   campaignName: string;
   campaignId: string;
+  campaignDescription: string;
   setCampaign: (name: string, id?: string) => void;
+  setCampaignDescription: (desc: string) => void;
 }
 
 function formatPrice(n: number) {
@@ -22,11 +24,11 @@ function formatPrice(n: number) {
   return `₹${n}`;
 }
 
-export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, total, campaignName, campaignId, setCampaign }: CartDrawerProps) {
+export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, total, campaignName, campaignId, campaignDescription, setCampaign, setCampaignDescription }: CartDrawerProps) {
+  const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState<Array<{ id: string; title: string }>>([]);
   const [newCampaignName, setNewCampaignName] = useState("");
   const [showNewCampaign, setShowNewCampaign] = useState(false);
-  const [checkingOut, setCheckingOut] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -47,32 +49,9 @@ export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, to
     }
   };
 
-  const handleCheckout = async () => {
-    setCheckingOut(true);
-    try {
-      const order = await api.cartCheckout();
-      if (!order.orderId || !order.keyId) {
-        clearCart();
-        onClose();
-        return;
-      }
-      await openRazorpayCheckout({
-        orderId: order.orderId,
-        amount: order.amount,
-        currency: order.currency,
-        keyId: order.keyId,
-        name: "Kalakaarian — Cart Checkout",
-        onSuccess: async () => {
-          clearCart();
-          onClose();
-        },
-        onDismiss: () => {},
-      });
-    } catch {
-      // no-op — user stays in cart
-    } finally {
-      setCheckingOut(false);
-    }
+  const handleCheckout = () => {
+    onClose();
+    navigate("/checkout");
   };
 
   if (!open) return null;
@@ -98,11 +77,18 @@ export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, to
             <span className="text-xs text-muted-foreground">Campaign:</span>
           </div>
           {campaignName ? (
-            <div className="flex items-center justify-between bg-secondary px-3 py-2 rounded-md">
-              <span className="text-sm font-medium">{campaignName}</span>
-              <button onClick={() => setCampaign("", "")} className="text-xs text-muted-foreground hover:text-destructive">
-                Change
-              </button>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between bg-secondary px-3 py-2 rounded-md">
+                <span className="text-sm font-medium">{campaignName}</span>
+                <button onClick={() => setCampaign("", "")} className="text-xs text-muted-foreground hover:text-destructive">Change</button>
+              </div>
+              <textarea
+                value={campaignDescription}
+                onChange={(e) => setCampaignDescription(e.target.value)}
+                placeholder="Campaign description (optional)"
+                rows={2}
+                className="w-full px-3 py-2 text-xs border border-border rounded-md bg-card focus:outline-none focus:border-primary resize-none"
+              />
             </div>
           ) : showNewCampaign ? (
             <div className="space-y-2">
@@ -191,10 +177,10 @@ export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, to
           </div>
           <button
             onClick={handleCheckout}
-            disabled={items.length === 0 || checkingOut}
+            disabled={items.length === 0}
             className="w-full border border-terminal py-2 font-mono text-xs uppercase tracking-widest text-terminal hover:bg-terminal hover:text-background transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {checkingOut ? "Processing..." : "Checkout →"}
+            Checkout →
           </button>
           <button
             onClick={clearCart}

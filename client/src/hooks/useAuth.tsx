@@ -7,7 +7,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (googleToken: string) => Promise<void>;
+  loginWithGoogle: (googleToken: string, role?: string) => Promise<void>;
   logout: () => void;
   register: (data: RegisterData) => Promise<void>;
 }
@@ -103,11 +103,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async (googleToken: string) => {
+  const loginWithGoogle = async (googleToken: string, role?: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response: LoginResponse = await api.googleLogin(googleToken);
+      const response: LoginResponse = await api.googleLogin(googleToken, role);
       if (!response.user.id) throw new Error("Server response missing user id");
       localStorage.setItem(TOKEN_KEY, response.token);
       localStorage.setItem(USER_KEY, JSON.stringify(response.user));

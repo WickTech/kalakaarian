@@ -8,6 +8,7 @@ export function useCart() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [campaignName, setCampaignName] = useState<string>("");
   const [campaignId, setCampaignId] = useState<string>("");
+  const [campaignDescription, setCampaignDescriptionState] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -101,6 +102,7 @@ export function useCart() {
     setItems([]);
     setCampaignName("");
     setCampaignId("");
+    setCampaignDescriptionState("");
 
     if (user) {
       try {
@@ -136,17 +138,19 @@ export function useCart() {
 
   const total = items.reduce((sum, i) => sum + (i.influencer.price ?? 0), 0);
 
-  return { 
-    items, 
-    addToCart, 
-    removeFromCart, 
-    clearCart, 
-    isInCart, 
-    total, 
+  return {
+    items,
+    addToCart,
+    removeFromCart,
+    clearCart,
+    isInCart,
+    total,
     count: items.length,
     campaignName,
     campaignId,
+    campaignDescription,
     setCampaign,
+    setCampaignDescription: setCampaignDescriptionState,
     loading,
   };
 }

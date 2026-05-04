@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { INDIA_STATES } from "@/lib/constants";
+import { TermsModal } from "@/components/TermsModal";
 
 const GENRES = ["Food", "Tech", "Fashion", "Travel", "Fitness", "Beauty", "Gaming", "Lifestyle", "Finance", "Education", "Comedy", "Music"];
 const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
@@ -21,6 +22,7 @@ export default function InfluencerRegisterPage() {
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [form, setForm] = useState<InfluencerForm>({
     name: "", email: "", phone: "", password: "", confirmPassword: "",
     genres: [], instagram: "", youtube: "",
@@ -142,11 +144,35 @@ export default function InfluencerRegisterPage() {
               <p className="text-sm text-chalk-dim">At least one handle required</p>
               <div>
                 <label className="block text-sm text-chalk-dim mb-1.5">📸 Instagram Handle</label>
-                <input value={form.instagram} onChange={set("instagram")} className="dark-input w-full px-4 py-3 text-sm" placeholder="@priyasharma" />
+                <div className="flex gap-2">
+                  <input value={form.instagram} onChange={set("instagram")} className="dark-input flex-1 px-4 py-3 text-sm" placeholder="@priyasharma" />
+                  {form.instagram && (
+                    <a
+                      href={`https://instagram.com/${form.instagram.replace(/^@/, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 px-3 py-2 text-xs border border-white/10 rounded-lg text-chalk-dim hover:text-chalk hover:border-white/30 transition-colors whitespace-nowrap"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Verify
+                    </a>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-sm text-chalk-dim mb-1.5">▶️ YouTube Channel URL</label>
-                <input value={form.youtube} onChange={set("youtube")} className="dark-input w-full px-4 py-3 text-sm" placeholder="youtube.com/@priyasharma" />
+                <div className="flex gap-2">
+                  <input value={form.youtube} onChange={set("youtube")} className="dark-input flex-1 px-4 py-3 text-sm" placeholder="youtube.com/@priyasharma" />
+                  {form.youtube && (
+                    <a
+                      href={form.youtube.startsWith("http") ? form.youtube : `https://${form.youtube}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 px-3 py-2 text-xs border border-white/10 rounded-lg text-chalk-dim hover:text-chalk hover:border-white/30 transition-colors whitespace-nowrap"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Verify
+                    </a>
+                  )}
+                </div>
               </div>
               <p className="text-xs text-chalk-faint">Connecting platforms enables auto-pulling of real analytics.</p>
             </div>
@@ -205,13 +231,19 @@ export default function InfluencerRegisterPage() {
             {step < 4 ? (
               <button onClick={next} className="flex-1 purple-pill py-3 text-sm">Continue →</button>
             ) : (
-              <button onClick={handleSubmit} disabled={loading} className="flex-1 gold-pill py-3 text-sm disabled:opacity-50">
+              <button onClick={() => setShowTerms(true)} disabled={loading} className="flex-1 gold-pill py-3 text-sm disabled:opacity-50">
                 {loading ? "Creating Account..." : "Complete Profile ✓"}
               </button>
             )}
           </div>
         </div>
       </div>
+      {showTerms && (
+        <TermsModal
+          onAccept={() => { setShowTerms(false); handleSubmit(); }}
+          onClose={() => setShowTerms(false)}
+        />
+      )}
     </main>
   );
 }

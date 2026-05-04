@@ -18,6 +18,7 @@ import campaignWorkflowRoutes from './routes/campaignWorkflow';
 import whatsappRoutes from './routes/whatsapp';
 import socialStatsRoutes from './routes/socialStats';
 import contactRoutes from './routes/contact';
+import adminRoutes from './routes/admin';
 import uploadRoutes from './routes/upload';
 import feedRoutes from './routes/feed';
 
@@ -98,6 +99,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/social', socialStatsRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/feed', feedRoutes);
 

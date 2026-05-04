@@ -5,6 +5,8 @@ import { api, InfluencerProfile } from "@/lib/api";
 import { Influencer } from "@/lib/store";
 import { NotificationBell } from "@/components/NotificationBell";
 import { MarketplaceFilters } from "@/components/MarketplaceFilters";
+import { RisingStarsCarousel } from "@/components/RisingStarsCarousel";
+import { Search } from "lucide-react";
 
 interface MarketplaceProps {
   dark: boolean;
@@ -53,6 +55,7 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
 
   const genreKey = selectedGenres.join(',');
 
@@ -91,6 +94,14 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
 
   const filtered = useMemo(() => {
     let r = influencers;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      r = r.filter((i) =>
+        i.name.toLowerCase().includes(q) ||
+        i.handle?.toLowerCase().includes(q) ||
+        i.genre?.toLowerCase().includes(q)
+      );
+    }
     if (platform !== "all") {
       r = r.filter((i) => {
         const p: string[] = Array.isArray(i.platform) ? (i.platform as unknown as string[]) : [i.platform as string].filter(Boolean);
@@ -172,6 +183,21 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
 
       {/* Main */}
       <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-chalk-faint pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder="Search by name, category, or platform..."
+            className="w-full bg-charcoal/50 border border-white/10 rounded-full pl-9 pr-4 py-2 text-xs text-chalk placeholder:text-chalk-faint focus:outline-none focus:border-gold/50"
+          />
+        </div>
+
+        {/* Rising Stars */}
+        <RisingStarsCarousel />
+
         {/* Controls bar */}
         <div className="flex flex-wrap gap-2 items-center">
           {/* Filters button */}
@@ -250,7 +276,7 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
             {paged.map((inf) => {
               const inCart = isInCart(inf.id);
               const selected = selectedIds.has(inf.id);
@@ -258,11 +284,11 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
                 <div
                   key={inf.id}
                   onClick={() => toggleSelect(inf.id)}
-                  className={`creator-card p-4 cursor-pointer transition-all ${selected ? "ring-2 ring-gold ring-offset-1 ring-offset-obsidian" : ""}`}
+                  className={`creator-card p-3 cursor-pointer transition-all ${selected ? "ring-2 ring-gold ring-offset-1 ring-offset-obsidian" : ""}`}
                 >
                   <div className="flex items-start gap-3 mb-3">
                     <div className="relative shrink-0">
-                      <img src={inf.photo} alt={inf.name} className="w-12 h-12 rounded-full object-cover bg-charcoal" />
+                      <img src={inf.photo} alt={inf.name} className="w-9 h-9 rounded-full object-cover bg-charcoal" />
                       {selected && (
                         <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gold flex items-center justify-center">
                           <CheckSquare className="w-3 h-3 text-obsidian" />
@@ -294,13 +320,13 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
                       <p className="text-sm font-bold text-chalk">—</p>
                     </div>
                     <div className="bento-card-dark p-2 rounded-lg">
-                      <p className="text-xs text-chalk-faint">Reel ₹</p>
+                      <p className="text-xs text-chalk-faint">Cost</p>
                       <p className="text-sm font-bold text-chalk">{inf.price ? `₹${inf.price.toLocaleString("en-IN")}` : "—"}</p>
                     </div>
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); if (!inCart) addToCart(inf); }}
-                    className={`w-full py-2 text-xs rounded-full font-bold transition-all ${inCart ? "bg-green-500/20 text-green-400 border border-green-500/30 cursor-default" : "purple-pill"}`}
+                    className={`w-full py-1.5 text-[10px] rounded-full font-bold transition-all ${inCart ? "bg-green-500/20 text-green-400 border border-green-500/30 cursor-default" : "purple-pill"}`}
                   >
                     {inCart ? "✓ Added to Cart" : "Add to Cart"}
                   </button>

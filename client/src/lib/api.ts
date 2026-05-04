@@ -9,6 +9,7 @@ export interface User {
   role: "brand" | "influencer";
   name?: string;
   brandName?: string;
+  isAdmin?: boolean;
 }
 
 export interface BrandProfile {
@@ -405,10 +406,10 @@ export const api = {
     });
   },
 
-  googleLogin: async (googleToken: string): Promise<LoginResponse> => {
+  googleLogin: async (googleToken: string, role?: string): Promise<LoginResponse> => {
     return request<LoginResponse>("/api/auth/google", {
       method: "POST",
-      body: JSON.stringify({ token: googleToken }),
+      body: JSON.stringify({ token: googleToken, ...(role ? { role } : {}) }),
     });
   },
 
@@ -492,8 +493,8 @@ export const api = {
     });
   },
 
-  cartCheckout: async (): Promise<{ orderId: string | null; amount: number; currency: string; keyId: string | null }> => {
-    return request('/api/cart/checkout', { method: 'POST' });
+  cartCheckout: async (data?: { campaignId?: string; campaignDescription?: string }): Promise<{ orderId: string | null; amount: number; currency: string; keyId: string | null }> => {
+    return request('/api/cart/checkout', { method: 'POST', body: JSON.stringify(data ?? {}) });
   },
 
   updateCartItem: async (influencerId: string, campaignId: string, price: number): Promise<Cart> => {
@@ -675,6 +676,14 @@ export const api = {
     if (params?.genre) q.set('genre', params.genre);
     return request(`/api/feed?${q.toString()}`);
   },
+
+  // Admin
+  adminGetUsers: async (): Promise<{ users: Array<{ id: string; name: string; email: string; role: string; created_at: string }> }> =>
+    request('/api/admin/users'),
+  adminGetCampaigns: async (): Promise<{ campaigns: Array<{ id: string; title: string; status: string; brand_id: string; created_at: string }> }> =>
+    request('/api/admin/campaigns'),
+  adminUpdateCampaignStatus: async (id: string, status: string): Promise<{ message: string }> =>
+    request(`/api/admin/campaigns/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
 
   // Contact
   submitContact: async (data: {

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Users, Target, TrendingUp, Sparkles } from "lucide-react";
 import { HeroText } from "@/components/HeroText";
+import { BrandCarousel } from "@/components/BrandCarousel";
 import { api } from "@/lib/api";
 
 export default function Landing() {
@@ -33,9 +34,9 @@ export default function Landing() {
 
   const tiers = [
     { key: "nano",  label: "Nano Creator",  range: "2K - 20K Followers",   count: tierCounts.nano },
-    { key: "micro", label: "Micro Creator", range: "21K - 200K Followers",  count: tierCounts.micro },
+    { key: "micro", label: "Micro Creator", range: "200K - 3M+ Followers",  count: tierCounts.micro },
     { key: "macro", label: "Macro Creator", range: "200K - 3M Followers",   count: tierCounts.macro },
-    { key: "celeb", label: "Celebrity",      range: "3M+ Followers",         count: tierCounts.celeb },
+    { key: "celeb", label: "Celebrity",      range: "3M+",                   count: tierCounts.celeb },
   ];
 
   const whyKalakaarian = [
@@ -70,7 +71,7 @@ export default function Landing() {
             India&apos;s First AI-Powered Marketplace of Kalakaar (Creators)
           </div>
 
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight" style={{ fontFamily: "Oswald, sans-serif" }}>
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight" style={{ fontFamily: "Oswald, sans-serif" }}>
             <span className="bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">
               Influence. Impact.
             </span>
@@ -101,6 +102,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* Brand Carousel */}
+      <BrandCarousel />
 
       {/* Tier Grid */}
       <section className="py-16 px-4">

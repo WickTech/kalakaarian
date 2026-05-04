@@ -143,7 +143,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     res.json({
       message: 'Login successful',
-      user: profile,
+      user: { ...profile, isAdmin: data.user.user_metadata?.is_admin ?? false },
       token: data.session.access_token,
     });
   } catch (error) {
@@ -211,7 +211,7 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
 
     res.json({
       message: 'Google login successful',
-      user: profile,
+      user: { ...profile, isAdmin: data.user.user_metadata?.is_admin ?? false },
       token: data.session.access_token,
     });
   } catch (error) {

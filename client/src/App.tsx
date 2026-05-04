@@ -3,8 +3,8 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useState, lazy, Suspense } from "react";
 import { useTheme } from "@/hooks/useTheme";
-import { useCart } from "@/hooks/useCart";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { CartProvider, useCartContext } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
 import Landing from "./pages/Landing";
 import LoginPage from "./pages/LoginPage";
@@ -33,6 +33,8 @@ const Messages = lazy(() => import("./pages/Messages"));
 const InfluencerProfile = lazy(() => import("./pages/InfluencerProfile"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const Feed = lazy(() => import("./pages/Feed"));
+const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 
 function PageLoader() {
   return (
@@ -130,7 +132,7 @@ function EditProfileWrapper() {
 
 function AppContent() {
   const { dark, toggle } = useTheme();
-  const cart = useCart();
+  const cart = useCartContext();
   const [cartOpen, setCartOpen] = useState(false);
 
   return (
@@ -256,6 +258,8 @@ function AppContent() {
           element={<InfluencerProfile />}
         />
         <Route path="/feed" element={<Feed />} />
+        <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route
           path="/contact"
           element={<ContactPage />}
@@ -275,7 +279,9 @@ function AppContent() {
         total={cart.total}
         campaignName={cart.campaignName}
         campaignId={cart.campaignId}
+        campaignDescription={cart.campaignDescription}
         setCampaign={cart.setCampaign}
+        setCampaignDescription={cart.setCampaignDescription}
       />
       <InstallPrompt />
       <FloatingContactButton />
@@ -291,7 +297,9 @@ const App = () => {
       <AuthProvider>
         <TooltipProvider>
           <BrowserRouter>
+            <CartProvider>
             <AppContent />
+            </CartProvider>
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { INDIA_STATES } from "@/lib/constants";
+import { TermsModal } from "@/components/TermsModal";
 
 const INDUSTRIES = [
   "Fashion", "Technology", "Food & Beverage", "Health & Wellness",
@@ -29,13 +30,14 @@ export default function BrandRegisterPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const set =
     (key: keyof BrandForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm((p) => ({ ...p, [key]: e.target.value }));
 
-  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const { companyName, contactName, email, phone, password, confirmPassword, industry, state } = form;
     if (!companyName || !contactName || !email || !phone || !password || !confirmPassword || !industry || !state) {
@@ -51,6 +53,11 @@ export default function BrandRegisterPage() {
       return;
     }
     setError("");
+    setShowTerms(true);
+  };
+
+  const doRegister = async () => {
+    const { companyName, contactName, email, phone, password, industry } = form;
     setLoading(true);
     try {
       await register({
@@ -146,6 +153,12 @@ export default function BrandRegisterPage() {
           </p>
         </form>
       </div>
+      {showTerms && (
+        <TermsModal
+          onAccept={() => { setShowTerms(false); doRegister(); }}
+          onClose={() => setShowTerms(false)}
+        />
+      )}
     </main>
   );
 }

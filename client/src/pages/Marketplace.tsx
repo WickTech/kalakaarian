@@ -108,7 +108,7 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const toggleGenre = (g: string) => setSelectedGenres((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
-  const toggleSelect = (id: string) => setSelectedIds((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  const toggleSelect = (id: string) => setSelectedIds((prev) => { const s = new Set(prev); if (s.has(id)) { s.delete(id); } else { s.add(id); } return s; });
   const selectAll = () => setSelectedIds(new Set(paged.map((i) => i.id)));
   const clearSelection = () => setSelectedIds(new Set());
   const addSelectedToCart = () => { paged.filter((i) => selectedIds.has(i.id) && !isInCart(i.id)).forEach(addToCart); clearSelection(); };
@@ -299,7 +299,7 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
                     </div>
                   </div>
                   <button
-                    onClick={(e) => { e.stopPropagation(); !inCart && addToCart(inf); }}
+                    onClick={(e) => { e.stopPropagation(); if (!inCart) addToCart(inf); }}
                     className={`w-full py-2 text-xs rounded-full font-bold transition-all ${inCart ? "bg-green-500/20 text-green-400 border border-green-500/30 cursor-default" : "purple-pill"}`}
                   >
                     {inCart ? "✓ Added to Cart" : "Add to Cart"}

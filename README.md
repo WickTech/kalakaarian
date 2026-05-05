@@ -1,5 +1,4 @@
 # Kalakaarian — India's Creator-Brand Marketplace
-
 Connect brands with creators. Discover authentic partnerships that drive real campaign results.
 
 **Live:** [kalakaarian.com](https://kalakaarian.com) · **API:** [kalakaarian-server.vercel.app](https://kalakaarian-server.vercel.app)

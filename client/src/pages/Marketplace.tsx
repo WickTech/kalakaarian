@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { ShoppingCart, Instagram, Youtube, ArrowLeft, SlidersHorizontal, CheckSquare, Square, Megaphone } from "lucide-react";
 import { api, InfluencerProfile } from "@/lib/api";
@@ -58,6 +58,33 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
   const [search, setSearch] = useState("");
 
   const genreKey = selectedGenres.join(',');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search: wait 350ms after user stops typing before updating debouncedSearch
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 350);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [search]);
+
+  const toInfluencer = (inf: InfluencerProfile): Influencer => ({
+    id: inf.id ?? inf._id ?? "",
+    name: inf.name || "",
+    handle: inf.socialHandles?.instagram || inf.socialHandles?.youtube || "",
+    photo: inf.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${inf.name}`,
+    platform: (inf.platform as "instagram" | "youtube") || "instagram",
+    tier: (inf.tier as Tier) || "nano",
+    genre: inf.niches?.[0] || "",
+    city: inf.city || "",
+    followers: inf.followerCount || 0, activeFollowers: 0, fakeFollowers: 0,
+    avgViews: 0, avgLikes: 0,
+    genderSplit: { male: 45, female: 52, other: 3 },
+    price: null, isOnline: inf.isOnline, lastSeenAt: inf.lastSeenAt,
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -69,32 +96,20 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
           platform: platform !== "all" ? platform : undefined,
           city: location || undefined,
           genre: selectedGenres.length === 1 ? selectedGenres[0] : undefined,
+          name: debouncedSearch || undefined,
         });
-        const transformed: Influencer[] = (Array.isArray(data) ? data : []).map((inf: InfluencerProfile) => ({
-          id: inf.id ?? inf._id ?? "",
-          name: inf.name || "",
-          handle: inf.socialHandles?.instagram || inf.socialHandles?.youtube || "",
-          photo: inf.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${inf.name}`,
-          platform: (inf.platform as "instagram" | "youtube") || "instagram",
-          tier: (inf.tier as Tier) || "nano",
-          genre: inf.niches?.[0] || "",
-          city: inf.city || "",
-          followers: inf.followerCount || 0, activeFollowers: 0, fakeFollowers: 0,
-          avgViews: 0, avgLikes: 0,
-          genderSplit: { male: 45, female: 52, other: 3 },
-          price: null, isOnline: inf.isOnline, lastSeenAt: inf.lastSeenAt,
-        }));
-        setInfluencers(transformed);
+        setInfluencers((Array.isArray(data) ? data : []).map(toInfluencer));
       } catch { setInfluencers([]); }
       finally { setLoading(false); }
     };
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gender, tier, platform, location, genreKey]);
+  }, [gender, tier, platform, location, genreKey, debouncedSearch]);
 
   const filtered = useMemo(() => {
     let r = influencers;
-    if (search.trim()) {
+    // If server already filtered by debouncedSearch, skip re-filtering; only apply if search differs
+    if (search.trim() && search.trim() !== debouncedSearch) {
       const q = search.trim().toLowerCase();
       r = r.filter((i) =>
         i.name.toLowerCase().includes(q) ||
@@ -113,7 +128,7 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
     if (priceMin) r = r.filter((i) => i.price != null && i.price >= parseInt(priceMin));
     if (priceMax) r = r.filter((i) => i.price != null && i.price <= parseInt(priceMax));
     return r;
-  }, [influencers, platform, selectedGenres, location, priceMin, priceMax]);
+  }, [influencers, search, debouncedSearch, platform, selectedGenres, location, priceMin, priceMax]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);

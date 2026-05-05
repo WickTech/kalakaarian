@@ -113,6 +113,7 @@ export interface InfluencerSearchFilters {
   minFollowers?: number;
   maxFollowers?: number;
   gender?: 'male' | 'female' | 'non_binary' | 'prefer_not_to_say';
+  name?: string;
 }
 
 export interface Pagination {
@@ -426,6 +427,7 @@ export const api = {
     if (filters?.minFollowers) params.append("minFollowers", filters.minFollowers.toString());
     if (filters?.maxFollowers) params.append("maxFollowers", filters.maxFollowers.toString());
     if (filters?.gender) params.append("gender", filters.gender);
+    if (filters?.name) params.append("name", filters.name);
     const response = await request<{ influencers: InfluencerProfile[]; pagination: Pagination }>(`/api/influencers/search?${params}`);
     return response.influencers || response as unknown as InfluencerProfile[];
   },

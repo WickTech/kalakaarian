@@ -16,6 +16,7 @@ export default function CheckoutPage() {
   const { items, campaignName, campaignId, campaignDescription, clearCart, total } = useCartContext();
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
+  const [termsAgreed, setTermsAgreed] = useState(false);
   const fee = Math.round(total * 0.08);
   const grand = total + fee;
 
@@ -102,9 +103,25 @@ export default function CheckoutPage() {
 
         {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={termsAgreed}
+            onChange={(e) => setTermsAgreed(e.target.checked)}
+            className="mt-0.5 accent-purple-600 w-4 h-4 flex-shrink-0"
+          />
+          <span className="text-sm text-muted-foreground">
+            I agree to the{" "}
+            <a href="/terms" target="_blank" className="text-purple-600 hover:underline">
+              campaign execution terms
+            </a>{" "}
+            (24–48h delivery, escrow payment, auto-approval policy)
+          </span>
+        </label>
+
         <button
           onClick={handlePay}
-          disabled={items.length === 0 || processing}
+          disabled={items.length === 0 || processing || !termsAgreed}
           className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
         >
           {processing ? "Processing..." : `Pay ${formatPrice(grand)}`}

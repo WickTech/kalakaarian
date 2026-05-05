@@ -8,6 +8,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const {
       email, username, phone, password, name, role,
       companyName, industry, city, niches, platform, tier, bio, pricing,
+      gender, termsAccepted,
     } = req.body;
 
     if (!email && !phone) {
@@ -15,6 +16,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
     if (!password || !name || !role) {
       res.status(400).json({ message: 'Password, name, and role are required' }); return;
+    }
+    if (!termsAccepted) {
+      res.status(400).json({ message: 'You must accept the Terms & Conditions to register' }); return;
     }
     if (password.length < 8) {
       res.status(400).json({ message: 'Password must be at least 8 characters' }); return;
@@ -45,6 +49,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       email: email || null,
       phone: normalizedPhone || null,
       username: username || null,
+      terms_accepted: true,
+      terms_accepted_at: new Date().toISOString(),
     });
 
     if (role === 'brand') {
@@ -54,6 +60,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         industry: industry || '',
       });
     } else if (role === 'influencer') {
+      const ALLOWED_GENDERS = ['male', 'female', 'non_binary', 'prefer_not_to_say'];
       await adminClient.from('influencer_profiles').insert({
         id: userId,
         bio: bio || '',
@@ -61,6 +68,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         niches: niches || [],
         platforms: platform || [],
         tier: tier || 'micro',
+        gender: ALLOWED_GENDERS.includes(gender) ? gender : null,
       });
 
       const p = pricing || {};

@@ -33,10 +33,10 @@ export default function Landing() {
   }, []);
 
   const tiers = [
-    { key: "nano",  label: "Nano Creator",  range: "2K - 20K Followers",   count: tierCounts.nano },
-    { key: "micro", label: "Micro Creator", range: "200K - 3M+ Followers",  count: tierCounts.micro },
-    { key: "macro", label: "Macro Creator", range: "200K - 3M Followers",   count: tierCounts.macro },
-    { key: "celeb", label: "Celebrity",      range: "3M+",                   count: tierCounts.celeb },
+    { key: "nano",  label: "Nano Creator",  range: "2K – 20K followers",   count: tierCounts.nano },
+    { key: "micro", label: "Micro Creator", range: "200K to 3M+ followers", count: tierCounts.micro },
+    { key: "macro", label: "Macro Creator", range: "3M – 10M followers",    count: tierCounts.macro },
+    { key: "celeb", label: "Celebrity",      range: "10M+",                  count: tierCounts.celeb },
   ];
 
   const whyKalakaarian = [

@@ -1,31 +1,34 @@
 const BRANDS = [
-  { name: "Myntra", domain: "myntra.com" },
-  { name: "Nykaa", domain: "nykaa.com" },
-  { name: "Mamaearth", domain: "mamaearth.in" },
-  { name: "boAt", domain: "boat-lifestyle.com" },
-  { name: "Zomato", domain: "zomato.com" },
-  { name: "Swiggy", domain: "swiggy.com" },
-  { name: "WOW Skin Science", domain: "wowskinscience.com" },
-  { name: "MCaffeine", domain: "mcaffeine.in" },
-  { name: "Noise", domain: "gonoise.com" },
-  { name: "Lakme", domain: "lakmeindia.com" },
-  { name: "Sugar Cosmetics", domain: "sugarcosmetics.com" },
-  { name: "Plum", domain: "plumgoodness.com" },
-  { name: "Minimalist", domain: "beminimalist.co" },
-  { name: "Dot & Key", domain: "dotandkey.com" },
-  { name: "Beardo", domain: "beardo.in" },
-  { name: "Man Matters", domain: "manmatters.com" },
-  { name: "Wakefit", domain: "wakefit.co" },
-  { name: "Sleepy Owl", domain: "sleepyowl.coffee" },
-  { name: "The Man Company", domain: "themancompany.com" },
+  { name: "Rummyverse",       domain: "rummyverse.com" },
+  { name: "Gameskraft",       domain: "gameskraft.com" },
+  { name: "Coca-Cola",        domain: "coca-cola.com" },
+  { name: "Pepsi",            domain: "pepsi.com" },
+  { name: "Lakmé",            domain: "lakmeindia.com" },
+  { name: "L'Oréal",          domain: "loreal.com" },
+  { name: "PokerBaazi",       domain: "pokerbaazi.com" },
+  { name: "Junglee Games",    domain: "jungleegames.com" },
+  { name: "Van Heusen",       domain: "vanheusenindia.com" },
+  { name: "Allen Solly",      domain: "allensolly.com" },
+  { name: "Gucci",            domain: "gucci.com" },
+  { name: "Armani Exchange",  domain: "armaniexchange.com" },
+  { name: "Zara",             domain: "zara.com" },
+  { name: "Adidas",           domain: "adidas.com" },
+  { name: "Nike",             domain: "nike.com" },
+  { name: "Oppo",             domain: "oppo.com" },
+  { name: "Vivo",             domain: "vivo.com" },
+  { name: "Nothing",          domain: "nothing.tech" },
+  { name: "Motorola",         domain: "motorola.com" },
+  { name: "Tanishq",          domain: "tanishq.co.in" },
+  { name: "Kalyan Jewellers", domain: "kalyanjewellers.net" },
 ];
 
 function BrandLogo({ name, domain }: { name: string; domain: string }) {
   return (
-    <div className="inline-flex items-center justify-center px-5 py-3 rounded-xl border border-border bg-card hover:border-purple-500 transition-colors shrink-0 h-14 min-w-[100px]">
+    <div className="inline-flex items-center justify-center px-5 py-3 rounded-xl border border-border bg-card hover:border-purple-500 transition-colors shrink-0 h-14 min-w-[110px]">
       <img
         src={`https://logo.clearbit.com/${domain}`}
         alt={name}
+        loading="lazy"
         className="max-h-7 max-w-[90px] object-contain grayscale hover:grayscale-0 transition-all"
         onError={(e) => {
           const img = e.currentTarget;
@@ -34,7 +37,7 @@ function BrandLogo({ name, domain }: { name: string; domain: string }) {
           if (span) span.style.display = "block";
         }}
       />
-      <span className="hidden text-sm font-medium text-muted-foreground">{name}</span>
+      <span className="hidden text-xs font-medium text-muted-foreground">{name}</span>
     </div>
   );
 }
@@ -46,8 +49,8 @@ export function BrandCarousel() {
       <p className="text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-6">
         Trusted by India's leading brands
       </p>
-      <div className="relative">
-        <div className="flex gap-8 animate-marquee-left whitespace-nowrap">
+      <div className="relative group">
+        <div className="flex gap-6 animate-marquee-left group-hover:[animation-play-state:paused] whitespace-nowrap">
           {doubled.map((brand, i) => (
             <BrandLogo key={i} name={brand.name} domain={brand.domain} />
           ))}

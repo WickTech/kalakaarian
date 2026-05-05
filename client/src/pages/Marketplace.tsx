@@ -288,7 +288,7 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
                 >
                   <div className="flex items-start gap-3 mb-3">
                     <div className="relative shrink-0">
-                      <img src={inf.photo} alt={inf.name} className="w-9 h-9 rounded-full object-cover bg-charcoal" />
+                      <img src={inf.photo} alt={inf.name} className="w-12 h-12 rounded-xl object-cover bg-charcoal" />
                       {selected && (
                         <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gold flex items-center justify-center">
                           <CheckSquare className="w-3 h-3 text-obsidian" />

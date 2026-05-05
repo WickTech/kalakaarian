@@ -68,6 +68,7 @@ export default function BrandRegisterPage() {
         role: "brand",
         companyName,
         industry,
+        termsAccepted: true,
       });
       navigate("/brand/dashboard");
     } catch (err) {
@@ -155,6 +156,7 @@ export default function BrandRegisterPage() {
       </div>
       {showTerms && (
         <TermsModal
+          role="brand"
           onAccept={() => { setShowTerms(false); doRegister(); }}
           onClose={() => setShowTerms(false)}
         />

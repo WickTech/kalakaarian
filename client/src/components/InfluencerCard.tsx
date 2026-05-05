@@ -36,7 +36,7 @@ export function InfluencerCard({ influencer, isInCart, onAddToCart }: Influencer
             <img
               src={influencer.photo || DEFAULT_AVATAR}
               alt={influencer.name}
-              className="w-14 h-14 rounded-full border-2 border-border object-cover"
+              className="w-16 h-16 rounded-xl border-2 border-border object-cover"
               loading="lazy"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = DEFAULT_AVATAR;

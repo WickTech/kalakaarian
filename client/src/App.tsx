@@ -265,6 +265,7 @@ function AppContent() {
           element={<ContactPage />}
         />
         <Route path="/terms" element={<TermsPage />} />
+        <Route path="/terms-and-conditions" element={<Navigate to="/terms" replace />} />
         <Route path="/refund-policy" element={<RefundPolicyPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="*" element={<NotFound />} />

@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { Edit, ExternalLink } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Edit, ExternalLink, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { api, Proposal, InfluencerProfile, InfluencerAnalytics } from "@/lib/api";
@@ -23,7 +23,8 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default function InfluencerDashboard() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [tab, setTab] = useState<Tab>("analytics");
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -37,6 +38,7 @@ export default function InfluencerDashboard() {
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [isOnline, setIsOnline] = useState(false);
+  const [membershipTermsAccepted, setMembershipTermsAccepted] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -139,6 +141,9 @@ export default function InfluencerDashboard() {
               <Link to="/profile/edit" className="p-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk transition-colors">
                 <Edit className="w-3.5 h-3.5" />
               </Link>
+              <button onClick={() => { logout(); navigate("/"); }} className="p-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors" title="Logout">
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>
@@ -251,6 +256,14 @@ export default function InfluencerDashboard() {
 
         {tab === "membership" && (
           <div className="space-y-4">
+            <div className="bento-card p-4 border border-purple-500/20 bg-purple-500/5 rounded-xl">
+              <p className="text-xs text-chalk-dim mb-2 font-semibold">Membership Terms</p>
+              <p className="text-xs text-chalk-faint mb-3">Membership fees are non-refundable. By activating, you agree to Kalakaarian&apos;s <a href="/terms" target="_blank" className="text-purple-400 hover:underline">Terms & Conditions</a>. Membership grants visibility benefits and does not guarantee campaign selection.</p>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={membershipTermsAccepted} onChange={(e) => setMembershipTermsAccepted(e.target.checked)} className="accent-purple-600" />
+                <span className="text-xs text-chalk-dim">I agree to the membership terms</span>
+              </label>
+            </div>
             {[
               { plan: "gold", price: "₹149/month", features: ["Top visibility", "Profile banner", "Priority selection", "Advanced analytics"] },
               { plan: "silver", price: "₹79/month", features: ["2-3× more selection", "Notifications", "Basic analytics", "Community access"] },
@@ -268,7 +281,8 @@ export default function InfluencerDashboard() {
                   ))}
                 </ul>
                 <button onClick={() => handleMembershipUpgrade(plan)}
-                  className={`w-full py-2.5 text-sm rounded-full font-bold ${plan === "gold" ? "gold-pill" : "purple-pill"}`}>
+                  disabled={!membershipTermsAccepted || (membershipStatus?.tier === plan && membershipStatus.active)}
+                  className={`w-full py-2.5 text-sm rounded-full font-bold disabled:opacity-40 disabled:cursor-not-allowed ${plan === "gold" ? "gold-pill" : "purple-pill"}`}>
                   {membershipStatus?.tier === plan && membershipStatus.active ? "✓ Active" : `Activate ${plan.charAt(0).toUpperCase() + plan.slice(1)}`}
                 </button>
               </div>

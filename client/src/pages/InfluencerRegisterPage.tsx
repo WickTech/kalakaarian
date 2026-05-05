@@ -6,12 +6,18 @@ import { INDIA_STATES } from "@/lib/constants";
 import { TermsModal } from "@/components/TermsModal";
 
 const GENRES = ["Food", "Tech", "Fashion", "Travel", "Fitness", "Beauty", "Gaming", "Lifestyle", "Finance", "Education", "Comedy", "Music"];
-const DEFAULT_AVATAR = "https://api.dicebear.com/7.x/avataaars/svg?seed=default";
 const STEPS = ["Basic Info", "Genre", "Platforms", "Rates", "Location"];
+
+const GENDER_AVATARS: Record<string, string> = {
+  male: "https://api.dicebear.com/7.x/avataaars/svg?seed=male&accessories=&top=shortFlat&facialHair=beardLight",
+  female: "https://api.dicebear.com/7.x/avataaars/svg?seed=female&accessories=round&top=longButNotTooLong",
+  non_binary: "https://api.dicebear.com/7.x/avataaars/svg?seed=nb&accessories=sunglasses",
+  prefer_not_to_say: "https://api.dicebear.com/7.x/avataaars/svg?seed=default",
+};
 
 interface InfluencerForm {
   name: string; email: string; phone: string; password: string; confirmPassword: string;
-  genres: string[]; instagram: string; youtube: string;
+  gender: string; genres: string[]; instagram: string; youtube: string;
   reelRate: string; storyRate: string; longVideoRate: string; shortsRate: string; bio: string;
   city: string; state: string;
 }
@@ -25,7 +31,7 @@ export default function InfluencerRegisterPage() {
   const [showTerms, setShowTerms] = useState(false);
   const [form, setForm] = useState<InfluencerForm>({
     name: "", email: "", phone: "", password: "", confirmPassword: "",
-    genres: [], instagram: "", youtube: "",
+    gender: "", genres: [], instagram: "", youtube: "",
     reelRate: "", storyRate: "", longVideoRate: "", shortsRate: "", bio: "",
     city: "", state: "",
   });
@@ -39,7 +45,7 @@ export default function InfluencerRegisterPage() {
 
   const validate = (): boolean => {
     if (step === 0) {
-      if (!form.name || !form.email || !form.phone || !form.password || !form.confirmPassword) {
+      if (!form.name || !form.email || !form.phone || !form.password || !form.confirmPassword || !form.gender) {
         setError("All fields are required."); return false;
       }
       if (form.password.length < 8) { setError("Password must be at least 8 characters."); return false; }
@@ -57,14 +63,16 @@ export default function InfluencerRegisterPage() {
     if (!form.city || !form.state) { setError("City and state are required."); return; }
     setLoading(true);
     try {
+      const profileImage = GENDER_AVATARS[form.gender] || GENDER_AVATARS.prefer_not_to_say;
       await register({
         email: form.email, phone: form.phone, password: form.password, name: form.name,
         role: "influencer",
+        gender: (form.gender as 'male' | 'female' | 'non_binary' | 'prefer_not_to_say') || undefined,
         niches: form.genres as never[],
         platform: [...(form.instagram ? ["instagram"] : []), ...(form.youtube ? ["youtube"] : [])],
         tier: "micro", bio: form.bio,
         socialHandles: { instagram: form.instagram || undefined, youtube: form.youtube || undefined },
-        profileImage: DEFAULT_AVATAR,
+        profileImage,
         city: form.city,
         pricing: {
           reelRate: Number(form.reelRate) || 0,
@@ -72,6 +80,7 @@ export default function InfluencerRegisterPage() {
           longVideoRate: Number(form.longVideoRate) || 0,
           shortsRate: Number(form.shortsRate) || 0,
         },
+        termsAccepted: true,
       });
       navigate("/influencer/dashboard");
     } catch (err) {
@@ -120,6 +129,16 @@ export default function InfluencerRegisterPage() {
                   <input type={type} value={form[key]} onChange={set(key)} className="dark-input w-full px-4 py-3 text-sm" placeholder={ph} />
                 </div>
               ))}
+              <div>
+                <label className="block text-sm text-chalk-dim mb-1.5">Gender *</label>
+                <select value={form.gender} onChange={set("gender")} className="dark-select w-full px-4 py-3 text-sm">
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="non_binary">Non-binary</option>
+                  <option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
             </div>
           )}
 

@@ -236,6 +236,8 @@ export interface RegisterData {
     video?: number;
     post?: number;
   };
+  gender?: 'male' | 'female' | 'non_binary' | 'prefer_not_to_say';
+  termsAccepted?: boolean;
 }
 
 export interface LoginResponse {

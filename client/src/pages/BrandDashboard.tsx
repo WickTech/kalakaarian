@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { Plus, Search, MessageSquare, FileText, TrendingUp, Users, DollarSign, Check, X, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Plus, Search, MessageSquare, FileText, TrendingUp, Users, DollarSign, Check, X, Loader2, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { api, Campaign, Proposal, BrandAnalytics } from "@/lib/api";
@@ -16,7 +16,8 @@ const STATUS_STYLE: Record<string, string> = {
 const WORKFLOW_STEPS = ["Creators Selected", "Shooting Videos", "Uploaded", "Payment Done"];
 
 export default function BrandDashboard() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [tab, setTab] = useState<Tab>("overview");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -84,6 +85,12 @@ export default function BrandDashboard() {
             <Link to="/brand-campaign" className="purple-pill flex items-center gap-2 px-4 py-2 text-sm">
               <Plus className="w-4 h-4" /> New Campaign
             </Link>
+            <button
+              onClick={() => { logout(); navigate("/"); }}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
 

@@ -211,12 +211,17 @@ export default function BrandDashboard() {
               {viewingProposals.proposals.length === 0 ? (
                 <p className="text-chalk-dim text-sm">No proposals yet for this campaign.</p>
               ) : viewingProposals.proposals.map((p) => (
-                <div key={p._id} className="bento-card-dark p-4 rounded-lg mb-3">
+                <div key={p._id} className="bento-card-dark p-4 rounded-lg mb-3 relative">
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="text-sm font-medium text-chalk">{p.influencerName || "Creator"}</p>
                       <p className="text-xs text-chalk-dim mt-1">{p.message}</p>
                       <p className="text-sm font-bold text-gold mt-2">₹{p.bidAmount.toLocaleString("en-IN")}</p>
+                      {import.meta.env.VITE_WORKFLOW_V2_ENABLED === 'true' && p.workflow_stage && (
+                        <Link to={`/proposals/${p._id}`} className="text-xs text-purple-400 hover:text-purple-300 mt-1 inline-block">
+                          View workflow →
+                        </Link>
+                      )}
                     </div>
                     {p.status === "submitted" ? (
                       <div className="flex gap-2 ml-4">

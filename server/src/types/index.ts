@@ -97,6 +97,18 @@ export interface ICampaign {
   updated_at?: string;
 }
 
+export type WorkflowStage =
+  | 'shortlisted' | 'accepted' | 'content_in_progress' | 'submitted'
+  | 'under_review' | 'approved' | 'payment_pending' | 'payment_released'
+  | 'rejected_workflow';
+
+export interface WorkflowSubmission {
+  url: string;
+  platform: string;
+  notes: string | null;
+  submittedAt: string;
+}
+
 export interface IProposal {
   id: string;
   campaign_id: string;
@@ -104,6 +116,11 @@ export interface IProposal {
   message?: string | null;
   bid_amount?: number | null;
   status: 'submitted' | 'accepted' | 'rejected' | 'withdrawn';
+  workflow_stage?: WorkflowStage | null;
+  workflow_stage_updated_at?: string | null;
+  auto_approve_at?: string | null;
+  current_submission?: WorkflowSubmission | null;
+  transaction_ref?: string | null;
   created_at?: string;
   updated_at?: string;
 }

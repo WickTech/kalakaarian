@@ -103,6 +103,34 @@ export interface Proposal {
   bidAmount: number;
   message?: string;
   createdAt: string;
+  workflow_stage?: string | null;
+}
+
+export interface WorkflowSubmission {
+  url: string;
+  platform: string;
+  notes: string | null;
+  submittedAt: string;
+}
+
+export interface WorkflowProposal {
+  id: string;
+  status: string;
+  workflow_stage: string | null;
+  workflow_stage_updated_at: string | null;
+  auto_approve_at: string | null;
+  current_submission: WorkflowSubmission | null;
+  transaction_ref: string | null;
+}
+
+export interface ActivityLogEntry {
+  id: string;
+  actor_role: string | null;
+  action: string;
+  from_stage: string | null;
+  to_stage: string | null;
+  details: Record<string, unknown> | null;
+  created_at: string;
 }
 
 export interface InfluencerSearchFilters {
@@ -705,3 +733,42 @@ export const api = {
 };
 
 export { ApiError };
+
+// ─── Workflow API (standalone functions for TanStack Query hooks) ─────────────
+
+const ACTION_METHODS: Record<string, string> = {
+  shortlist: 'shortlist',
+  accept: 'accept',
+  start_content: 'start',
+  submit_content: 'submit',
+  approve: 'approve',
+  request_revision: 'request-revision',
+  feedback: 'feedback',
+  mark_payment_pending: 'mark-payment-pending',
+  release_payment: 'release-payment',
+  reject_workflow: 'reject',
+};
+
+export async function getWorkflow(proposalId: string): Promise<WorkflowProposal> {
+  const res = await request<{ proposal: WorkflowProposal }>(`/api/proposals/${proposalId}/workflow`);
+  return res.proposal;
+}
+
+export async function getActivityLog(proposalId: string): Promise<ActivityLogEntry[]> {
+  const res = await request<{ log: ActivityLogEntry[] }>(`/api/proposals/${proposalId}/workflow/activity`);
+  return res.log;
+}
+
+export async function workflowAction(
+  proposalId: string,
+  action: string,
+  body?: Record<string, unknown>,
+): Promise<WorkflowProposal> {
+  const path = ACTION_METHODS[action];
+  if (!path) throw new Error(`Unknown workflow action: ${action}`);
+  const res = await request<{ proposal: WorkflowProposal }>(`/api/proposals/${proposalId}/workflow/${path}`, {
+    method: 'POST',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return res.proposal;
+}

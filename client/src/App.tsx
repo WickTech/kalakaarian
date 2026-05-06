@@ -35,6 +35,7 @@ const ContactPage = lazy(() => import("./pages/ContactPage"));
 const Feed = lazy(() => import("./pages/Feed"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const ProposalDetail = lazy(() => import("./pages/proposal/[id]"));
 
 function PageLoader() {
   return (
@@ -260,6 +261,7 @@ function AppContent() {
         <Route path="/feed" element={<Feed />} />
         <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />
         <Route
           path="/contact"
           element={<ContactPage />}

@@ -21,6 +21,8 @@ import contactRoutes from './routes/contact';
 import adminRoutes from './routes/admin';
 import uploadRoutes from './routes/upload';
 import feedRoutes from './routes/feed';
+import workflowRoutes from './routes/workflow';
+import internalRoutes from './routes/internal';
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -102,6 +104,8 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/feed', feedRoutes);
+app.use('/api/proposals/:id/workflow', workflowRoutes);
+app.use('/api/internal', internalRoutes);
 
 if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);

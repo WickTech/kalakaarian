@@ -11,5 +11,11 @@
       "src": "/(.*)",
       "dest": "server/src/app.ts"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/internal/cron/auto-approve",
+      "schedule": "0 * * * *"
+    }
   ]
 }

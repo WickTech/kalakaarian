@@ -189,7 +189,13 @@ export default function InfluencerDashboard() {
                   <tbody>
                     {proposals.slice(0, 10).map((p) => (
                       <tr key={p._id} className="border-b border-white/5 hover:bg-white/2">
-                        <td className="px-4 py-2.5 text-chalk">{p.campaignTitle || "—"}</td>
+                        <td className="px-4 py-2.5 text-chalk">
+                          {import.meta.env.VITE_WORKFLOW_V2_ENABLED === 'true' && p.workflow_stage ? (
+                            <Link to={`/proposals/${p._id}`} className="hover:text-purple-400 transition-colors">
+                              {p.campaignTitle || "—"}
+                            </Link>
+                          ) : (p.campaignTitle || "—")}
+                        </td>
                         <td className="px-4 py-2.5 text-chalk">₹{p.bidAmount.toLocaleString("en-IN")}</td>
                         <td className="px-4 py-2.5 text-chalk-dim">{new Date(p.createdAt).toLocaleDateString()}</td>
                         <td className="px-4 py-2.5">

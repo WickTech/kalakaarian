@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Phase 1 Structured Campaign Workflow
+
+### Added
+- **Migration 015** — `proposals.workflow_stage` + activity log + cron heartbeat + `transition_workflow_stage` Postgres RPC (additive, nullable, no downtime)
+- **Workflow v2 backend** — 7-stage proposal lifecycle with atomic RPC transitions and optimistic locking (`workflowActions.ts`, `workflowController.ts`, `cronController.ts`)
+- **Workflow routes** — `GET|POST /api/proposals/:id/workflow/*` (11 endpoints behind `WORKFLOW_V2_ENABLED` flag)
+- **Cron** — `POST /api/internal/cron/auto-approve` auto-approves expired `under_review` proposals; Vercel cron hourly
+- **Workflow UI** — `StageTimeline`, `ActivityLogList`, `WorkflowDialogs` components; `ProposalDetail` page at `/proposals/:id`
+- **TanStack Query hooks** — `useProposalWorkflow`, `useActivityLog`, `useWorkflowAction`
+- **Feature flag** — `WORKFLOW_V2_ENABLED` + `VITE_WORKFLOW_V2_ENABLED` gate all new surfaces; legacy proposals unaffected
+
+### Schema changes (migration 015)
+- `proposals`: `workflow_stage`, `workflow_stage_updated_at`, `auto_approve_at`, `current_submission`, `transaction_ref` (all nullable)
+- New table: `proposal_activity_log` (with RLS), `cron_runs`
+- New RPC: `transition_workflow_stage`
+
+---
+
 ## [Unreleased] — targeting 1 May 2026
 
 ### Remaining pre-launch blockers

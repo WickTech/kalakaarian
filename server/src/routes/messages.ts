@@ -15,14 +15,24 @@ router.post('/send', auth, async (req: AuthRequest, res: Response): Promise<void
       res.status(400).json({ message: 'Message content cannot exceed 2000 characters' }); return;
     }
 
-    // Find or create conversation (participant_ids stored sorted via DB trigger)
+    // Relationship guard: only allow messaging if connected via a proposal or conversation already exists
     const sorted = [senderId, receiverId].sort();
-    let { data: conversation } = await adminClient
-      .from('conversations')
-      .select('id')
-      .contains('participant_ids', sorted)
-      .single();
+    const { data: existingConv } = await adminClient.from('conversations')
+      .select('id').contains('participant_ids', sorted).maybeSingle();
+    if (!existingConv) {
+      const [r1, r2] = await Promise.all([
+        adminClient.from('proposals').select('id, campaigns!inner(brand_id)')
+          .eq('influencer_id', senderId).eq('campaigns.brand_id', receiverId).limit(1),
+        adminClient.from('proposals').select('id, campaigns!inner(brand_id)')
+          .eq('influencer_id', receiverId).eq('campaigns.brand_id', senderId).limit(1),
+      ]);
+      if ((r1.data?.length ?? 0) === 0 && (r2.data?.length ?? 0) === 0) {
+        res.status(403).json({ message: 'Can only message users connected via a proposal' }); return;
+      }
+    }
 
+    // Find or create conversation (participant_ids stored sorted via DB trigger)
+    let conversation = existingConv;
     if (!conversation) {
       const { data: newConv, error: convErr } = await adminClient
         .from('conversations')

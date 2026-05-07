@@ -68,7 +68,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
     }
     if ((record.attempts ?? 0) >= 5) {
       await adminClient.from('otp_codes').delete().eq('phone', normalizedPhone);
-      res.status(400).json({ message: 'Too many attempts. Request a new OTP.' }); return;
+      res.status(429).json({ message: 'Too many attempts. Request a new OTP.' }); return;
     }
     if (hashOtp(otp, normalizedPhone) !== record.otp_hash) {
       await adminClient.from('otp_codes').update({ attempts: (record.attempts ?? 0) + 1 }).eq('phone', normalizedPhone);

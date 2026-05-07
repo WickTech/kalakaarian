@@ -23,6 +23,11 @@ router.post('/order', auth, async (req: AuthRequest, res: Response) => {
 });
 
 const activateMembership = async (userId: string, tier: string, paymentId: string) => {
+  // Idempotency: /purchase and webhook can both fire for the same payment
+  const { data: existing } = await adminClient.from('memberships')
+    .select('*').eq('user_id', userId).eq('payment_id', paymentId).maybeSingle();
+  if (existing) return existing;
+
   const endsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
   const { data: membership } = await adminClient.from('memberships').insert({
     user_id: userId,
@@ -61,6 +66,7 @@ router.get('/status', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { data } = await adminClient.from('memberships')
       .select('*').eq('user_id', req.user!.userId).eq('status', 'active')
+      .gt('ends_at', new Date().toISOString())
       .order('created_at', { ascending: false }).limit(1).single();
     res.json(data || { tier: 'regular' });
   } catch { res.status(500).json({ message: 'Error fetching membership status' }); }

@@ -96,7 +96,7 @@ export default function Landing() {
             </Link>
             <Link to="/influencer-register">
               <Button size="lg" variant="outline">
-                Join as Influencer
+                Join as Creator
               </Button>
             </Link>
           </div>

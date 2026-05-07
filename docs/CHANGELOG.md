@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Phases 2–11 + P0 Security Fixes (2026-05-07)
+
+### Added
+- **Migration 016** — `cart_orders` table for Razorpay webhook reconciliation
+- **Migration 017** — `ratings` table (`proposal_id`, `brand_id`, `influencer_id`, `score`, `review`); XP events table; `award_xp` + `recalculate_influencer_xp` RPCs
+- **Checkout** — `POST /api/cart/checkout` creates Razorpay order with 8% platform fee; `POST /api/cart/webhook` advances `payment_released` idempotently
+- **Proposal Workflow** — 9-stage lifecycle (shortlisted → payment_released); `GET /api/proposals/:id/workflow/public` (no auth); auto-approve countdown; live Share link; 15s polling
+- **Live Campaign Tracking** — `/brand/campaigns/:id/track` page; `RecommendedCreators` on overview; `Track →` links from campaigns tab
+- **Ratings** — `POST /api/proposals/:id/rate`; `GET /api/influencers/:id/ratings`; `InfluencerTrustSection` + `BadgeStrip` on profile; XP awarded per review
+- **Dashboards** — `BrandAnalyticsPanel` (stage funnel, top campaigns); `InfluencerAnalyticsPanel` (completion rate, rating); `GamificationPanel` (XP + badges)
+- **Deep Analytics** — `GET /api/analytics/brand/deep`; `GET /api/analytics/influencer/deep`
+- **Recommendations** — `GET /api/recommendations/creators` (brand); `GET /api/recommendations/campaigns` (influencer)
+- **Gamification** — `GET /api/gamification/influencer`; XP system Bronze→Platinum; 5 achievement badges; public badge endpoint
+- **Creator Search** — `?name=` ilike on `GET /api/influencers`; sorted online→lastSeenAt→tier; TanStack Query in Marketplace
+
+### Security (P0)
+- OTP lockout returns 429 (was 400) after 5 failed attempts
+- Membership activation idempotent on `(user_id, payment_id)` — prevents double-grant
+- `/api/membership/status` filters expired rows via `gt('ends_at', now)`
+- `POST /api/messages/send` blocks new conversations without a shared proposal relationship
+
+### Schema (migrations applied 2026-05-07 to `uacdkzjgddivifvhjxyv`)
+- **016** `cart_orders` — cart snapshot at checkout
+- **017** `ratings`, XP events, `award_xp` RPC, `influencer_profiles.xp`
+
+---
+
 ## [Unreleased] — Phase 1 Structured Campaign Workflow
 
 ### Added

@@ -324,15 +324,17 @@ Public (optional auth). Lists open campaigns.
 
 ## Cart — `/api/cart`
 
-All cart endpoints require auth.
+All cart endpoints require auth except webhook.
 
-| Method | Path | Action |
-|--------|------|--------|
-| GET | `/api/cart` | Get cart |
-| POST | `/api/cart/add` | Add influencer: `{ influencerId, price, campaignId? }` |
-| DELETE | `/api/cart/remove/:influencerId` | Remove item |
-| DELETE | `/api/cart/clear` | Clear cart |
-| PUT | `/api/cart/update/:influencerId` | Update item: `{ campaignId, price }` |
+| Method | Path | Auth | Action |
+|--------|------|------|--------|
+| GET | `/api/cart` | required | Get cart |
+| POST | `/api/cart/add` | required | Add influencer: `{ influencerId, price, campaignId? }` |
+| DELETE | `/api/cart/remove/:influencerId` | required | Remove item |
+| DELETE | `/api/cart/clear` | required | Clear cart |
+| PUT | `/api/cart/update/:influencerId` | required | Update item: `{ campaignId, price }` |
+| POST | `/api/cart/checkout` | required | Create Razorpay order (applies 8% platform fee). Returns `{ orderId, amount, currency, keyId }` |
+| POST | `/api/cart/webhook` | none | Razorpay `payment.captured` webhook — advances approved proposals to `payment_released`. Idempotent. Requires raw body. |
 
 ---
 
@@ -413,6 +415,8 @@ All require auth.
 |--------|------|------|-------|
 | GET | `/api/analytics/brand` | brand | Campaign metrics |
 | GET | `/api/analytics/influencer` | influencer | Reach/engagement |
+| GET | `/api/analytics/brand/deep` | brand | Stage breakdown, top campaigns, avg bid, completed count |
+| GET | `/api/analytics/influencer/deep` | influencer | Completion rate, avg rating, stage breakdown |
 
 ---
 
@@ -475,3 +479,87 @@ Public. Rate-limited: **5 req / hour / IP**. Returns 429 on breach.
 ```json
 { "status": "open" | "resolved" | "in_progress" }
 ```
+
+---
+
+## Ratings — `/api/proposals`, `/api/influencers`
+
+### POST /api/proposals/:id/rate
+**Auth required (brand).** Submit a rating after workflow completes.
+
+```json
+{ "score": 1-5, "review": "optional text" }
+// → 201 { "rating": { "id", "score", "review", "created_at" } }
+```
+
+### GET /api/proposals/:id/rating
+**Auth required.** Fetch the rating for this proposal (null if not yet rated).
+
+### GET /api/influencers/:id/ratings
+Public. Returns all ratings + aggregate.
+
+```json
+// → 200 { "ratings": [...], "avg": 4.3, "count": 12 }
+```
+
+---
+
+## Proposal Workflow — `/api/proposals/:id/workflow`
+
+All actions require auth. Stage transitions are gated server-side.
+
+### GET /api/proposals/:id/workflow
+Auth required. Returns `{ proposal, workflow, logs }`.
+
+### GET /api/proposals/:id/workflow/public
+**No auth.** Sanitized read-only view for shared links.
+
+### POST /api/proposals/:id/workflow/:action
+Auth required. Valid actions:
+
+| Action | Who | Description |
+|--------|-----|-------------|
+| `shortlist` | brand | Move to shortlisted |
+| `accept` | brand | Accept proposal — gates on `budget > 0` AND `deadline` set |
+| `start` | influencer | Begin content creation |
+| `submit` | influencer | Submit content for review |
+| `approve` | brand | Approve submitted content |
+| `request-revision` | brand | Request content revision |
+| `feedback` | brand | Leave feedback (any stage) |
+| `mark-payment-pending` | brand | Mark payment initiated |
+| `release-payment` | brand | Release payment |
+| `reject` | brand/influencer | Reject / exit workflow |
+
+---
+
+## Recommendations — `/api/recommendations`
+
+Both require auth.
+
+| Method | Path | Auth | Notes |
+|--------|------|------|-------|
+| GET | `/api/recommendations/creators` | brand | Top 6 creators matching brand's campaign niches |
+| GET | `/api/recommendations/campaigns` | influencer | Top 6 open campaigns matching influencer's niches |
+
+---
+
+## Gamification — `/api/gamification`
+
+### GET /api/gamification/influencer
+**Auth required (influencer).** Returns XP, level, and full badge list.
+
+```json
+// → 200
+{
+  "xp": 120,
+  "level": "Silver",
+  "nextLevelXp": 300,
+  "badges": [
+    { "id": "rising_star", "name": "Rising Star", "emoji": "⭐", "description": "First accepted campaign", "earned": true },
+    ...
+  ]
+}
+```
+
+### GET /api/gamification/influencer/:id/public
+**No auth.** Returns only earned badges. `Cache-Control: public, max-age=60`.

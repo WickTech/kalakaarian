@@ -68,15 +68,15 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
         visible ? "translate-y-0" : "-translate-y-full"
       } ${
         scrolled
-          ? "bg-background/95 backdrop-blur-md border-b border-border shadow-sm"
-          : "bg-background/80 backdrop-blur-sm border-b border-border/50"
+          ? "bg-obsidian/95 backdrop-blur-md border-b border-white/10 shadow-lg shadow-black/30"
+          : "bg-obsidian/70 backdrop-blur-sm border-b border-white/5"
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <img src="/k-logo-no-bg.png" alt="Kalakaarian" className="h-8 w-auto" />
-          <span className="font-mono text-xs uppercase tracking-[0.3em] font-bold hidden sm:block">
+          <span className="font-mono text-xs uppercase tracking-[0.3em] font-bold hidden sm:block text-chalk">
             KALAKAARIAN
           </span>
         </Link>
@@ -89,8 +89,8 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
               to={link.to}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 isActive(link)
-                  ? "bg-purple-600/15 text-purple-600 dark:text-purple-400"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "bg-purple-600/15 text-purple-400"
+                  : "text-chalk-dim hover:text-chalk hover:bg-white/5"
               }`}
             >
               {link.label}
@@ -109,7 +109,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
               <button
                 onClick={onCartOpen}
                 aria-label="Open cart"
-                className="relative p-2 rounded-md border border-border hover:bg-muted transition-colors"
+                className="relative p-2 rounded-md border border-white/10 hover:bg-white/5 transition-colors"
               >
                 <ShoppingCart className="w-4 h-4" />
                 {cart.count > 0 && (
@@ -181,7 +181,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
             <>
               <Link
                 to="/login"
-                className="hidden sm:inline-flex px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="hidden sm:inline-flex px-3 py-1.5 rounded-md text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors"
               >
                 Login
               </Link>
@@ -198,7 +198,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <button
-                className="md:hidden p-2 rounded-md border border-border hover:bg-muted transition-colors ml-1"
+                className="md:hidden p-2 rounded-md border border-white/10 hover:bg-white/5 transition-colors ml-1"
                 aria-label="Open menu"
               >
                 <Menu className="w-4 h-4" />
@@ -220,8 +220,8 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                       onClick={() => setMobileOpen(false)}
                       className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                         isActive(link)
-                          ? "bg-purple-600/15 text-purple-600"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                          ? "bg-purple-600/15 text-purple-400"
+                          : "text-chalk-dim hover:text-chalk hover:bg-white/5"
                       }`}
                     >
                       {link.label}
@@ -230,16 +230,16 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                   <div className="border-t border-border my-2" />
                   {user ? (
                     <>
-                      <Link to={dashboardHref} onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-2">
+                      <Link to={dashboardHref} onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
                         <LayoutDashboard className="w-4 h-4" /> Dashboard
                       </Link>
-                      <Link to="/profile" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-2">
+                      <Link to="/profile" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
                         <User className="w-4 h-4" /> Profile
                       </Link>
-                      <Link to="/notifications" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-2">
+                      <Link to="/notifications" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
                         <Bell className="w-4 h-4" /> Notifications
                       </Link>
-                      <Link to="/profile/edit" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-2">
+                      <Link to="/profile/edit" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
                         <Settings className="w-4 h-4" /> Settings
                       </Link>
                       <button
@@ -251,13 +251,13 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                     </>
                   ) : (
                     <>
-                      <Link to="/login" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                      <Link to="/login" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors">
                         Login
                       </Link>
-                      <Link to="/brand-register" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                      <Link to="/brand-register" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors">
                         Become a Brand
                       </Link>
-                      <Link to="/influencer-register" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                      <Link to="/influencer-register" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors">
                         Become a Creator
                       </Link>
                     </>

@@ -47,7 +47,7 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/30">
+    <div className="min-h-screen flex flex-col bg-obsidian">
       {/* Hero Section */}
       <section className="relative py-20 px-4 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-fuchsia-600/10 to-pink-600/10" />
@@ -72,7 +72,7 @@ export default function Landing() {
 
           <HeroText />
 
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-chalk-dim max-w-2xl mx-auto">
             Bridge the gap between brands and influencers. Discover authentic partnerships
             that drive real results for your marketing campaigns.
           </p>
@@ -102,7 +102,7 @@ export default function Landing() {
             <h2 className="text-4xl font-bold font-oswald tracking-tight mb-4 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">
               Explore Creators
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-chalk-dim">
               Find the perfect influencer tier for your budget and campaign goals
             </p>
           </div>
@@ -112,12 +112,12 @@ export default function Landing() {
               <div
                 key={tier.key}
                 onClick={() => navigate(`/marketplace?tier=${tier.key}`)}
-                className="border-2 border-border rounded-xl p-8 cursor-pointer group hover:border-purple-500 transition-all relative bg-card"
+                className="border border-white/8 rounded-xl p-8 cursor-pointer group hover:border-purple-500/60 hover:shadow-lg hover:shadow-purple-900/20 transition-all relative bg-charcoal"
               >
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600/0 to-pink-600/0 group-hover:from-purple-600/5 group-hover:to-pink-600/5 transition-all" />
-                {tier.range && <span className="text-sm font-oswald font-medium text-muted-foreground mb-3 block">{tier.range}</span>}
-                <h3 className="text-3xl font-oswald font-bold mb-3 group-hover:text-purple-600 transition-colors">{tier.label}</h3>
-                <p className="text-sm text-muted-foreground">
+                {tier.range && <span className="text-sm font-oswald font-medium text-chalk-dim mb-3 block">{tier.range}</span>}
+                <h3 className="text-3xl font-oswald font-bold mb-3 text-chalk group-hover:text-purple-400 transition-colors">{tier.label}</h3>
+                <p className="text-sm text-chalk-dim">
                   {loadingCounts ? "Loading..." : `${tier.count} Active Influencer${tier.count !== 1 ? 's' : ''}`}
                 </p>
               </div>
@@ -127,7 +127,7 @@ export default function Landing() {
       </section>
 
       {/* Why Kalakaarian */}
-      <section className="py-16 px-4 bg-muted/30">
+      <section className="py-16 px-4 bg-charcoal/50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold font-oswald tracking-tight mb-4 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">
@@ -137,13 +137,13 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {whyKalakaarian.map((feature) => (
-              <Card key={feature.title} className="bg-card border-border">
+              <Card key={feature.title} className="bg-charcoal border-white/8">
                 <CardContent className="pt-6">
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center mb-4">
                     <feature.icon className="h-6 w-6 text-white" />
                   </div>
-                  <h3 className="font-bold mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  <h3 className="font-bold mb-2 text-chalk">{feature.title}</h3>
+                  <p className="text-sm text-chalk-dim">{feature.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -158,7 +158,7 @@ export default function Landing() {
         <div className="absolute bottom-0 right-10 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl" />
         <div className="relative max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">Contact Us</h2>
-          <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
+          <p className="text-chalk-dim mb-8 max-w-2xl mx-auto">
             Have questions? We&apos;d love to hear from you. Reach out to us and we&apos;ll get back to you soon.
           </p>
           <Link to="/contact">
@@ -171,14 +171,14 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-4 border-t bg-background">
+      <footer className="py-8 px-4 border-t border-white/5 bg-obsidian">
         <div className="max-w-6xl mx-auto flex flex-col items-center gap-4">
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-            <Link to="/terms" className="hover:text-foreground transition-colors">Terms &amp; Conditions</Link>
-            <Link to="/refund-policy" className="hover:text-foreground transition-colors">Refund Policy</Link>
-            <Link to="/privacy-policy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-chalk-dim">
+            <Link to="/terms" className="hover:text-chalk transition-colors">Terms &amp; Conditions</Link>
+            <Link to="/refund-policy" className="hover:text-chalk transition-colors">Refund Policy</Link>
+            <Link to="/privacy-policy" className="hover:text-chalk transition-colors">Privacy Policy</Link>
           </div>
-          <p className="text-sm text-muted-foreground">&copy; 2026 Kalakaarian. All rights reserved.</p>
+          <p className="text-sm text-chalk-dim">&copy; 2026 Kalakaarian. All rights reserved.</p>
         </div>
       </footer>
     </div>

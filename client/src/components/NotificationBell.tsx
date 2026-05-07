@@ -90,7 +90,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
     <div className={`relative ${className || ''}`}>
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-md border border-border hover:bg-muted transition-colors"
+        className="relative p-2 rounded-md border border-white/10 hover:bg-white/5 transition-colors"
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
@@ -103,41 +103,41 @@ export function NotificationBell({ className }: NotificationBellProps) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
-            <div className="flex items-center justify-between p-3 border-b border-border">
-              <span className="font-medium">Notifications</span>
+          <div className="absolute right-0 top-full mt-2 w-80 bg-charcoal border border-white/10 rounded-lg shadow-xl shadow-black/40 z-50 overflow-hidden">
+            <div className="flex items-center justify-between p-3 border-b border-white/8">
+              <span className="font-medium text-chalk text-sm">Notifications</span>
               {unreadCount > 0 && (
-                <button onClick={markAllAsRead} className="text-xs text-primary hover:underline">
+                <button onClick={markAllAsRead} className="text-xs text-purple-400 hover:underline">
                   Mark all read
                 </button>
               )}
             </div>
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">No notifications</p>
+                <p className="text-sm text-chalk-dim text-center py-8">No notifications</p>
               ) : (
                 notifications.map((notification) => {
                   const Icon = typeIcons[notification.type] || Info;
                   return (
                     <div
                       key={notification.id}
-                      className={`p-3 border-b border-border last:border-0 hover:bg-secondary/50 ${
-                        !notification.read ? 'bg-primary/5' : ''
+                      className={`p-3 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors ${
+                        !notification.read ? 'bg-purple-600/5' : ''
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="p-1.5 bg-secondary rounded">
-                          <Icon className="w-4 h-4 text-muted-foreground" />
+                        <div className="p-1.5 bg-white/5 rounded">
+                          <Icon className="w-4 h-4 text-chalk-dim" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{notification.title}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-2">{notification.message}</p>
-                          <p className="text-[10px] text-muted-foreground mt-1">{getTimeAgo(notification.createdAt)}</p>
+                          <p className="text-sm font-medium text-chalk truncate">{notification.title}</p>
+                          <p className="text-xs text-chalk-dim line-clamp-2">{notification.message}</p>
+                          <p className="text-[10px] text-chalk-faint mt-1">{getTimeAgo(notification.createdAt)}</p>
                         </div>
                         {!notification.read && (
                           <button
                             onClick={() => markAsRead(notification.id)}
-                            className="p-1 hover:bg-secondary rounded"
+                            className="p-1 hover:bg-white/5 rounded text-chalk-dim"
                             title="Mark as read"
                           >
                             <Check className="w-3 h-3" />
@@ -150,7 +150,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
               )}
             </div>
             <Link to="/notifications" onClick={() => setOpen(false)}
-              className="block px-3 py-2 text-xs text-primary hover:underline text-center border-t border-border">
+              className="block px-3 py-2 text-xs text-purple-400 hover:underline text-center border-t border-white/8">
               View all notifications →
             </Link>
           </div>

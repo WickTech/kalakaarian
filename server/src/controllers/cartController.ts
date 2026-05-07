@@ -4,7 +4,8 @@ import { AuthRequest } from '../middleware/auth';
 import { PLATFORM_FEE_RATE } from '../utils/pricing';
 import { createOrder, verifyWebhookSignature } from '../services/razorpayService';
 
-const CART_SELECT = '*, influencer_profiles!cart_items_influencer_id_fkey(id, profiles!influencer_profiles_id_fkey(name, email)), campaigns!cart_items_campaign_id_fkey(id, title)';
+// influencer_id FK → profiles(id), not influencer_profiles
+const CART_SELECT = '*, profiles!cart_items_influencer_id_fkey(id, name), campaigns!cart_items_campaign_id_fkey(id, title)';
 
 const getCartItems = async (brandId: string) =>
   adminClient.from('cart_items').select(CART_SELECT).eq('brand_id', brandId).order('added_at', { ascending: false });

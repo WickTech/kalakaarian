@@ -25,13 +25,19 @@ export function useCart() {
     if (!user) return;
     setLoading(true);
     try {
-      const data = await api.getCart() as unknown as { cart?: { items?: Array<{ influencerId: { _id?: string; name?: string } | string; price: number; campaignId?: { _id?: string; title?: string } | string }> } };
+      type ServerCartItem = {
+        influencer_id: string;
+        price: number;
+        profiles: { id: string; name: string } | null;
+        campaigns: { id: string; title: string } | null;
+      };
+      const data = await api.getCart() as unknown as { cart?: { items?: ServerCartItem[] } };
       if (data?.cart?.items) {
         const loadedItems: CartItem[] = data.cart.items.map((item) => ({
           influencer: {
-            id: item.influencerId?._id || item.influencerId,
-            name: item.influencerId?.name || "Unknown",
-            photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + (item.influencerId?._id || "default"),
+            id: item.influencer_id,
+            name: item.profiles?.name || "Unknown",
+            photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + item.influencer_id,
             handle: "",
             platform: "instagram" as const,
             tier: "micro" as const,
@@ -48,10 +54,10 @@ export function useCart() {
           quantity: 1,
         }));
         setItems(loadedItems);
-        
-        if (data.cart.items[0]?.campaignId) {
-          setCampaignId(data.cart.items[0].campaignId._id || data.cart.items[0].campaignId);
-          setCampaignName(data.cart.items[0].campaignId?.title || "");
+
+        if (data.cart.items[0]?.campaigns) {
+          setCampaignId(data.cart.items[0].campaigns.id);
+          setCampaignName(data.cart.items[0].campaigns.title || "");
         }
       }
     } catch (err) {

@@ -1,8 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Calendar as CalendarIcon, CheckCircle, X, Info } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowLeft, CheckCircle, X, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +15,6 @@ interface CampaignFileEntry {
   fileType: "brief" | "contract" | "other";
 }
 
-const PLATFORMS = ["Instagram", "YouTube", "TikTok", "Multiple"] as const;
-const NICHES = ["Fashion", "Tech", "Food", "Fitness", "Beauty", "Lifestyle", "Gaming", "Travel"] as const;
 const FILE_TYPES = ["brief", "contract", "other"] as const;
 
 export default function CreateCampaign() {
@@ -28,11 +24,7 @@ export default function CreateCampaign() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
-  const [form, setForm] = useState({
-    title: "", description: "", targetAudience: "", keyMessage: "",
-    budget: "", deliverables: "", platform: "", niche: "",
-    deadline: undefined as Date | undefined,
-  });
+  const [form, setForm] = useState({ title: "", description: "", deliverables: "" });
   const [files, setFiles] = useState<CampaignFileEntry[]>([]);
   const [fileType, setFileType] = useState<"brief" | "contract" | "other">("brief");
   const [createdTitle, setCreatedTitle] = useState("");
@@ -61,18 +53,14 @@ export default function CreateCampaign() {
     e.preventDefault();
     setLoading(true);
     try {
-      const extra = [
-        form.targetAudience && `Target Audience: ${form.targetAudience}`,
-        form.keyMessage && `Key Message: ${form.keyMessage}`,
-      ].filter(Boolean).join("\n\n");
       const campaign = await api.createCampaign({
         title: form.title,
-        description: [form.description, extra].filter(Boolean).join("\n\n"),
-        budget: Number(form.budget),
-        deadline: form.deadline?.toISOString() || "",
+        description: form.description,
+        budget: 0,
+        deadline: "",
         deliverables: form.deliverables,
-        platform: form.platform,
-        niche: form.niche,
+        platform: "",
+        niche: "",
       });
       await Promise.all(files.map(f => api.uploadCampaignFile(campaign.id, f.fileUrl, f.fileName, f.fileType)));
       setCreatedTitle(form.title);
@@ -114,39 +102,13 @@ export default function CreateCampaign() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Basic Info */}
           <Card>
             <CardHeader><CardTitle className="text-base">Campaign Info</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Campaign Title *</Label>
+                <Label>Campaign Name *</Label>
                 <Input value={form.title} onChange={set("title")} placeholder="e.g. Summer Collection Launch" required />
               </div>
-              <div className="space-y-1.5">
-                <Label>Total Budget (₹) *</Label>
-                <Input type="number" min="0" value={form.budget} onChange={set("budget")} placeholder="e.g. 50000" required />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Deadline</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button type="button" variant="outline" className="w-full justify-start font-normal">
-                      <CalendarIcon className="w-4 h-4 mr-2 text-muted-foreground" />
-                      {form.deadline ? form.deadline.toLocaleDateString("en-IN") : <span className="text-muted-foreground">Select deadline</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={form.deadline} onSelect={d => setForm(f => ({ ...f, deadline: d }))} initialFocus />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Details */}
-          <Card>
-            <CardHeader><CardTitle className="text-base">Campaign Details</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <Label>Description *</Label>
@@ -154,53 +116,15 @@ export default function CreateCampaign() {
                     <Info className="w-3.5 h-3.5" />
                   </span>
                 </div>
-                <Textarea value={form.description} onChange={set("description")} placeholder="Describe your campaign goals and requirements" rows={3} required />
+                <Textarea value={form.description} onChange={set("description")} placeholder="Describe your campaign goals and requirements" rows={4} required />
               </div>
               <div className="space-y-1.5">
                 <Label>Deliverables *</Label>
                 <Textarea value={form.deliverables} onChange={set("deliverables")} placeholder="e.g. 1 Instagram Reel + 2 Stories" rows={2} required />
               </div>
-              <div className="space-y-1.5">
-                <Label>Target Audience</Label>
-                <Input value={form.targetAudience} onChange={set("targetAudience")} placeholder="e.g. Women aged 18–30 interested in skincare" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Key Message / Talking Points</Label>
-                <Textarea value={form.keyMessage} onChange={set("keyMessage")} placeholder="Main message you want creators to convey..." rows={2} />
-              </div>
             </CardContent>
           </Card>
 
-          {/* Targeting */}
-          <Card>
-            <CardHeader><CardTitle className="text-base">Targeting</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Platform</Label>
-                <div className="flex flex-wrap gap-2">
-                  {PLATFORMS.map(p => (
-                    <button key={p} type="button" onClick={() => setForm(f => ({ ...f, platform: p }))}
-                      className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${form.platform === p ? "bg-purple-600 text-white border-purple-600" : "border-border text-muted-foreground hover:border-purple-400"}`}>
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Niche</Label>
-                <div className="flex flex-wrap gap-2">
-                  {NICHES.map(n => (
-                    <button key={n} type="button" onClick={() => setForm(f => ({ ...f, niche: n }))}
-                      className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${form.niche === n ? "bg-purple-600 text-white border-purple-600" : "border-border text-muted-foreground hover:border-purple-400"}`}>
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* File Upload */}
           <Card>
             <CardHeader><CardTitle className="text-base">Campaign Files</CardTitle></CardHeader>
             <CardContent className="space-y-4">

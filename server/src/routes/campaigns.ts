@@ -27,8 +27,6 @@ router.post(
   [
     body('title').notEmpty().withMessage('Title is required'),
     body('description').notEmpty().withMessage('Description is required'),
-    body('budget').isNumeric().withMessage('Budget must be a number'),
-    body('deadline').isISO8601().withMessage('Valid deadline is required'),
   ],
   validate,
   createCampaign

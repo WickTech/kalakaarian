@@ -17,6 +17,8 @@ export interface Influencer {
   price: number | null; // null = "Get in Touch"
   isOnline?: boolean;
   lastSeenAt?: string;
+  avgRating?: number | null;
+  ratingCount?: number;
 }
 
 export interface CartItem {

@@ -35,26 +35,28 @@ export function StageTimeline({ currentStage }: StageTimelineProps) {
               <div className="flex flex-col items-center">
                 <div className={`
                   w-8 h-8 rounded-full flex items-center justify-center border-2 shrink-0
+                  transition-all duration-300
                   ${state === 'completed' ? 'border-purple-500 bg-purple-500/20 text-purple-400' : ''}
-                  ${state === 'active' ? 'border-gold bg-gold/10 text-gold' : ''}
+                  ${state === 'active' ? 'border-gold bg-gold/10 text-gold ring-2 ring-gold/20 ring-offset-1 ring-offset-transparent' : ''}
                   ${state === 'pending' ? 'border-white/20 bg-transparent text-chalk-dim' : ''}
                 `}>
                   {state === 'completed' ? (
                     <CheckCircle2 className="w-4 h-4" />
                   ) : state === 'active' ? (
-                    <Clock className="w-4 h-4" />
+                    <Clock className="w-4 h-4 animate-pulse" />
                   ) : (
                     <Circle className="w-4 h-4 opacity-40" />
                   )}
                 </div>
                 <span className={`text-xs mt-1 text-center whitespace-nowrap max-w-[72px] leading-tight
+                  transition-colors duration-300
                   ${state === 'active' ? 'text-gold font-medium' : state === 'completed' ? 'text-purple-400' : 'text-chalk-dim'}
                 `}>
                   {STAGE_LABELS[stage]}
                 </span>
               </div>
               {i < TIMELINE_STAGES.length - 1 && (
-                <div className={`h-0.5 w-6 mx-1 shrink-0 mt-[-16px]
+                <div className={`h-0.5 w-6 mx-1 shrink-0 mt-[-16px] transition-colors duration-300
                   ${state === 'completed' ? 'bg-purple-500' : 'bg-white/10'}
                 `} />
               )}

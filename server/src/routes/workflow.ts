@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import { auth } from '../middleware/auth';
-import { getWorkflow, getActivityLog } from '../controllers/workflowController';
+import { getWorkflow, getActivityLog, getPublicWorkflow } from '../controllers/workflowController';
 import {
   shortlist,
   acceptWorkflow,
@@ -28,6 +28,7 @@ const feedbackValidators = [
   body('notes').optional().isString().isLength({ max: 500 }).withMessage('Notes ≤ 500 chars'),
 ];
 
+router.get('/public', getPublicWorkflow);  // no auth — share links
 router.get('/', auth, getWorkflow);
 router.get('/activity', auth, getActivityLog);
 

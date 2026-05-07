@@ -23,6 +23,8 @@ import uploadRoutes from './routes/upload';
 import feedRoutes from './routes/feed';
 import workflowRoutes from './routes/workflow';
 import internalRoutes from './routes/internal';
+import recommendationRoutes from './routes/recommendations';
+import gamificationRoutes from './routes/gamification';
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -79,6 +81,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Raw body for Razorpay webhook signature verification (must precede express.json())
 app.use('/api/membership/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/cart/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -106,6 +109,8 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/feed', feedRoutes);
 app.use('/api/proposals/:id/workflow', workflowRoutes);
 app.use('/api/internal', internalRoutes);
+app.use('/api/recommendations', recommendationRoutes);
+app.use('/api/gamification', gamificationRoutes);
 
 if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);

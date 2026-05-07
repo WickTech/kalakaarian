@@ -65,6 +65,8 @@ export interface InfluencerProfile {
   followerCount?: number;
   instagramPosts?: Array<{ url: string; thumbnail?: string; caption?: string }>;
   youtubeVideos?: Array<{ url: string; thumbnail?: string; title?: string }>;
+  avgRating?: number | null;
+  ratingCount?: number;
 }
 
 export interface UpdateInfluencerProfileData {
@@ -709,6 +711,16 @@ export const api = {
     return request(`/api/feed?${q.toString()}`);
   },
 
+  // Ratings
+  submitRating: async (proposalId: string, score: number, review?: string): Promise<{ rating: { id: string; score: number; review?: string | null; created_at: string } }> =>
+    request(`/api/proposals/${proposalId}/rate`, { method: 'POST', body: JSON.stringify({ score, review }) }),
+
+  getProposalRating: async (proposalId: string): Promise<{ rating: { id: string; score: number; review?: string | null; created_at: string } | null }> =>
+    request(`/api/proposals/${proposalId}/rating`),
+
+  getInfluencerRatings: async (influencerId: string): Promise<{ ratings: Array<{ id: string; score: number; review?: string | null; created_at: string }>; avg: number | null; count: number }> =>
+    request(`/api/influencers/${influencerId}/ratings`),
+
   // Admin
   adminGetUsers: async (): Promise<{ users: Array<{ id: string; name: string; email: string; role: string; created_at: string }> }> =>
     request('/api/admin/users'),
@@ -716,6 +728,41 @@ export const api = {
     request('/api/admin/campaigns'),
   adminUpdateCampaignStatus: async (id: string, status: string): Promise<{ message: string }> =>
     request(`/api/admin/campaigns/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
+
+  // Gamification
+  getGamification: async (): Promise<{
+    xp: number;
+    level: string;
+    nextLevelXp: number | null;
+    badges: Array<{ id: string; name: string; description: string; emoji: string; earned: boolean }>;
+  }> => request('/api/gamification/influencer'),
+
+  getPublicBadges: async (influencerId: string): Promise<{
+    badges: Array<{ id: string; name: string; description: string; emoji: string }>;
+  }> => request(`/api/gamification/influencer/${influencerId}/public`),
+
+  // Deep Analytics
+  getBrandDeepAnalytics: async (): Promise<{
+    stageBreakdown: Array<{ stage: string; count: number }>;
+    topCampaigns: Array<{ id: string; title: string; proposalCount: number; workflowCount: number }>;
+    avgBid: number;
+    completedCount: number;
+  }> => request('/api/analytics/brand/deep'),
+
+  getInfluencerDeepAnalytics: async (): Promise<{
+    completedCount: number;
+    completionRate: number;
+    avgRating: number | null;
+    ratingCount: number;
+    stageBreakdown: Array<{ stage: string; count: number }>;
+  }> => request('/api/analytics/influencer/deep'),
+
+  // Recommendations
+  getRecommendedCreators: async (): Promise<any[]> =>
+    request<any[]>('/api/recommendations/creators'),
+
+  getRecommendedCampaigns: async (): Promise<any[]> =>
+    request<any[]>('/api/recommendations/campaigns'),
 
   // Contact
   submitContact: async (data: {
@@ -771,4 +818,11 @@ export async function workflowAction(
     body: body ? JSON.stringify(body) : undefined,
   });
   return res.proposal;
+}
+
+export async function getPublicWorkflow(proposalId: string): Promise<{
+  proposal: Pick<WorkflowProposal, 'id' | 'workflow_stage' | 'workflow_stage_updated_at' | 'auto_approve_at'>;
+  log: Array<Pick<ActivityLogEntry, 'id' | 'actor_role' | 'action' | 'from_stage' | 'to_stage' | 'created_at'>>;
+}> {
+  return request(`/api/proposals/${proposalId}/workflow/public`);
 }

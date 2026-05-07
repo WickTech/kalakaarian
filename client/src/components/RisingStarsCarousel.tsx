@@ -1,22 +1,20 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
 import { api, InfluencerProfile } from "@/lib/api";
 
 export function RisingStarsCarousel() {
-  const [stars, setStars] = useState<InfluencerProfile[]>([]);
-
-  useEffect(() => {
-    api.searchInfluencers({ limit: 12 } as Parameters<typeof api.searchInfluencers>[0])
-      .then((data) => {
-        const sorted = (Array.isArray(data) ? data : [])
-          .filter((i) => i.followerCount && i.followerCount > 0)
-          .sort((a, b) => (b.followerCount ?? 0) - (a.followerCount ?? 0))
-          .slice(0, 10);
-        setStars(sorted);
-      })
-      .catch(() => {});
-  }, []);
+  const { data: stars = [] } = useQuery({
+    queryKey: ['rising-stars'],
+    queryFn: async () => {
+      const data = await api.searchInfluencers({ limit: 12 } as Parameters<typeof api.searchInfluencers>[0]);
+      return (Array.isArray(data) ? data : [])
+        .filter((i: InfluencerProfile) => i.followerCount && i.followerCount > 0)
+        .sort((a: InfluencerProfile, b: InfluencerProfile) => (b.followerCount ?? 0) - (a.followerCount ?? 0))
+        .slice(0, 10);
+    },
+    staleTime: 5 * 60_000,
+  });
 
   if (!stars.length) return null;
 
@@ -27,7 +25,7 @@ export function RisingStarsCarousel() {
         <span className="text-xs font-bold text-chalk uppercase tracking-wider">Rising Stars</span>
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-        {stars.map((inf) => (
+        {stars.map((inf: InfluencerProfile) => (
           <Link
             key={inf.id ?? inf._id}
             to={`/influencer/${inf.id ?? inf._id}`}
@@ -37,6 +35,7 @@ export function RisingStarsCarousel() {
               <img
                 src={inf.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${inf.name}`}
                 alt={inf.name}
+                loading="lazy"
                 className="w-12 h-12 rounded-full object-cover border-2 border-gold/60 bg-charcoal"
               />
               <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-gold flex items-center justify-center">

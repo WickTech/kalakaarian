@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { body } from 'express-validator';
 import { getProposals, getProposalById, createProposal, getMyProposals } from '../controllers/proposalController';
 import { updateProposal, deleteProposal, respondToProposal } from '../controllers/proposalActions';
+import { submitRating, getProposalRating } from '../controllers/ratingController';
 import { auth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
@@ -23,6 +24,8 @@ router.post(
   createProposal
 );
 
+router.get('/:id/rating', auth, getProposalRating);
+router.post('/:id/rate', auth, submitRating);
 router.put('/:id', auth, updateProposal);
 router.delete('/:id', auth, deleteProposal);
 

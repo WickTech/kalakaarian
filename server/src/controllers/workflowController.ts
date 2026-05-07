@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { adminClient } from '../config/supabase';
 
@@ -66,4 +66,26 @@ export async function getActivityLog(req: AuthRequest, res: Response): Promise<v
 
   if (error) { res.status(500).json({ message: error.message }); return; }
   res.json({ log: data });
+}
+
+// Public (no auth) — sanitized view for share links; omits submission details and private feedback.
+export async function getPublicWorkflow(req: Request, res: Response): Promise<void> {
+  if (featureGate(res)) return;
+  const { id } = req.params;
+
+  const { data: proposal } = await adminClient
+    .from('proposals')
+    .select('id, workflow_stage, workflow_stage_updated_at, auto_approve_at')
+    .eq('id', id)
+    .single();
+  if (!proposal) { res.status(404).json({ message: 'Not found' }); return; }
+
+  const { data: log } = await adminClient
+    .from('proposal_activity_log')
+    .select('id, actor_role, action, from_stage, to_stage, created_at')
+    .eq('proposal_id', id)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  res.json({ proposal, log: log ?? [] });
 }

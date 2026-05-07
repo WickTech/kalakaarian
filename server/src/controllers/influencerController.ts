@@ -5,7 +5,7 @@ import { applyPlatformMargin } from '../utils/pricing';
 
 const ALLOWED_GENDERS = ['male', 'female', 'non_binary', 'prefer_not_to_say'] as const;
 
-const formatInfluencer = (row: any) => {
+export const formatInfluencer = (row: any) => {
   const pricingObj = (row.influencer_pricing ?? []).reduce(
     (acc: Record<string, number>, r: any) => { acc[r.content_type] = r.price; return acc; },
     {}
@@ -31,6 +31,8 @@ const formatInfluencer = (row: any) => {
       youtube: row.youtube_handle ?? undefined,
     },
     pricing: applyPlatformMargin(pricingObj),
+    avgRating: row.avg_rating != null ? Number(row.avg_rating) : null,
+    ratingCount: row.rating_count ?? 0,
   };
 };
 
@@ -78,6 +80,7 @@ const buildInfluencerQuery = (params: Record<string, any>) => {
     const arr = Array.isArray(params.platform) ? params.platform : [params.platform];
     q = q.overlaps('platforms', arr);
   }
+  if (params.name) q = q.ilike('profiles.name', `%${params.name}%`);
   if (params.q) q = q.textSearch('fts', params.q, { type: 'websearch' });
 
   return q;
@@ -91,6 +94,9 @@ export const getInfluencers = async (req: Request, res: Response): Promise<void>
     const to = from + clampedLimit - 1;
 
     const query = buildInfluencerQuery({ tier, city, genre, platform, gender })
+      .order('is_online', { ascending: false })
+      .order('last_seen_at', { ascending: false, nullsFirst: false })
+      .order('tier', { ascending: true })
       .order('created_at', { ascending: false })
       .range(from, to);
 
@@ -110,12 +116,15 @@ export const getInfluencers = async (req: Request, res: Response): Promise<void>
 
 export const searchInfluencers = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { q, tier, city, genre, platform, gender, page = 1, limit = 20 } = req.query;
+    const { q, tier, city, genre, platform, gender, name, page = 1, limit = 20 } = req.query;
     const clampedLimit = Math.min(Number(limit) || 20, 100);
     const from = (Number(page) - 1) * clampedLimit;
     const to = from + clampedLimit - 1;
 
-    const { data, count, error } = await buildInfluencerQuery({ q, tier, city, genre, platform, gender })
+    const { data, count, error } = await buildInfluencerQuery({ q, tier, city, genre, platform, gender, name })
+      .order('is_online', { ascending: false })
+      .order('last_seen_at', { ascending: false, nullsFirst: false })
+      .order('tier', { ascending: true })
       .order('created_at', { ascending: false })
       .range(from, to);
     if (error) throw error;

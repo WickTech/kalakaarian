@@ -36,6 +36,8 @@ const Feed = lazy(() => import("./pages/Feed"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const ProposalDetail = lazy(() => import("./pages/proposal/[id]"));
+const SharedWorkflowView = lazy(() => import("./pages/proposal/SharedView"));
+const CampaignTrackPage = lazy(() => import("./pages/campaign/TrackPage"));
 
 function PageLoader() {
   return (
@@ -45,7 +47,9 @@ function PageLoader() {
   );
 }
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000, gcTime: 5 * 60_000 } },
+});
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -262,6 +266,8 @@ function AppContent() {
         <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />
+        <Route path="/proposals/shared/:id" element={<SharedWorkflowView />} />
+        <Route path="/brand/campaigns/:id/track" element={<BrandRoute><CampaignTrackPage /></BrandRoute>} />
         <Route
           path="/contact"
           element={<ContactPage />}

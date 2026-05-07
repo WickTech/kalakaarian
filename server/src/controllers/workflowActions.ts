@@ -73,6 +73,15 @@ export async function startContent(req: AuthRequest, res: Response): Promise<voi
   if (featureGate(res) || handleValidation(req, res)) return;
   const { id } = req.params;
   if (req.user!.role !== 'influencer') { res.status(403).json({ message: 'Creators only' }); return; }
+
+  // Brief gate: campaign must have budget + deadline before creator can start
+  const { data: prop } = await adminClient.from('proposals').select('campaign_id').eq('id', id).single();
+  if (!prop) { res.status(404).json({ message: 'Proposal not found' }); return; }
+  const { data: camp } = await adminClient.from('campaigns').select('budget, deadline').eq('id', prop.campaign_id).single();
+  if (!camp || !(camp.budget > 0) || !camp.deadline) {
+    res.status(400).json({ message: 'Campaign brief incomplete. Brand must set budget and deadline first.' }); return;
+  }
+
   const data = await callRpc(id, req.user!.userId, 'influencer', 'accepted', 'content_in_progress', 'start_content', null, res);
   if (data) res.json({ proposal: data });
 }

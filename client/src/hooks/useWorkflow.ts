@@ -14,6 +14,7 @@ export function useProposalWorkflow(id: string) {
     queryFn: () => getWorkflow(id),
     enabled: !!id,
     staleTime: 10_000,
+    refetchInterval: 15_000,
   });
 }
 
@@ -23,6 +24,7 @@ export function useActivityLog(id: string) {
     queryFn: () => getActivityLog(id),
     enabled: !!id,
     staleTime: 10_000,
+    refetchInterval: 15_000,
   });
 }
 

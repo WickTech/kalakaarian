@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { api, InfluencerProfile as InfluencerProfileData, InfluencerAnalytics, VideoItem, SocialStats } from '@/lib/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { api, InfluencerProfile as InfluencerProfileData, VideoItem } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigateBack } from '@/hooks/useNavigateBack';
@@ -10,6 +10,8 @@ import { AnalyticsCard } from '@/components/AnalyticsCard';
 import { MembershipUpgradeCard } from '@/components/MembershipBadge';
 import { VideoGrid } from '@/components/VideoGrid';
 import { SocialConnect } from '@/components/SocialConnect';
+import { InfluencerTrustSection } from '@/components/InfluencerTrustSection';
+import { BadgeStrip } from '@/components/BadgeStrip';
 import { openRazorpayCheckout } from '@/lib/razorpay';
 
 export default function InfluencerProfile() {
@@ -17,113 +19,82 @@ export default function InfluencerProfile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { goBack } = useNavigateBack('/marketplace');
-
-  const [profile, setProfile] = useState<InfluencerProfileData | null>(null);
-  const [membership, setMembership] = useState<{ tier: string }>({ tier: 'regular' });
-  const [analytics, setAnalytics] = useState<InfluencerAnalytics | null>(null);
-  const [videos, setVideos] = useState<VideoItem[]>([]);
-  const [socialStats, setSocialStats] = useState<SocialStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const qc = useQueryClient();
 
   const isOwnProfile = user?.id === id;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const profileData = await api.getInfluencerById(id!);
-        
-        const [membershipData, videosData, socialStatsData] = await Promise.all([
-          isOwnProfile ? api.getMembershipStatus() : Promise.resolve({ tier: 'regular' }),
-          isOwnProfile ? api.getMyVideos() : Promise.resolve([]),
-          api.getSocialStats(profileData?.userId || id!),
-        ]);
+  const { data: profile, isLoading } = useQuery<InfluencerProfileData>({
+    queryKey: ['influencer-profile', id],
+    queryFn: () => api.getInfluencerById(id!),
+    enabled: !!id,
+  });
 
-        setProfile(profileData);
-        setMembership(membershipData);
-        setVideos(videosData);
-        setSocialStats(socialStatsData);
-        setAnalytics(socialStatsData?.analytics || null);
-      } catch (err) {
-        toast({ title: 'Error', description: 'Failed to load profile', variant: 'destructive' });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { data: membership = { tier: 'regular' } } = useQuery({
+    queryKey: ['membership-status'],
+    queryFn: () => api.getMembershipStatus(),
+    enabled: !!id && isOwnProfile,
+  });
 
-    if (id) fetchData();
-  }, [id, isOwnProfile]);
+  const { data: videos = [] as VideoItem[] } = useQuery({
+    queryKey: ['my-videos'],
+    queryFn: () => api.getMyVideos(),
+    enabled: !!id && isOwnProfile,
+  });
+
+  const { data: socialStats } = useQuery({
+    queryKey: ['social-stats', id, profile?.userId],
+    queryFn: () => api.getSocialStats(profile?.userId || id!),
+    enabled: !!id && !!profile,
+  });
+
+  const analytics = (socialStats as any)?.analytics || null;
 
   const handleStatusToggle = async (isOnline: boolean) => {
-    try {
-      await api.updatePresence(isOnline);
-    } catch (err) {
-      toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' });
-    }
+    try { await api.updatePresence(isOnline); }
+    catch { toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' }); }
   };
 
   const handleMembershipUpgrade = async (tier: 'gold' | 'silver') => {
     try {
       const order = await api.createMembershipOrder(tier);
-
       if (!order.orderId || !order.keyId) {
-        // Razorpay not configured (dev) — activate directly
         await api.purchaseMembership(tier);
-        setMembership({ tier });
+        qc.invalidateQueries({ queryKey: ['membership-status'] });
         toast({ title: 'Success', description: `Upgraded to ${tier} membership!` });
         return;
       }
-
       await openRazorpayCheckout({
-        orderId: order.orderId,
-        amount: order.amount,
-        currency: order.currency,
-        keyId: order.keyId,
+        orderId: order.orderId, amount: order.amount, currency: order.currency, keyId: order.keyId,
         name: `Kalakaarian ${tier.charAt(0).toUpperCase() + tier.slice(1)} Membership`,
         prefill: { name: user?.name, email: user?.email },
         onSuccess: async (paymentId, orderId, signature) => {
-          await api.purchaseMembership(tier, {
-            razorpayOrderId: orderId,
-            razorpayPaymentId: paymentId,
-            razorpaySignature: signature,
-          });
-          const updated = await api.getMembershipStatus();
-          setMembership(updated);
+          await api.purchaseMembership(tier, { razorpayOrderId: orderId, razorpayPaymentId: paymentId, razorpaySignature: signature });
+          qc.invalidateQueries({ queryKey: ['membership-status'] });
           toast({ title: 'Payment successful!', description: `${tier} membership activated.` });
         },
         onDismiss: () => toast({ title: 'Payment cancelled' }),
       });
-    } catch (err) {
-      toast({ title: 'Error', description: 'Failed to process payment', variant: 'destructive' });
-    }
+    } catch { toast({ title: 'Error', description: 'Failed to process payment', variant: 'destructive' }); }
   };
 
   const handleVideoUpload = async (videoUrl: string, platform: string) => {
     try {
-      const newVideo = await api.uploadVideo(videoUrl, platform);
-      setVideos([newVideo, ...videos]);
+      await api.uploadVideo(videoUrl, platform);
+      qc.invalidateQueries({ queryKey: ['my-videos'] });
       toast({ title: 'Success', description: 'Video uploaded successfully' });
-    } catch (err) {
-      toast({ title: 'Error', description: 'Failed to upload video', variant: 'destructive' });
-    }
+    } catch { toast({ title: 'Error', description: 'Failed to upload video', variant: 'destructive' }); }
   };
 
   const handleSocialConnect = async (platform: 'instagram' | 'youtube', handle: string) => {
     try {
       await api.connectSocialMedia(platform, handle);
-      const refreshed = await api.getInfluencerById(id!);
-      setProfile(refreshed);
+      qc.invalidateQueries({ queryKey: ['influencer-profile', id] });
       toast({ title: 'Success', description: `${platform} connected successfully!` });
-    } catch (err) {
-      toast({ title: 'Error', description: 'Failed to connect social media', variant: 'destructive' });
-    }
+    } catch { toast({ title: 'Error', description: 'Failed to connect social media', variant: 'destructive' }); }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin" />
-      </div>
-    );
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   }
 
   if (!profile) {
@@ -148,7 +119,7 @@ export default function InfluencerProfile() {
         <ProfileHeader
           profile={{
             name: profile.name || 'Unknown',
-            handle: `@${profile.socialHandles?.instagram || profile.username || 'user'}`,
+            handle: `@${profile.socialHandles?.instagram || (profile as any).username || 'user'}`,
             profileImage: profile.profileImage || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default',
             tier: membership.tier as 'gold' | 'silver' | 'regular',
             city: profile.city,
@@ -162,36 +133,28 @@ export default function InfluencerProfile() {
         <div>
           <h2 className="text-lg font-semibold mb-4">Analytics</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <AnalyticsCard 
-              title="Engagement Rate" 
-              value={`${analytics?.engagementRate || 0}%`} 
-              icon="er" 
-              subtitle={analytics?.source ? `Based on ${analytics.source}` : undefined}
-            />
-            <AnalyticsCard 
-              title="Avg Views" 
-              value={(analytics?.avgViews || 0).toLocaleString()} 
-              icon="views" 
-            />
-            <AnalyticsCard 
-              title="Total Followers" 
-              value={(analytics?.totalFollowers || 0).toLocaleString()} 
-              icon="fake" 
-            />
-            <AnalyticsCard 
-              title="Reach Estimate" 
-              value={(analytics?.reachEstimate || 0).toLocaleString()} 
-              icon="views" 
-              subtitle={analytics?.authenticityScore ? `Authenticity: ${analytics.authenticityScore}%` : undefined}
-            />
+            <AnalyticsCard title="Engagement Rate" value={`${analytics?.engagementRate || 0}%`} icon="er"
+              subtitle={analytics?.source ? `Based on ${analytics.source}` : undefined} />
+            <AnalyticsCard title="Avg Views" value={(analytics?.avgViews || 0).toLocaleString()} icon="views" />
+            <AnalyticsCard title="Total Followers" value={(analytics?.totalFollowers || 0).toLocaleString()} icon="fake" />
+            <AnalyticsCard title="Reach Estimate" value={(analytics?.reachEstimate || 0).toLocaleString()} icon="views"
+              subtitle={analytics?.authenticityScore ? `Authenticity: ${analytics.authenticityScore}%` : undefined} />
           </div>
         </div>
+
+        <InfluencerTrustSection
+          influencerId={id!}
+          avgRating={profile.avgRating}
+          ratingCount={profile.ratingCount}
+        />
+
+        <BadgeStrip influencerId={id!} />
 
         <div>
           <h2 className="text-lg font-semibold mb-4">Social Media</h2>
           <SocialConnect
             socialHandles={profile.socialHandles || {}}
-            stats={socialStats}
+            stats={socialStats || null}
             isOwnProfile={isOwnProfile}
             onConnect={handleSocialConnect}
           />
@@ -205,7 +168,6 @@ export default function InfluencerProfile() {
         )}
 
         <VideoGrid videos={videos} isOwnProfile={isOwnProfile} onUpload={handleVideoUpload} />
-
       </div>
     </div>
   );

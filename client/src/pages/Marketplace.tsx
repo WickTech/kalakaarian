@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { ShoppingCart, Instagram, Youtube, ArrowLeft, SlidersHorizontal, CheckSquare, Square, Megaphone } from "lucide-react";
 import { api, InfluencerProfile } from "@/lib/api";
@@ -51,8 +52,6 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
   const [priceMax, setPriceMax] = useState("");
   const [location, setLocation] = useState("");
   const [page, setPage] = useState(1);
-  const [influencers, setInfluencers] = useState<Influencer[]>([]);
-  const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -84,27 +83,25 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
     avgViews: 0, avgLikes: 0,
     genderSplit: { male: 45, female: 52, other: 3 },
     price: null, isOnline: inf.isOnline, lastSeenAt: inf.lastSeenAt,
+    avgRating: inf.avgRating ?? null, ratingCount: inf.ratingCount ?? 0,
   });
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const data = await api.searchInfluencers({
-          gender: gender !== "all" ? gender : undefined,
-          tier: tier !== "all" ? tier : undefined,
-          platform: platform !== "all" ? platform : undefined,
-          city: location || undefined,
-          genre: selectedGenres.length === 1 ? selectedGenres[0] : undefined,
-          name: debouncedSearch || undefined,
-        });
-        setInfluencers((Array.isArray(data) ? data : []).map(toInfluencer));
-      } catch { setInfluencers([]); }
-      finally { setLoading(false); }
-    };
-    load();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gender, tier, platform, location, genreKey, debouncedSearch]);
+  const { data: influencers = [], isLoading: loading } = useQuery({
+    queryKey: ['marketplace', gender, tier, platform, location, genreKey, debouncedSearch],
+    queryFn: async () => {
+      const data = await api.searchInfluencers({
+        gender: gender !== "all" ? gender : undefined,
+        tier: tier !== "all" ? tier : undefined,
+        platform: platform !== "all" ? platform : undefined,
+        city: location || undefined,
+        genre: selectedGenres.length === 1 ? selectedGenres[0] : undefined,
+        name: debouncedSearch || undefined,
+      });
+      return (Array.isArray(data) ? data : []).map(toInfluencer);
+    },
+    staleTime: 30_000,
+    placeholderData: (prev) => prev,
+  });
 
   const filtered = useMemo(() => {
     let r = influencers;
@@ -303,7 +300,7 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
                 >
                   <div className="flex items-start gap-3 mb-3">
                     <div className="relative shrink-0">
-                      <img src={inf.photo} alt={inf.name} className="w-12 h-12 rounded-xl object-cover bg-charcoal" />
+                      <img src={inf.photo} alt={inf.name} loading="lazy" className="w-12 h-12 rounded-xl object-cover bg-charcoal" />
                       {selected && (
                         <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gold flex items-center justify-center">
                           <CheckSquare className="w-3 h-3 text-obsidian" />
@@ -331,8 +328,10 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
                       <p className="text-sm font-bold text-chalk">{inf.followers ? `${(inf.followers / 1000).toFixed(0)}K` : "—"}</p>
                     </div>
                     <div className="bento-card-dark p-2 rounded-lg">
-                      <p className="text-xs text-chalk-faint">ER%</p>
-                      <p className="text-sm font-bold text-chalk">—</p>
+                      <p className="text-xs text-chalk-faint">Rating</p>
+                      <p className="text-sm font-bold text-chalk">
+                        {inf.avgRating ? `${inf.avgRating}★` : '—'}
+                      </p>
                     </div>
                     <div className="bento-card-dark p-2 rounded-lg">
                       <p className="text-xs text-chalk-faint">Cost</p>

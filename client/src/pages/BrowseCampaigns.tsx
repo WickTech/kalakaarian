@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Search, Calendar, DollarSign, Briefcase } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,57 +6,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
 import { api, Campaign, CampaignFilters } from "@/lib/api";
 
 const genres = ["Fashion", "Tech", "Food", "Fitness", "Beauty", "Lifestyle", "Gaming", "Travel"];
 
 export default function BrowseCampaigns() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<CampaignFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    const fetchCampaigns = async () => {
-      setLoading(true);
-      try {
-        const data = await api.getOpenCampaigns(filters);
-        setCampaigns(data);
-        setError(null);
-      } catch (err) {
-        setError("Failed to load campaigns");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCampaigns();
-  }, [filters]);
+  const { data: campaigns = [], isLoading: loading, isError } = useQuery({
+    queryKey: ['open-campaigns', filters],
+    queryFn: () => api.getOpenCampaigns(filters),
+    staleTime: 60_000,
+  });
 
-  const filteredCampaigns = campaigns.filter((campaign) => {
-    if (searchTerm && !campaign.title.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
-    }
-    if (filters.niche && campaign.genre !== filters.niche) {
-      return false;
-    }
-    if (filters.minBudget && campaign.budget < filters.minBudget) {
-      return false;
-    }
-    if (filters.maxBudget && campaign.budget > filters.maxBudget) {
-      return false;
-    }
+  const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
+    if (searchTerm && !campaign.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (filters.niche && campaign.genre !== filters.niche) return false;
+    if (filters.minBudget && campaign.budget < filters.minBudget) return false;
+    if (filters.maxBudget && campaign.budget > filters.maxBudget) return false;
     return true;
   });
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-purple-700 via-fuchsia-600 to-pink-500 px-4 py-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <Link
-          to="/influencer/dashboard"
-          className="inline-flex items-center gap-2 text-sm text-white/90 hover:text-white"
-        >
+        <Link to="/influencer/dashboard" className="inline-flex items-center gap-2 text-sm text-white/90 hover:text-white">
           <ArrowLeft className="h-4 w-4" /> Back to Dashboard
         </Link>
 
@@ -92,9 +68,7 @@ export default function BrowseCampaigns() {
                   <SelectContent>
                     <SelectItem value="">All Niches</SelectItem>
                     {genres.map((genre) => (
-                      <SelectItem key={genre} value={genre}>
-                        {genre}
-                      </SelectItem>
+                      <SelectItem key={genre} value={genre}>{genre}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -103,11 +77,7 @@ export default function BrowseCampaigns() {
                 <Select
                   value={
                     filters.maxBudget
-                      ? filters.maxBudget <= 30000
-                        ? "0-30000"
-                        : filters.maxBudget <= 60000
-                        ? "30001-60000"
-                        : "60000+"
+                      ? filters.maxBudget <= 30000 ? "0-30000" : filters.maxBudget <= 60000 ? "30001-60000" : "60000+"
                       : ""
                   }
                   onValueChange={(value) => {
@@ -136,8 +106,14 @@ export default function BrowseCampaigns() {
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
           </div>
+        ) : isError ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">Failed to load campaigns.</p>
+            </CardContent>
+          </Card>
         ) : filteredCampaigns.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
@@ -146,7 +122,7 @@ export default function BrowseCampaigns() {
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {filteredCampaigns.map((campaign) => (
+            {filteredCampaigns.map((campaign: Campaign) => (
               <Card key={campaign.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">

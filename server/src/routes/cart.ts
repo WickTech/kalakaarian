@@ -7,6 +7,7 @@ import {
   clearCart,
   updateCartItem,
   checkout,
+  handleCartWebhook,
 } from '../controllers/cartController';
 import { auth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
@@ -33,5 +34,8 @@ router.delete('/clear', auth, clearCart);
 router.put('/update/:influencerId', auth, updateCartItem);
 
 router.post('/checkout', auth, checkout);
+
+// No auth — called by Razorpay servers; verified via HMAC signature in handler
+router.post('/webhook', handleCartWebhook);
 
 export default router;

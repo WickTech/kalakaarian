@@ -1,5 +1,5 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, DollarSign, Briefcase, CheckCircle, Clock, XCircle } from "lucide-react";
+import { ArrowLeft, Briefcase, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -76,31 +76,15 @@ export default function CampaignDetails() {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex flex-wrap gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-muted-foreground" />
+            {campaign.platform && (
+              <div className="flex items-center gap-2 text-sm">
+                <Briefcase className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-muted-foreground">Budget</p>
-                  <p className="font-semibold">₹{campaign.budget.toLocaleString()}</p>
+                  <p className="text-muted-foreground">Platform</p>
+                  <p className="font-semibold">{campaign.platform}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-muted-foreground">Deadline</p>
-                  <p className="font-semibold">{new Date(campaign.deadline).toLocaleDateString()}</p>
-                </div>
-              </div>
-              {campaign.platform && (
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-muted-foreground">Platform</p>
-                    <p className="font-semibold">{campaign.platform}</p>
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
 
             <Separator />
 

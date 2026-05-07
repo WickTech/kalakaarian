@@ -3,6 +3,7 @@ import { body } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 import {
   getCampaigns, getCampaignById, createCampaign, updateCampaign, deleteCampaign, getOpenCampaigns,
+  getCampaignInfluencers,
 } from '../controllers/campaignController';
 import { submitProposal, getProposals } from '../controllers/proposalController';
 import { updateProposalStatus } from '../controllers/proposalActions';
@@ -32,6 +33,7 @@ router.post(
   createCampaign
 );
 
+router.get('/:id/influencers', auth, getCampaignInfluencers);
 router.put('/:id', auth, updateCampaign);
 router.delete('/:id', auth, deleteCampaign);
 

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { adminClient } from '../config/supabase';
 import { AuthRequest } from '../middleware/auth';
+import { formatInfluencer } from './influencerController';
 
 const CAMPAIGN_SELECT = '*, profiles!campaigns_brand_id_fkey(name, email)';
 
@@ -142,6 +143,52 @@ export const deleteCampaign = async (req: AuthRequest, res: Response): Promise<v
     res.json({ message: 'Campaign deleted successfully' });
   } catch (error) {
     console.error('Delete campaign error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getCampaignInfluencers = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'brand') {
+      res.status(403).json({ message: 'Forbidden' }); return;
+    }
+    const { id: campaignId } = req.params;
+    const brandId = req.user.userId;
+
+    const [txResult, cartResult] = await Promise.all([
+      adminClient.from('transactions').select('influencer_id, amount')
+        .eq('campaign_id', campaignId).eq('brand_id', brandId),
+      adminClient.from('cart_items').select('influencer_id, price')
+        .eq('campaign_id', campaignId).eq('brand_id', brandId),
+    ]);
+
+    const paidMap = new Map<string, number>();
+    for (const r of txResult.data ?? []) paidMap.set(r.influencer_id, r.amount);
+
+    const pendingMap = new Map<string, number>();
+    for (const r of cartResult.data ?? []) {
+      if (!paidMap.has(r.influencer_id)) pendingMap.set(r.influencer_id, r.price);
+    }
+
+    const allIds = [...paidMap.keys(), ...pendingMap.keys()];
+    if (!allIds.length) { res.json({ influencers: [] }); return; }
+
+    const { data: profiles, error } = await adminClient
+      .from('influencer_profiles')
+      .select('*, profiles(name, avatar_url), influencer_pricing(platform, content_type, price)')
+      .in('id', allIds);
+
+    if (error) throw error;
+
+    const influencers = (profiles ?? []).map((row: any) => ({
+      ...formatInfluencer(row),
+      cartPrice: paidMap.get(row.id) ?? pendingMap.get(row.id) ?? 0,
+      paymentStatus: paidMap.has(row.id) ? 'paid' : 'pending',
+    }));
+
+    res.json({ influencers });
+  } catch (err) {
+    console.error('getCampaignInfluencers error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };

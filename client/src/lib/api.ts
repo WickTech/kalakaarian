@@ -29,13 +29,26 @@ export interface Campaign {
   title: string;
   description: string;
   genre: string;
-  budget: number;
-  deadline: string;
+  budget?: number;
+  deadline?: string;
   status: "open" | "closed" | "archived";
   createdAt: string;
   deliverables?: string;
   platform?: string;
   brandName?: string;
+}
+
+export interface CampaignInfluencer {
+  id: string;
+  name: string;
+  profileImage: string | null;
+  platform: string[];
+  followerCount: number;
+  niches: string[];
+  tier: string;
+  pricing: Record<string, number>;
+  cartPrice: number;
+  paymentStatus: 'paid' | 'pending';
 }
 
 export interface CampaignFilters {
@@ -400,6 +413,11 @@ export const api = {
   getCampaignById: async (id: string): Promise<Campaign> => {
     const res = await request<{ campaign: Campaign }>(`/api/campaigns/${id}`);
     return res.campaign;
+  },
+
+  getCampaignInfluencers: async (campaignId: string): Promise<CampaignInfluencer[]> => {
+    const res = await request<{ influencers: CampaignInfluencer[] }>(`/api/campaigns/${campaignId}/influencers`);
+    return res.influencers;
   },
 
   submitProposal: async (campaignId: string, message: string, bidAmount: number): Promise<Proposal> => {

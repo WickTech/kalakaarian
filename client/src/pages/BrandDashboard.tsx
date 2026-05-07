@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Plus, Search, MessageSquare, FileText, Users, Loader2, LogOut, BarChart2 } from "lucide-react";
+import { Plus, Search, MessageSquare, FileText, Users, LogOut, BarChart2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { api, Campaign, Proposal } from "@/lib/api";
 import { BrandProposalsModal } from "@/components/BrandProposalsModal";
+import { CampaignInfluencersPanel } from "@/components/CampaignInfluencersPanel";
 import { RecommendedCreators } from "@/components/RecommendedCreators";
 import { BrandAnalyticsPanel } from "@/components/BrandAnalyticsPanel";
 import { BrandRoomPanel } from "@/components/BrandRoomPanel";
@@ -24,6 +25,7 @@ export default function BrandDashboard() {
   const location = useLocation();
   const [tab, setTab] = useState<Tab>("overview");
   const [viewingCampaignId, setViewingCampaignId] = useState<string | null>(null);
+  const [viewingInfluencersCampaign, setViewingInfluencersCampaign] = useState<Campaign | null>(null);
 
   useEffect(() => {
     const t = (location.state as { tab?: Tab } | null)?.tab;
@@ -143,7 +145,7 @@ export default function BrandDashboard() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead><tr className="border-b border-white/5">
-                        {["Campaign", "Status", "Budget", "Deadline", "Actions"].map((h) => (
+                        {["Campaign", "Status", "Actions"].map((h) => (
                           <th key={h} className="px-5 py-3 text-left text-xs text-chalk-faint font-medium">{h}</th>
                         ))}
                       </tr></thead>
@@ -156,17 +158,21 @@ export default function BrandDashboard() {
                                 {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
                               </span>
                             </td>
-                            <td className="px-5 py-3 text-chalk-dim">₹{c.budget?.toLocaleString("en-IN") || "—"}</td>
-                            <td className="px-5 py-3 text-chalk-dim">{c.deadline ? new Date(c.deadline).toLocaleDateString() : "—"}</td>
-                            <td className="px-5 py-3 flex items-center gap-3">
-                              <button onClick={() => setViewingCampaignId(c.id)}
-                                className="text-xs text-gold hover:underline flex items-center gap-1">
-                                <Users className="w-3 h-3" /> Proposals
-                              </button>
-                              <Link to={`/brand/campaigns/${c.id}/track`}
-                                className="text-xs text-purple-400 hover:underline flex items-center gap-1">
-                                <BarChart2 className="w-3 h-3" /> Track
-                              </Link>
+                            <td className="px-5 py-3">
+                              <div className="flex items-center gap-3">
+                                <button onClick={() => setViewingInfluencersCampaign(c)}
+                                  className="text-xs text-purple-400 hover:underline flex items-center gap-1">
+                                  <Users className="w-3 h-3" /> Creators
+                                </button>
+                                <button onClick={() => setViewingCampaignId(c.id)}
+                                  className="text-xs text-gold hover:underline flex items-center gap-1">
+                                  <FileText className="w-3 h-3" /> Proposals
+                                </button>
+                                <Link to={`/brand/campaigns/${c.id}/track`}
+                                  className="text-xs text-chalk-dim hover:text-chalk flex items-center gap-1">
+                                  <BarChart2 className="w-3 h-3" /> Track
+                                </Link>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -189,6 +195,13 @@ export default function BrandDashboard() {
           campaignId={viewingCampaignId}
           proposals={viewingProposals}
           onClose={() => setViewingCampaignId(null)}
+        />
+      )}
+      {viewingInfluencersCampaign && (
+        <CampaignInfluencersPanel
+          campaignId={viewingInfluencersCampaign.id}
+          campaignTitle={viewingInfluencersCampaign.title}
+          onClose={() => setViewingInfluencersCampaign(null)}
         />
       )}
     </main>

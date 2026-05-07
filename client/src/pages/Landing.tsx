@@ -34,7 +34,7 @@ export default function Landing() {
 
   const tiers = [
     { key: "nano",  label: "Nano Creator",  range: "2K – 20K followers",    count: tierCounts.nano },
-    { key: "micro", label: "Micro Creator", range: "10K – 200K followers",  count: tierCounts.micro },
+    { key: "micro", label: "Micro Creator", range: "20K – 200K followers",  count: tierCounts.micro },
     { key: "macro", label: "Macro Creator", range: "200K – 3M+ followers",  count: tierCounts.macro },
     { key: "celeb", label: "Celebrity",      range: "",                       count: tierCounts.celeb },
   ];

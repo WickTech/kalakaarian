@@ -14,6 +14,11 @@ function useLocalStorage<T>(key: string, initial: T): [T, (v: T) => void] {
 interface Props { membershipTier?: string; }
 
 export function BrandRoomPanel({ membershipTier }: Props) {
+  const [savedIds, setSavedIds] = useLocalStorage<string[]>("room_saved_creators", []);
+  const [campaignDate, setCampaignDate] = useLocalStorage<string>("room_campaign_date", "");
+  const [activeTs, setActiveTs] = useLocalStorage<string>("room_active_since", "");
+  const [newId, setNewId] = useState("");
+
   const isRoom = membershipTier === "room";
 
   if (!isRoom) {
@@ -34,11 +39,6 @@ export function BrandRoomPanel({ membershipTier }: Props) {
       </div>
     );
   }
-
-  const [savedIds, setSavedIds] = useLocalStorage<string[]>("room_saved_creators", []);
-  const [campaignDate, setCampaignDate] = useLocalStorage<string>("room_campaign_date", "");
-  const [activeTs, setActiveTs] = useLocalStorage<string>("room_active_since", "");
-  const [newId, setNewId] = useState("");
 
   const addCreator = () => {
     const trimmed = newId.trim();

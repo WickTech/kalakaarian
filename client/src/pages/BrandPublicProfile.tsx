@@ -1,11 +1,11 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { ArrowLeft, Globe, Briefcase, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useNavigateBack } from "@/hooks/useNavigateBack";
 
 interface BrandPublic {
-  id: string;
   companyName: string;
   industry: string;
   description?: string;
@@ -24,6 +24,8 @@ export default function BrandPublicProfile() {
     queryFn: () => api.getBrandPublicProfile(id!),
     enabled: !!id,
   });
+
+  useEffect(() => { document.title = brand?.companyName ? `${brand.companyName} | Kalakaarian` : "Brand Profile | Kalakaarian"; }, [brand?.companyName]);
 
   if (isLoading) {
     return (
@@ -58,7 +60,7 @@ export default function BrandPublicProfile() {
               className="w-20 h-20 rounded-xl object-cover border border-border" />
           ) : (
             <div className="w-20 h-20 rounded-xl bg-secondary flex items-center justify-center text-2xl font-bold text-muted-foreground">
-              {brand.companyName[0]}
+              {brand.companyName?.[0] ?? '?'}
             </div>
           )}
           <div>

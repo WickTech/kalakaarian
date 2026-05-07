@@ -18,7 +18,7 @@ export function WalletTab({ earnings, pendingTotal }: WalletProps) {
   const [showDrawer, setShowDrawer] = useState(false);
   const [upiId, setUpiId] = useState("");
 
-  const { data: txData } = useQuery({
+  const { data: txData, isError: txError } = useQuery({
     queryKey: ["wallet-transactions"],
     queryFn: () => api.getTransactionHistory(),
     staleTime: 30_000,
@@ -96,7 +96,9 @@ export function WalletTab({ earnings, pendingTotal }: WalletProps) {
         <div className="p-4 border-b border-white/5">
           <h3 className="text-sm font-display font-bold text-chalk">Transaction History</h3>
         </div>
-        {transactions.length === 0 ? (
+        {txError ? (
+          <p className="text-sm text-red-400 text-center py-6">Could not load transactions. Try again.</p>
+        ) : transactions.length === 0 ? (
           <p className="text-sm text-chalk-dim text-center py-6">No transactions yet</p>
         ) : (
           <table className="w-full text-xs">

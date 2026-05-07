@@ -773,7 +773,7 @@ export const api = {
     request('/api/wallet/withdraw', { method: 'POST', body: JSON.stringify({ amount, upiId }) }),
 
   getBrandPublicProfile: async (id: string): Promise<{
-    id: string; companyName: string; industry: string; description?: string;
+    companyName: string; industry: string; description?: string;
     website?: string; logo?: string; ownerName?: string; openCampaignCount: number;
   }> => request(`/api/brands/${id}/public`),
 

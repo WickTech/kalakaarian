@@ -26,7 +26,6 @@ router.get('/:id/public', (async (req, res) => {
       .eq('status', 'open');
 
     res.json({
-      id,
       companyName: (bp as Record<string, unknown>).company_name,
       industry: (bp as Record<string, unknown>).industry,
       description: (bp as Record<string, unknown>).description,

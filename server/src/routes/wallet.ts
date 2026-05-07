@@ -6,6 +6,7 @@ import { sendWithdrawalRequestEmail } from '../services/emailService';
 const router = Router();
 
 router.get('/transactions', auth as unknown as RequestHandler, (async (req, res) => {
+  if ((req as AuthRequest).user!.role !== 'influencer') return res.status(403).json({ error: 'Forbidden' });
   const userId = (req as AuthRequest).user!.userId;
   try {
     const { data, error } = await adminClient
@@ -31,6 +32,7 @@ router.get('/transactions', auth as unknown as RequestHandler, (async (req, res)
 }) as RequestHandler);
 
 router.post('/withdraw', auth as unknown as RequestHandler, (async (req, res) => {
+  if ((req as AuthRequest).user!.role !== 'influencer') return res.status(403).json({ error: 'Forbidden' });
   const { userId } = (req as AuthRequest).user!;
   const { amount, upiId } = req.body as { amount?: number; upiId?: string };
 

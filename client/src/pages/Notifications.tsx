@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Bell, MessageSquare, FileText, DollarSign, Info, X } from "lucide-react";
 import { api, AppNotification } from "@/lib/api";
@@ -24,6 +24,7 @@ export default function Notifications() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<"all" | "unread">("all");
+  useEffect(() => { document.title = "Notifications | Kalakaarian"; }, []);
 
   const { data: notifications = [], isLoading } = useQuery<AppNotification[]>({
     queryKey: ["notifications"],

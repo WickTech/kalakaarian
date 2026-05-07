@@ -2,7 +2,6 @@ import { Response } from 'express';
 import { adminClient } from '../config/supabase';
 import { AuthRequest } from '../middleware/auth';
 import { formatInfluencer } from './influencerController';
-import { applyPlatformMargin } from '../utils/pricing';
 
 export const getSimilarInfluencers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -18,7 +17,7 @@ export const getSimilarInfluencers = async (req: AuthRequest, res: Response): Pr
 
     const { data: rows } = await adminClient
       .from('influencer_profiles')
-      .select('*, profiles!inner(name, email)')
+      .select('*, profiles!inner(name)')
       .eq('tier', target.tier)
       .neq('id', id)
       .order('avg_rating', { ascending: false })
@@ -29,7 +28,7 @@ export const getSimilarInfluencers = async (req: AuthRequest, res: Response): Pr
     if (results.length < 6) {
       const { data: fallback } = await adminClient
         .from('influencer_profiles')
-        .select('*, profiles!inner(name, email)')
+        .select('*, profiles!inner(name)')
         .neq('id', id)
         .neq('tier', target.tier)
         .order('avg_rating', { ascending: false })
@@ -37,10 +36,8 @@ export const getSimilarInfluencers = async (req: AuthRequest, res: Response): Pr
       results = [...results, ...(fallback || [])];
     }
 
-    const influencers = results.map((row: any) => {
-      const formatted = formatInfluencer(row);
-      return { ...formatted, pricing: applyPlatformMargin(formatted.pricing) };
-    });
+    // formatInfluencer already calls applyPlatformMargin internally — do not wrap again
+    const influencers = results.map((row: any) => formatInfluencer(row));
 
     res.json({ influencers });
   } catch (error) {

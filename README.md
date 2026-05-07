@@ -35,6 +35,14 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 
 ## Current Features (✅ Completed)
 
+### Global Navigation
+- Sticky glassmorphism header across every page — scroll hide/show
+- Logo, nav links (Home / Marketplace / Campaigns / Contact)
+- Auth-aware: notification bell + cart icon + avatar dropdown for logged-in users; Login / Get Started for guests
+- Role-aware dashboard link (brand → `/brand/dashboard`, influencer → `/influencer/dashboard`)
+- Mobile hamburger Sheet menu
+- Dark obsidian theme — `bg-obsidian/95 backdrop-blur` with white/10 borders
+
 ### Authentication & Onboarding
 - Email + password login with role detection (brand / creator)
 - Google OAuth login
@@ -53,6 +61,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - "Why Kalakaarian" feature section
 - Floating contact button (bottom-right, persistent across pages)
 - PWA install prompt for mobile browsers
+- Dark obsidian theme throughout — charcoal tier cards, chalk text, obsidian footer
 
 ### Marketplace
 - 4-column influencer grid (responsive: 2 → 3 → 4 columns)
@@ -60,9 +69,11 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Search bar (name/handle filter, live)
 - Filter drawer: tier, genre, gender, platform, price range, city
 - Influencer cards: avatar, tier badge, online status dot / last-seen, follower count, cost, add-to-cart
+- Celebrity tier shows "Get In Touch" button instead of Add to Cart → navigates to `/contact`
 - Default avatar fallback (DiceBear)
 - Select all / deselect all with bulk cart add
 - Cart drawer: shows selected creators, remove button, 8% platform fee, grand total
+- Similar Profiles strip on influencer profile page — horizontal scroll, same-tier creators
 
 ### Cart & Checkout
 - Cart context shared across app (single state instance)
@@ -71,21 +82,29 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Dedicated `/checkout` page — campaign details, creator list, price breakdown
 - Razorpay checkout (two-step: create order → verify payment signature, server-side)
 - 8% platform fee enforced server-side at order creation — not client-only
+- Post-payment success screen with "Explore More Creators" and "Your Campaigns" CTAs
 
 ### Brand Dashboard
-- Campaign list with status badges
+- Campaign list with status badges (no budget/deadline — budget auto-calculated from creator cartPrices)
+- **Campaign Influencers panel** — view all creators added to a campaign, filter by payment status (all/paid/pending), search by name, sort by price or followers; computed total budget; remove pending creators
 - Proposals table per campaign (accept / reject)
 - Campaign workflow timeline (creators selected → content review → payment)
 - Video review grid — approve / request revision
 - Campaign file management (brief uploads, contract documents)
-- Campaign creation form (title, description, budget, deadline, platform, niche, file attachments)
+- Campaign creation form (title, description, platform, niche, file attachments; brief tooltip with disclaimer)
+- Campaign history analytics — past campaigns table + spend bar chart
+- Brand Room: saved creators list, campaign start date picker with countdown, active status toggle
+- Brand public profile page (`/brand/:id`) — logo, industry, description, open campaign count (no auth required)
 
 ### Influencer Dashboard
 - Active proposals list with status
 - Analytics cards: engagement rate, avg views, CPV, fake follower %
+- **Monthly earnings bar chart** — last 6 months of accepted proposals (recharts via shadcn ChartContainer)
+- **Wallet tab** — earnings balance, withdraw drawer (UPI ID input → admin-notified), transaction history table
 - Membership tier badge (Silver / Gold)
 - Browse open campaigns — filter by genre and platform
 - Campaign details + proposal submission (bid amount, message, deliverables)
+- Online presence toggle shows "active since HH:MM" timestamp when live
 
 ### Admin Dashboard (`/admin`, admin-only)
 - Users tab — paginated user list with role, tier, join date
@@ -104,9 +123,9 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Send / receive messages with read status
 
 ### Notifications
-- Bell icon with unread count badge
-- Notification dropdown
-- Mark individual or all as read; delete
+- Bell icon with unread count badge — dark dropdown (charcoal bg, purple accents)
+- Full-page `/notifications` — tab filter (All / Unread), mark all read, delete, click-to-navigate
+- Mark individual or all as read
 
 ### Social Stats
 - Instagram stats: followers, ER, recent posts (live API or mock fallback)
@@ -128,6 +147,11 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 ### Infrastructure
 - Supabase RLS + search_path hardening (migration 012)
 - `celeb` tier enum (migration 013, backfill from legacy `mega`)
+- T&C acceptance tracking (migration 014) — role-aware modal gating checkout + membership
+- Campaign workflow stages (migration 015)
+- Cart orders table (migration 016)
+- Creator ratings (migration 017)
+- Withdrawal requests table (migration 018) — `pending | processing | paid | failed` statuses
 - 5% platform margin applied server-side on all brand-facing reads (`applyPlatformMargin()`)
 - Rate limits: auth 20/15 min, OTP 5/hr by phone, campaign create 10/hr, contact POST 5/hr by IP
 - CORS allowlist (hardcoded production + `CORS_ORIGINS` env var + Vercel preview pattern)
@@ -137,7 +161,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 
 ---
 
-## In Progress (🔄)
+## In Progress / Known Gaps (🔄)
 
 | Feature | Status | What's Missing |
 |---|---|---|
@@ -145,44 +169,35 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 | **WhatsApp OTP** | Conditional | Route and handler exist. Requires `WHATSAPP_PHONE_NUMBER_ID` + `WHATSAPP_ACCESS_TOKEN` env vars. Falls back to mock response without them. |
 | **Instagram / YouTube analytics** | Conditional | API wired up with mock fallback. Requires `INSTAGRAM_ACCESS_TOKEN` + `YOUTUBE_API_KEY`. Without keys, mock data is returned. |
 | **Real-time messaging** | Poll-based | Messages page polls the API. Supabase Realtime / WebSocket not yet wired. |
-| **BrandCampaignPage** | Placeholder | `/brand-campaign` route exists but renders minimal content; v2 feature not implemented. |
+| **Influencer withdrawal payouts** | Admin-notified only | `POST /api/wallet/withdraw` inserts a `withdrawal_requests` row and emails admin. Actual Razorpay Payouts API not wired — requires manual admin action. |
+| **Similar influencers endpoint** | Server wired, needs verification | `GET /api/influencers/:id/similar` exists; confirm Supabase query returns correct tier-matched results in production. |
 
 ---
 
 ## Roadmap / Next Steps (⏭️)
 
-### Phase 1 — Infrastructure & Real-time
+### Near-term (next session)
 - [ ] Wire Supabase Realtime on messages table — eliminate polling
+- [ ] Verify `GET /api/influencers/:id/similar` returns correct results in production
+- [ ] Wire actual Razorpay Payouts API for influencer withdrawals (currently admin-notification only)
 - [ ] Push notifications via FCM/APNs (service worker hook already present in PWA)
 - [ ] Social handle OAuth verification (Instagram Basic Display API / YouTube OAuth)
 
-### Phase 2 — Marketplace Enhancements
+### Platform Enhancements
 - [ ] AI-powered creator recommendations (semantic search by brief → matching creators)
 - [ ] Influencer verified-badge flow (manual admin approval after follower count check)
 - [ ] Advanced filters: engagement rate range, fake-follower % threshold
 - [ ] Campaign match score — show fit % per creator for a given brief
-
-### Phase 3 — Payments & Contracts
 - [ ] Escrow / milestone payment hold — release on brand approval
 - [ ] Automated invoice generation (PDF) on successful payment
 - [ ] E-signature for campaign contracts (DocuSign / Leegality API)
-- [ ] Payout flow for influencers (Razorpay Payouts / UPI)
 
-### Phase 4 — Analytics & Reporting
-- [ ] Campaign performance dashboard (impressions, clicks, conversions, ROI)
-- [ ] Brand spend analytics — historical campaigns, ROI trends
-- [ ] Influencer growth tracking — follower count history, ER trend chart
-
-### Phase 5 — Creator Tools
-- [ ] Content calendar / deadline tracker
-- [ ] Draft content upload for brand review before going live
-- [ ] Portfolio section — past brand collaborations
-
-### Phase 6 — Platform & Scale
+### Scale
 - [ ] Multi-currency support (USD for global brands)
 - [ ] Mobile apps (React Native / Flutter — API is already mobile-ready)
 - [ ] Affiliate / referral reward system (referral code infra exists in DB)
 - [ ] Bulk brand outreach — brands message multiple creators in one action
+- [ ] Content calendar / deadline tracker for creators
 
 ---
 
@@ -280,10 +295,15 @@ Apply in the Supabase SQL editor in order:
 
 ```
 # First apply v2 base schema (001–010) if starting fresh
-# Then apply v1 extras:
+# Then apply v1 extras in order:
 supabase/migrations/011_v1_extras.sql
 supabase/migrations/012_security_hardening.sql
 supabase/migrations/013_add_celeb_tier.sql
+supabase/migrations/014_terms_accepted.sql
+supabase/migrations/015_workflow_stages.sql
+supabase/migrations/016_cart_orders.sql
+supabase/migrations/017_ratings.sql
+supabase/migrations/018_withdrawal_requests.sql
 ```
 
 ### 4. Supabase Auth

@@ -33,10 +33,10 @@ export default function Landing() {
   }, []);
 
   const tiers = [
-    { key: "nano",  label: "Nano Creator",  range: "2K – 20K followers",   count: tierCounts.nano },
-    { key: "micro", label: "Micro Creator", range: "200K to 3M+ followers", count: tierCounts.micro },
-    { key: "macro", label: "Macro Creator", range: "3M – 10M followers",    count: tierCounts.macro },
-    { key: "celeb", label: "Celebrity",      range: "10M+",                  count: tierCounts.celeb },
+    { key: "nano",  label: "Nano Creator",  range: "2K – 20K followers",    count: tierCounts.nano },
+    { key: "micro", label: "Micro Creator", range: "10K – 200K followers",  count: tierCounts.micro },
+    { key: "macro", label: "Macro Creator", range: "200K – 3M+ followers",  count: tierCounts.macro },
+    { key: "celeb", label: "Celebrity",      range: "",                       count: tierCounts.celeb },
   ];
 
   const whyKalakaarian = [
@@ -126,7 +126,7 @@ export default function Landing() {
                 className="border-2 border-border rounded-xl p-8 cursor-pointer group hover:border-purple-500 transition-all relative bg-card"
               >
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600/0 to-pink-600/0 group-hover:from-purple-600/5 group-hover:to-pink-600/5 transition-all" />
-                <span className="text-sm font-oswald font-medium text-muted-foreground mb-3 block">{tier.range}</span>
+                {tier.range && <span className="text-sm font-oswald font-medium text-muted-foreground mb-3 block">{tier.range}</span>}
                 <h3 className="text-3xl font-oswald font-bold mb-3 group-hover:text-purple-600 transition-colors">{tier.label}</h3>
                 <p className="text-sm text-muted-foreground">
                   {loadingCounts ? "Loading..." : `${tier.count} Active Influencer${tier.count !== 1 ? 's' : ''}`}

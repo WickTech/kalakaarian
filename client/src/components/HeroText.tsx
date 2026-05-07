@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { prepareWithSegments, layoutWithLines, type PreparedTextWithSegments } from '@chenglou/pretext';
 
-const PHRASES = ['Nano creators', 'Micro influencers', 'Macro creators', 'Celeb stars'];
+const PHRASES = ['Nano creators', 'Micro creators', 'Macro creators', 'Celeb stars'];
 const SHOW_MS = 2400;
 const FADE_MS = 500;
 const CANVAS_H = 68;

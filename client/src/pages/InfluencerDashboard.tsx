@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Edit, LogOut, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { api, Proposal } from "@/lib/api";
+import { api, Proposal, InfluencerProfile } from "@/lib/api";
 import { WalletTab, UploadTab, MembershipTab, SettingsTab } from "@/components/InfluencerDashboardPanels";
 import { InfluencerAnalyticsPanel } from "@/components/InfluencerAnalyticsPanel";
 import { GamificationPanel } from "@/components/GamificationPanel";
@@ -31,18 +31,20 @@ export default function InfluencerDashboard() {
     queryFn: () => api.getProposals().catch(() => []),
   });
 
-  const { data: profile } = useQuery({
+  const { data: profile } = useQuery<InfluencerProfile | null>({
     queryKey: ["influencer-profile-own"],
     queryFn: () => api.getInfluencerProfile().catch(() => null),
-    onSuccess: (p: any) => { if (p?.isOnline !== undefined) setIsOnline(p.isOnline); },
-  } as any);
+  });
+  useEffect(() => {
+    if (profile?.isOnline !== undefined) setIsOnline(profile.isOnline!);
+  }, [profile]);
 
   const { data: analytics } = useQuery({
     queryKey: ["influencer-analytics"],
     queryFn: () => api.getInfluencerAnalytics().catch(() => null),
   });
 
-  const { data: membershipStatus = null } = useQuery({
+  const { data: membershipStatus = null } = useQuery<{ tier: string; active?: boolean; endDate?: string } | null>({
     queryKey: ["membership-status"],
     queryFn: () => api.getMembershipStatus().catch(() => null),
   });
@@ -72,28 +74,28 @@ export default function InfluencerDashboard() {
         <div className="bento-card p-5">
           <div className="flex items-start gap-4">
             <div className="relative flex-shrink-0">
-              <img src={(profile as any)?.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name}`}
+              <img src={profile?.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name}`}
                 alt="avatar" className="w-16 h-16 rounded-full object-cover bg-charcoal" />
               <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-obsidian ${isOnline ? "bg-green-400" : "bg-chalk-faint"}`} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="font-display font-bold text-chalk text-xl">{(profile as any)?.name || user?.name}</h1>
-                {(membershipStatus as any)?.active && (
+                <h1 className="font-display font-bold text-chalk text-xl">{profile?.name || user?.name}</h1>
+                {membershipStatus?.active && (
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold/20 text-gold border border-gold/30">
-                    {(membershipStatus as any)?.tier?.toUpperCase()}
+                    {membershipStatus?.tier?.toUpperCase()}
                   </span>
                 )}
-                {(profile as any)?.avgRating && (
+                {profile?.avgRating && (
                   <span className="flex items-center gap-0.5 text-xs text-gold">
                     <Star className="w-3 h-3 fill-gold" />
-                    {Number((profile as any).avgRating).toFixed(1)}
-                    <span className="text-chalk-faint">({(profile as any).ratingCount})</span>
+                    {Number(profile.avgRating).toFixed(1)}
+                    <span className="text-chalk-faint">({profile.ratingCount})</span>
                   </span>
                 )}
               </div>
-              <p className="text-xs text-chalk-dim mt-0.5">{(profile as any)?.niches?.join(", ") || "—"} · {(profile as any)?.city || "—"}</p>
-              <p className="text-xs text-chalk-faint mt-0.5">{((profile as any)?.followerCount || 0).toLocaleString("en-IN")} followers</p>
+              <p className="text-xs text-chalk-dim mt-0.5">{profile?.niches?.join(", ") || "—"} · {profile?.city || "—"}</p>
+              <p className="text-xs text-chalk-faint mt-0.5">{(profile?.followerCount || 0).toLocaleString("en-IN")} followers</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-xs text-chalk-dim">Active</span>
@@ -124,8 +126,8 @@ export default function InfluencerDashboard() {
 
         {tab === "wallet" && <WalletTab earnings={stats.earnings} pendingTotal={stats.pendingTotal} />}
         {tab === "upload" && <UploadTab />}
-        {tab === "membership" && <MembershipTab membershipStatus={membershipStatus as any} />}
-        {tab === "settings" && <SettingsTab profile={profile as any} />}
+        {tab === "membership" && <MembershipTab membershipStatus={membershipStatus} />}
+        {tab === "settings" && <SettingsTab profile={profile} />}
       </div>
     </main>
   );

@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, InfluencerProfile as InfluencerProfileData, VideoItem } from '@/lib/api';
+import { api, InfluencerProfile as InfluencerProfileData, VideoItem, SocialStats } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigateBack } from '@/hooks/useNavigateBack';
@@ -47,7 +47,7 @@ export default function InfluencerProfile() {
     enabled: !!id && !!profile,
   });
 
-  const analytics = (socialStats as any)?.analytics || null;
+  const analytics = (socialStats as SocialStats & { analytics?: { engagementRate?: number; avgViews?: number; totalFollowers?: number; reachEstimate?: number; source?: string; authenticityScore?: number } })?.analytics || null;
 
   const handleStatusToggle = async (isOnline: boolean) => {
     try { await api.updatePresence(isOnline); }
@@ -119,7 +119,7 @@ export default function InfluencerProfile() {
         <ProfileHeader
           profile={{
             name: profile.name || 'Unknown',
-            handle: `@${profile.socialHandles?.instagram || (profile as any).username || 'user'}`,
+            handle: `@${profile.socialHandles?.instagram || 'user'}`,
             profileImage: profile.profileImage || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default',
             tier: membership.tier as 'gold' | 'silver' | 'regular',
             city: profile.city,

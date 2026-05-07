@@ -16,7 +16,7 @@ export function RecommendedCreators() {
     <div className="bento-card p-5">
       <h2 className="font-display font-bold text-chalk mb-4">Recommended Creators</h2>
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {creators.map((c: any) => (
+        {creators.map((c) => (
           <Link key={c.id} to={`/influencer/${c.id}`}
             className="flex-shrink-0 w-36 bento-card-dark p-3 rounded-xl hover:border-purple-500/30 transition-colors text-center block">
             <img

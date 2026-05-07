@@ -758,11 +758,11 @@ export const api = {
   }> => request('/api/analytics/influencer/deep'),
 
   // Recommendations
-  getRecommendedCreators: async (): Promise<any[]> =>
-    request<any[]>('/api/recommendations/creators'),
+  getRecommendedCreators: async (): Promise<Array<{ id: string; name: string; niches?: string[]; tier?: string; profileImage?: string; avgRating?: number }>> =>
+    request('/api/recommendations/creators'),
 
-  getRecommendedCampaigns: async (): Promise<any[]> =>
-    request<any[]>('/api/recommendations/campaigns'),
+  getRecommendedCampaigns: async (): Promise<Array<{ id: string; title: string; niches?: string[]; budget?: number }>> =>
+    request('/api/recommendations/campaigns'),
 
   // Contact
   submitContact: async (data: {

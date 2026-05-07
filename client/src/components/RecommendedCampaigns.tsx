@@ -17,7 +17,7 @@ export function RecommendedCampaigns() {
         <h2 className="font-display font-bold text-chalk text-sm">Campaigns for You</h2>
       </div>
       <div className="divide-y divide-white/5">
-        {campaigns.map((c: any) => (
+        {campaigns.map((c) => (
           <div key={c.id} className="px-4 py-3 flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-sm font-medium text-chalk truncate">{c.title}</p>

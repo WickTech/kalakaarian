@@ -12,7 +12,7 @@ export function BadgeStrip({ influencerId }: { influencerId: string }) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      {data.badges.map((b: any) => (
+      {data.badges.map((b) => (
         <span key={b.id} title={b.description}
           className="text-xs px-2 py-1 rounded-full border border-white/10 text-chalk-dim flex items-center gap-1.5">
           <span>{b.emoji}</span> {b.name}

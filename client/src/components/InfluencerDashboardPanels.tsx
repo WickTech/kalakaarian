@@ -6,29 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { openRazorpayCheckout } from "@/lib/razorpay";
 import { ExternalLink } from "lucide-react";
 
-interface WalletProps { earnings: number; pendingTotal: number; }
-export function WalletTab({ earnings, pendingTotal }: WalletProps) {
-  return (
-    <div className="space-y-4">
-      <div className="wallet-card p-6 rounded-xl">
-        <p className="text-xs text-chalk-dim mb-1">Total Earnings</p>
-        <p className="font-display font-bold text-3xl text-chalk">₹{earnings.toLocaleString("en-IN")}</p>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bento-card p-4">
-          <p className="text-xs text-chalk-dim">⏳ Pending</p>
-          <p className="font-bold text-xl text-chalk mt-1">₹{pendingTotal.toLocaleString("en-IN")}</p>
-        </div>
-        <div className="bento-card p-4">
-          <p className="text-xs text-chalk-dim">✅ Approved</p>
-          <p className="font-bold text-xl text-chalk mt-1">₹{earnings.toLocaleString("en-IN")}</p>
-        </div>
-      </div>
-      <button disabled={earnings === 0} className="purple-pill w-full py-3 text-sm disabled:opacity-40">Withdraw Earnings</button>
-      <p className="text-xs text-chalk-faint text-center">Withdrawals enabled only after campaign approval</p>
-    </div>
-  );
-}
+export { WalletTab } from "./WalletTab";
 
 export function UploadTab() {
   const { toast } = useToast();

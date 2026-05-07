@@ -12,6 +12,7 @@ import { VideoGrid } from '@/components/VideoGrid';
 import { SocialConnect } from '@/components/SocialConnect';
 import { InfluencerTrustSection } from '@/components/InfluencerTrustSection';
 import { BadgeStrip } from '@/components/BadgeStrip';
+import { SimilarProfiles } from '@/components/SimilarProfiles';
 import { openRazorpayCheckout } from '@/lib/razorpay';
 
 export default function InfluencerProfile() {
@@ -168,6 +169,8 @@ export default function InfluencerProfile() {
         )}
 
         <VideoGrid videos={videos} isOwnProfile={isOwnProfile} onUpload={handleVideoUpload} />
+
+        <SimilarProfiles currentId={id!} />
       </div>
     </div>
   );

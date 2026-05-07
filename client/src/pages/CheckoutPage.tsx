@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ShoppingCart, FileText } from "lucide-react";
+import { ArrowLeft, ShoppingCart, FileText, CheckCircle2 } from "lucide-react";
 import { useCartContext } from "@/contexts/CartContext";
 import { api } from "@/lib/api";
 import { openRazorpayCheckout } from "@/lib/razorpay";
@@ -17,6 +17,7 @@ export default function CheckoutPage() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
   const [termsAgreed, setTermsAgreed] = useState(false);
+  const [paid, setPaid] = useState(false);
   const fee = Math.round(total * 0.08);
   const grand = total + fee;
 
@@ -27,7 +28,7 @@ export default function CheckoutPage() {
       const order = await api.cartCheckout({ campaignId: campaignId || undefined, campaignDescription: campaignDescription || undefined });
       if (!order.orderId || !order.keyId) {
         clearCart();
-        navigate("/brand/dashboard");
+        setPaid(true);
         return;
       }
       await openRazorpayCheckout({
@@ -36,7 +37,7 @@ export default function CheckoutPage() {
         currency: order.currency,
         keyId: order.keyId,
         name: "Kalakaarian — Cart Checkout",
-        onSuccess: async () => { clearCart(); navigate("/brand/dashboard"); },
+        onSuccess: async () => { clearCart(); setPaid(true); },
         onDismiss: () => {},
       });
     } catch {
@@ -45,6 +46,32 @@ export default function CheckoutPage() {
       setProcessing(false);
     }
   };
+
+  if (paid) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-10 h-10 text-green-500" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Payment Successful!</h2>
+            <p className="text-muted-foreground text-sm">Your campaign is live and creators have been notified.</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <button onClick={() => navigate("/marketplace")}
+              className="w-full py-3 rounded-xl border border-border font-medium hover:bg-muted transition-colors">
+              Explore More Creators
+            </button>
+            <button onClick={() => navigate("/brand/dashboard", { state: { tab: "campaigns" } })}
+              className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+              Your Campaigns →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

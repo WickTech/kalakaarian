@@ -50,6 +50,23 @@ export const sendMembershipInvoice = async (
   });
 };
 
+export const sendWithdrawalRequestEmail = async (
+  influencerName: string,
+  influencerEmail: string,
+  amount: number,
+  upiId: string
+): Promise<void> => {
+  const r = getClient();
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@kalakaarian.com';
+  if (!r) return;
+  await r.emails.send({
+    from: FROM,
+    to: adminEmail,
+    subject: `Withdrawal request — ₹${amount} from ${influencerName}`,
+    html: `<h2>Withdrawal Request</h2><table style="border-collapse:collapse"><tr><td style="padding:4px 12px">Influencer</td><td style="padding:4px 12px"><strong>${influencerName}</strong></td></tr><tr><td style="padding:4px 12px">Email</td><td style="padding:4px 12px">${influencerEmail}</td></tr><tr><td style="padding:4px 12px">Amount</td><td style="padding:4px 12px">₹${amount}</td></tr><tr><td style="padding:4px 12px">UPI ID</td><td style="padding:4px 12px"><strong>${upiId}</strong></td></tr></table><p>Please process within 5–7 business days.</p>`,
+  });
+};
+
 export const sendProposalStatusEmail = async (
   to: string,
   name: string,

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Plus, Search, MessageSquare, FileText, Users, Loader2, LogOut, BarChart2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,8 +8,9 @@ import { BrandProposalsModal } from "@/components/BrandProposalsModal";
 import { RecommendedCreators } from "@/components/RecommendedCreators";
 import { BrandAnalyticsPanel } from "@/components/BrandAnalyticsPanel";
 import { BrandRoomPanel } from "@/components/BrandRoomPanel";
+import { BrandCampaignHistoryPanel } from "@/components/BrandCampaignHistoryPanel";
 
-type Tab = "overview" | "campaigns" | "analytics" | "room";
+type Tab = "overview" | "campaigns" | "analytics" | "room" | "history";
 
 const STATUS_STYLE: Record<string, string> = {
   open: "text-green-400 border-green-400/30",
@@ -20,8 +21,14 @@ const STATUS_STYLE: Record<string, string> = {
 export default function BrandDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [tab, setTab] = useState<Tab>("overview");
   const [viewingCampaignId, setViewingCampaignId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = (location.state as { tab?: Tab } | null)?.tab;
+    if (t) { setTab(t); window.history.replaceState({}, ''); }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: campaigns = [], isLoading: campaignsLoading } = useQuery<Campaign[]>({
     queryKey: ["brand-campaigns"],
@@ -72,7 +79,7 @@ export default function BrandDashboard() {
         </div>
 
         <div className="flex gap-2 mb-6">
-          {(["overview", "campaigns", "analytics", "room"] as Tab[]).map((t) => (
+          {(["overview", "campaigns", "analytics", "room", "history"] as Tab[]).map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${tab === t ? "bg-purple-600 text-white" : "border border-white/10 text-chalk-dim hover:text-chalk"}`}>
               {t === "room" ? "🏠 Your Room" : t.charAt(0).toUpperCase() + t.slice(1)}
@@ -172,6 +179,7 @@ export default function BrandDashboard() {
 
             {tab === "analytics" && <BrandAnalyticsPanel />}
             {tab === "room" && <BrandRoomPanel />}
+            {tab === "history" && <BrandCampaignHistoryPanel />}
           </>
         )}
       </div>

@@ -37,7 +37,9 @@ const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const ProposalDetail = lazy(() => import("./pages/proposal/[id]"));
 const SharedWorkflowView = lazy(() => import("./pages/proposal/SharedView"));
+const BrandPublicProfile = lazy(() => import("./pages/BrandPublicProfile"));
 const CampaignTrackPage = lazy(() => import("./pages/campaign/TrackPage"));
+const NotificationsPage = lazy(() => import("./pages/Notifications"));
 
 function PageLoader() {
   return (
@@ -268,6 +270,8 @@ function AppContent() {
         <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />
         <Route path="/proposals/shared/:id" element={<SharedWorkflowView />} />
         <Route path="/brand/campaigns/:id/track" element={<BrandRoute><CampaignTrackPage /></BrandRoute>} />
+        <Route path="/brand/:id" element={<BrandPublicProfile />} />
+        <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route
           path="/contact"
           element={<ContactPage />}

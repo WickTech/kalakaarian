@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { ShoppingCart, Instagram, Youtube, ArrowLeft, SlidersHorizontal, CheckSquare, Square, Megaphone } from "lucide-react";
@@ -338,12 +338,21 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
                       <p className="text-sm font-bold text-chalk">{inf.price ? `₹${inf.price.toLocaleString("en-IN")}` : "—"}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); if (!inCart) addToCart(inf); }}
-                    className={`w-full py-1.5 text-[10px] rounded-full font-bold transition-all ${inCart ? "bg-green-500/20 text-green-400 border border-green-500/30 cursor-default" : "purple-pill"}`}
-                  >
-                    {inCart ? "✓ Added to Cart" : "Add to Cart"}
-                  </button>
+                  {inf.tier === "celeb" ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate("/contact"); }}
+                      className="w-full py-1.5 text-[10px] rounded-full font-bold border border-gold/40 text-gold hover:bg-gold/10 transition-all"
+                    >
+                      Get In Touch
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); if (!inCart) addToCart(inf); }}
+                      className={`w-full py-1.5 text-[10px] rounded-full font-bold transition-all ${inCart ? "bg-green-500/20 text-green-400 border border-green-500/30 cursor-default" : "purple-pill"}`}
+                    >
+                      {inCart ? "✓ Added to Cart" : "Add to Cart"}
+                    </button>
+                  )}
                 </div>
               );
             })}

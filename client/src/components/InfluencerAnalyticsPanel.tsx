@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Star, ShieldCheck } from "lucide-react";
 import { api, Proposal } from "@/lib/api";
 import { RecommendedCampaigns } from "./RecommendedCampaigns";
+import { EarningsChart } from "./EarningsChart";
 
 const STATUS_STYLE: Record<string, string> = {
   submitted: "text-gold border-gold/30",
@@ -60,6 +61,11 @@ export function InfluencerAnalyticsPanel({ proposals, stats }: Props) {
           )}
         </div>
       )}
+
+      <div className="bento-card p-4">
+        <p className="text-xs text-chalk-dim mb-3">Monthly Earnings (last 6 months)</p>
+        <EarningsChart />
+      </div>
 
       <RecommendedCampaigns />
 

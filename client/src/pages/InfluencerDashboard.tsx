@@ -25,6 +25,7 @@ export default function InfluencerDashboard() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("analytics");
   const [isOnline, setIsOnline] = useState(false);
+  const [activeSince, setActiveSince] = useState<string | null>(null);
 
   const { data: proposals = [], isLoading } = useQuery<Proposal[]>({
     queryKey: ["my-proposals"],
@@ -60,6 +61,11 @@ export default function InfluencerDashboard() {
     const next = !isOnline;
     await api.updatePresence(next);
     setIsOnline(next);
+    if (next) {
+      setActiveSince(new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }));
+    } else {
+      setActiveSince(null);
+    }
   };
 
   if (isLoading) return (
@@ -102,6 +108,9 @@ export default function InfluencerDashboard() {
               <button onClick={togglePresence} className={`w-10 h-5 rounded-full transition-all ${isOnline ? "bg-green-500" : "bg-white/10"}`}>
                 <div className={`w-4 h-4 rounded-full bg-white mx-0.5 transition-transform ${isOnline ? "translate-x-4" : ""}`} />
               </button>
+              {isOnline && activeSince && (
+                <span className="text-[10px] text-green-400">since {activeSince}</span>
+              )}
               <Link to="/profile/edit" className="p-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk transition-colors">
                 <Edit className="w-3.5 h-3.5" />
               </Link>

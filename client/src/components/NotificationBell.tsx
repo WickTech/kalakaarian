@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Bell, Check, MessageSquare, FileText, DollarSign, Info } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -111,7 +112,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
                 </button>
               )}
             </div>
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-8">No notifications</p>
               ) : (
@@ -148,6 +149,10 @@ export function NotificationBell({ className }: NotificationBellProps) {
                 })
               )}
             </div>
+            <Link to="/notifications" onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-xs text-primary hover:underline text-center border-t border-border">
+              View all notifications →
+            </Link>
           </div>
         </>
       )}

@@ -25,6 +25,8 @@ import workflowRoutes from './routes/workflow';
 import internalRoutes from './routes/internal';
 import recommendationRoutes from './routes/recommendations';
 import gamificationRoutes from './routes/gamification';
+import walletRoutes from './routes/wallet';
+import brandRoutes from './routes/brands';
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -111,6 +113,8 @@ app.use('/api/proposals/:id/workflow', workflowRoutes);
 app.use('/api/internal', internalRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/gamification', gamificationRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/brands', brandRoutes);
 
 if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);

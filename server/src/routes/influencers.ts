@@ -5,6 +5,7 @@ import {
   updatePresence, updateProfileImage, connectSocial,
 } from '../controllers/influencerController';
 import { getInfluencerRatings } from '../controllers/ratingController';
+import { getSimilarInfluencers } from '../controllers/similarInfluencersController';
 import { auth, optionalAuth } from '../middleware/auth';
 
 const router = Router();
@@ -14,6 +15,7 @@ router.get('/', optionalAuth, getInfluencers);
 router.get('/search', optionalAuth, searchInfluencers);
 router.get('/profile', auth, getOwnProfile);
 router.get('/:id/ratings', getInfluencerRatings);
+router.get('/:id/similar', optionalAuth, getSimilarInfluencers);
 router.get('/:id', optionalAuth, getInfluencerById);
 router.put('/profile', auth, updateInfluencerProfile);
 router.put('/presence', auth, updatePresence);

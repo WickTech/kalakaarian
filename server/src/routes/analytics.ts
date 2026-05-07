@@ -149,4 +149,85 @@ router.get('/influencer/deep', auth, async (req: AuthRequest, res: Response): Pr
   }
 });
 
+router.get('/influencer/monthly', auth, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (req.user!.role !== 'influencer') { res.status(403).json({ message: 'Forbidden' }); return; }
+    const userId = req.user!.userId;
+    const since = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data } = await adminClient
+      .from('proposals')
+      .select('bid_amount, created_at')
+      .eq('influencer_id', userId)
+      .eq('status', 'accepted')
+      .gte('created_at', since);
+
+    const monthMap: Record<string, { earnings: number; proposals: number }> = {};
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthMap[key] = { earnings: 0, proposals: 0 };
+    }
+    (data || []).forEach((p: { bid_amount?: number | null; created_at: string }) => {
+      const d = new Date(p.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (monthMap[key]) {
+        monthMap[key].earnings += p.bid_amount ?? 0;
+        monthMap[key].proposals++;
+      }
+    });
+
+    const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthly = Object.entries(monthMap).map(([key, v]) => ({
+      month: MONTH_NAMES[parseInt(key.split('-')[1]) - 1],
+      earnings: v.earnings,
+      proposals: v.proposals,
+    }));
+
+    res.json({ monthly });
+  } catch (error) {
+    console.error('Monthly analytics error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.get('/brand/campaigns/history', auth, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (req.user!.role !== 'brand') { res.status(403).json({ message: 'Forbidden' }); return; }
+    const userId = req.user!.userId;
+
+    const { data: campaigns } = await adminClient
+      .from('campaigns')
+      .select('id, title, status, created_at, deadline')
+      .eq('brand_id', userId)
+      .in('status', ['closed', 'archived'])
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    const ids = (campaigns || []).map((c: any) => c.id);
+    const { data: proposals } = ids.length
+      ? await adminClient.from('proposals').select('campaign_id, bid_amount, status').in('campaign_id', ids)
+      : { data: [] };
+
+    const stats: Record<string, { accepted: number; completed: number; totalSpend: number }> = {};
+    (proposals || []).forEach((p: any) => {
+      if (!stats[p.campaign_id]) stats[p.campaign_id] = { accepted: 0, completed: 0, totalSpend: 0 };
+      if (p.status === 'accepted') { stats[p.campaign_id].accepted++; stats[p.campaign_id].totalSpend += p.bid_amount ?? 0; }
+      if (p.status === 'payment_released') stats[p.campaign_id].completed++;
+    });
+
+    res.json({
+      campaigns: (campaigns || []).map((c: any) => ({
+        id: c.id, title: c.title, status: c.status,
+        createdAt: c.created_at, deadline: c.deadline,
+        ...( stats[c.id] || { accepted: 0, completed: 0, totalSpend: 0 }),
+      })),
+    });
+  } catch (error) {
+    console.error('Campaign history error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 export default router;

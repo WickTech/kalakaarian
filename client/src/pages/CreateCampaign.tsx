@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Calendar as CalendarIcon, CheckCircle, X } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, CheckCircle, X, Info } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -148,7 +148,12 @@ export default function CreateCampaign() {
             <CardHeader><CardTitle className="text-base">Campaign Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Description *</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label>Description *</Label>
+                  <span title="If campaign brief is not mentioned clearly it would not be considered as creator or brand fault." className="cursor-help text-muted-foreground">
+                    <Info className="w-3.5 h-3.5" />
+                  </span>
+                </div>
                 <Textarea value={form.description} onChange={set("description")} placeholder="Describe your campaign goals and requirements" rows={3} required />
               </div>
               <div className="space-y-1.5">

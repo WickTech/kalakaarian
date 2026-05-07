@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
-import { ArrowLeft, Users, Megaphone } from "lucide-react";
+import { Users, Megaphone } from "lucide-react";
 
 interface AdminUser { id: string; name: string; email: string; role: string; created_at: string; }
 interface AdminCampaign { id: string; title: string; status: string; brand_id: string; created_at: string; }
@@ -43,14 +43,8 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-lg border border-border hover:border-primary transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <span className="font-bold text-foreground">Admin Dashboard</span>
-      </header>
-
       <div className="max-w-4xl mx-auto p-4">
+        <h1 className="font-bold text-foreground text-lg mb-4">Admin Dashboard</h1>
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
           {([["users", Users, "Users"], ["campaigns", Megaphone, "Campaigns"]] as const).map(([key, Icon, label]) => (

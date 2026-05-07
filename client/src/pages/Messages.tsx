@@ -120,16 +120,7 @@ export default function Messages() {
   }
 
   return (
-    <main className="flex h-screen flex-col bg-background">
-      <header className="flex items-center justify-between border-b px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={goBack}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-xl font-bold">Messages</h1>
-        </div>
-      </header>
-
+    <main className="flex h-[calc(100vh-4rem)] flex-col bg-background">
       <div className="flex flex-1 overflow-hidden">
         {/* Conversations Sidebar */}
         <div className="w-full border-r md:w-80 lg:w-96">

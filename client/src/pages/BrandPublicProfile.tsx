@@ -1,9 +1,8 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { ArrowLeft, Globe, Briefcase, Loader2 } from "lucide-react";
+import { Globe, Briefcase, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
-import { useNavigateBack } from "@/hooks/useNavigateBack";
 
 interface BrandPublic {
   companyName: string;
@@ -17,8 +16,6 @@ interface BrandPublic {
 
 export default function BrandPublicProfile() {
   const { id } = useParams<{ id: string }>();
-  const { goBack } = useNavigateBack("/marketplace");
-
   const { data: brand, isLoading } = useQuery<BrandPublic>({
     queryKey: ["brand-public", id],
     queryFn: () => api.getBrandPublicProfile(id!),
@@ -46,13 +43,6 @@ export default function BrandPublicProfile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border px-4 py-3 flex items-center gap-4">
-        <button onClick={goBack} className="p-2 border border-border rounded-md hover:bg-secondary">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <h1 className="text-xl font-bold">Brand Profile</h1>
-      </header>
-
       <div className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
         <div className="flex items-center gap-5">
           {brand.logo ? (

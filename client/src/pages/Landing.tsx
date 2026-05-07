@@ -48,17 +48,6 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/30">
-      {/* Header */}
-      <header className="border-b border-border flex items-center justify-between px-4 py-3 shrink-0">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/k-logo-no-bg.png" alt="Kalakaarian" className="h-10 w-auto" />
-          <h1 className="font-mono text-sm uppercase tracking-[0.3em] font-bold">KALAKAARIAN</h1>
-        </Link>
-        <Link to="/login">
-          <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90">Login</Button>
-        </Link>
-      </header>
-
       {/* Hero Section */}
       <section className="relative py-20 px-4 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-fuchsia-600/10 to-pink-600/10" />

@@ -6,6 +6,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { CartProvider, useCartContext } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
+import { GlobalHeader } from "@/components/GlobalHeader";
 import Landing from "./pages/Landing";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
@@ -138,12 +139,13 @@ function EditProfileWrapper() {
 }
 
 function AppContent() {
-  const { dark, toggle } = useTheme();
   const cart = useCartContext();
   const [cartOpen, setCartOpen] = useState(false);
 
   return (
     <>
+      <GlobalHeader onCartOpen={() => setCartOpen(true)} />
+      <main className="pt-16">
       <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<Landing />} />
@@ -151,10 +153,6 @@ function AppContent() {
           path="/marketplace"
           element={
             <Marketplace
-              dark={dark}
-              toggleTheme={toggle}
-              cartCount={cart.count}
-              onCartOpen={() => setCartOpen(true)}
               isInCart={cart.isInCart}
               addToCart={cart.addToCart}
             />
@@ -283,6 +281,7 @@ function AppContent() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
+      </main>
       <CartDrawer
         open={cartOpen}
         onClose={() => setCartOpen(false)}

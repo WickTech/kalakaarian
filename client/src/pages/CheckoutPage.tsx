@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ShoppingCart, FileText, CheckCircle2 } from "lucide-react";
+import { ShoppingCart, FileText, CheckCircle2 } from "lucide-react";
 import { useCartContext } from "@/contexts/CartContext";
 import { api } from "@/lib/api";
 import { openRazorpayCheckout } from "@/lib/razorpay";
@@ -75,14 +75,8 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-lg border border-border hover:border-primary transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <span className="font-semibold text-foreground">Checkout</span>
-      </header>
-
       <div className="max-w-lg mx-auto p-4 space-y-5">
+        <h1 className="font-semibold text-lg">Checkout</h1>
         {/* Campaign Section */}
         <div className="border border-border rounded-xl p-4 space-y-2">
           <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-3">

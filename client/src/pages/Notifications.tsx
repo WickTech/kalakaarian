@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Bell, MessageSquare, FileText, DollarSign, Info, X } from "lucide-react";
+import { Bell, MessageSquare, FileText, DollarSign, Info, X } from "lucide-react";
 import { api, AppNotification } from "@/lib/api";
 
 const TYPE_ICONS: Record<string, React.ElementType> = {
@@ -52,25 +52,21 @@ export default function Notifications() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-lg border border-border hover:border-primary transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div className="flex items-center gap-2 flex-1">
-          <Bell className="w-4 h-4" />
-          <span className="font-semibold">Notifications</span>
+      <div className="max-w-lg mx-auto p-4 space-y-4">
+        <div className="flex items-center justify-between py-2">
+          <div className="flex items-center gap-2">
+            <Bell className="w-5 h-5" />
+            <h1 className="font-semibold text-lg">Notifications</h1>
+            {unreadCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold">{unreadCount}</span>
+            )}
+          </div>
           {unreadCount > 0 && (
-            <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold">{unreadCount}</span>
+            <button onClick={() => markAll.mutate()} className="text-xs text-primary hover:underline">
+              Mark all read
+            </button>
           )}
         </div>
-        {unreadCount > 0 && (
-          <button onClick={() => markAll.mutate()} className="text-xs text-primary hover:underline">
-            Mark all read
-          </button>
-        )}
-      </header>
-
-      <div className="max-w-lg mx-auto p-4 space-y-4">
         <div className="flex gap-2">
           {(["all", "unread"] as const).map((f) => (
             <button key={f} onClick={() => setFilter(f)}

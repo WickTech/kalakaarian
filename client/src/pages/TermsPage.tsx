@@ -87,13 +87,6 @@ const SECTIONS = [
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b px-4 py-3 flex items-center gap-3">
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/k-logo-no-bg.png" alt="Kalakaarian" className="h-8 w-auto" />
-          <span className="font-mono text-sm uppercase tracking-[0.3em] font-bold">KALAKAARIAN</span>
-        </Link>
-      </header>
-
       <main className="max-w-3xl mx-auto px-4 py-12">
         <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-8">
           <ArrowLeft className="h-4 w-4" /> Back to Home

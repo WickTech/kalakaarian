@@ -1,19 +1,14 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { ShoppingCart, Instagram, Youtube, ArrowLeft, SlidersHorizontal, CheckSquare, Square, Megaphone } from "lucide-react";
+import { Instagram, Youtube, SlidersHorizontal, CheckSquare, Square, Megaphone } from "lucide-react";
 import { api, InfluencerProfile } from "@/lib/api";
 import { Influencer } from "@/lib/store";
-import { NotificationBell } from "@/components/NotificationBell";
 import { MarketplaceFilters } from "@/components/MarketplaceFilters";
 import { RisingStarsCarousel } from "@/components/RisingStarsCarousel";
 import { Search } from "lucide-react";
 
 interface MarketplaceProps {
-  dark: boolean;
-  toggleTheme: () => void;
-  cartCount: number;
-  onCartOpen: () => void;
   isInCart: (id: string) => boolean;
   addToCart: (i: Influencer) => void;
 }
@@ -41,7 +36,7 @@ const parseUrlTier = (raw: string | null): Tier | "all" => {
   return "all";
 };
 
-export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart }: MarketplaceProps) {
+export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tier: Tier | "all" = parseUrlTier(searchParams.get("tier"));
@@ -142,24 +137,6 @@ export default function Marketplace({ cartCount, onCartOpen, isInCart, addToCart
   return (
     <div className="min-h-screen bg-obsidian flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-obsidian/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/")} className="p-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <span className="font-display font-bold text-chalk">Creators</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <NotificationBell />
-          <button onClick={onCartOpen} className="relative p-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk transition-colors">
-            <ShoppingCart className="w-4 h-4" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gold text-obsidian text-[10px] font-bold flex items-center justify-center">{cartCount}</span>
-            )}
-          </button>
-        </div>
-      </header>
-
       {/* Banner / Ads slot */}
       <div className="px-4 pt-4">
         {BANNERS.map((b) => (

@@ -1,10 +1,9 @@
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, InfluencerProfile as InfluencerProfileData, VideoItem, SocialStats } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigateBack } from '@/hooks/useNavigateBack';
 import { ProfileHeader } from '@/components/ProfileHeader';
 import { AnalyticsCard } from '@/components/AnalyticsCard';
 import { MembershipUpgradeCard } from '@/components/MembershipBadge';
@@ -19,7 +18,6 @@ export default function InfluencerProfile() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { goBack } = useNavigateBack('/marketplace');
   const qc = useQueryClient();
 
   const isOwnProfile = user?.id === id;
@@ -109,13 +107,6 @@ export default function InfluencerProfile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border px-4 py-3 flex items-center gap-4">
-        <button onClick={goBack} className="p-2 border border-border rounded-md hover:bg-secondary">
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <h1 className="text-xl font-bold">Profile</h1>
-      </header>
-
       <div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
         <ProfileHeader
           profile={{

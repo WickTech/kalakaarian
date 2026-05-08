@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { adminClient } from '../config/supabase';
 import { AuthRequest } from '../middleware/auth';
 import { applyPlatformMargin } from '../utils/pricing';
+import { syncInstagramAvatar } from '../services/instagramAvatarService';
 
 const ALLOWED_GENDERS = ['male', 'female', 'non_binary', 'prefer_not_to_say'] as const;
 
@@ -193,6 +194,11 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
     if (youtubeVideos) update.youtube_videos = youtubeVideos;
     if (instagramHandle !== undefined) update.instagram_handle = instagramHandle;
     if (youtubeHandle !== undefined) update.youtube_handle = youtubeHandle;
+
+    // Fire-and-forget avatar sync when Instagram handle is (re)set
+    if (instagramHandle && typeof instagramHandle === 'string') {
+      syncInstagramAvatar(req.user.userId, instagramHandle).catch(() => { /* silent */ });
+    }
 
     if (Object.keys(update).length > 0) {
       await adminClient.from('influencer_profiles').update(update).eq('id', req.user.userId);

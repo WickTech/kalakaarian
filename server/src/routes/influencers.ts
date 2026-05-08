@@ -4,9 +4,10 @@ import {
   updateInfluencerProfile, getTierCounts, getOwnProfile,
   updatePresence, updateProfileImage, connectSocial,
 } from '../controllers/influencerController';
+import { syncAllInstagramAvatars } from '../controllers/avatarSyncController';
 import { getInfluencerRatings } from '../controllers/ratingController';
 import { getSimilarInfluencers } from '../controllers/similarInfluencersController';
-import { auth, optionalAuth } from '../middleware/auth';
+import { auth, optionalAuth, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.put('/profile', auth, updateInfluencerProfile);
 router.put('/presence', auth, updatePresence);
 router.put('/:id/image', auth, updateProfileImage);
 router.post('/connect-social', auth, connectSocial);
+router.post('/sync-avatars', auth, requireAdmin as any, syncAllInstagramAvatars);
 
 export default router;

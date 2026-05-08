@@ -7,7 +7,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (googleToken: string, role?: string) => Promise<void>;
+  loginWithGoogle: (googleToken: string, role?: string) => Promise<{ isNewUser?: boolean }>;
   logout: () => void;
   register: (data: RegisterData) => Promise<void>;
 }
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async (googleToken: string, role?: string) => {
+  const loginWithGoogle = async (googleToken: string, role?: string): Promise<{ isNewUser?: boolean }> => {
     setLoading(true);
     setError(null);
     try {
@@ -113,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(USER_KEY, JSON.stringify(response.user));
       setToken(response.token);
       setUser(response.user);
+      return { isNewUser: response.isNewUser };
     } catch (err) {
       console.error('Google login API error:', err);
       const message = err instanceof ApiError ? err.message : "Google login failed";

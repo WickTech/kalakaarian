@@ -30,7 +30,6 @@ const SubmitProposal = lazy(() => import("./pages/SubmitProposal"));
 const MyProfile = lazy(() => import("./pages/MyProfile"));
 const EditInfluencerProfile = lazy(() => import("./pages/EditInfluencerProfile"));
 const EditBrandProfile = lazy(() => import("./pages/EditBrandProfile"));
-const Messages = lazy(() => import("./pages/Messages"));
 const InfluencerProfile = lazy(() => import("./pages/InfluencerProfile"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const Feed = lazy(() => import("./pages/Feed"));
@@ -116,6 +115,18 @@ function InfluencerRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function SmartHome() {
+  const { user, loading } = useAuth();
+  if (loading) return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700" />
+    </div>
+  );
+  if (user?.role === "brand") return <Navigate to="/marketplace" replace />;
+  if (user?.role === "influencer") return <Navigate to="/influencer/dashboard" replace />;
+  return <Landing />;
+}
+
 function EditProfileWrapper() {
   const { user, loading } = useAuth();
 
@@ -148,7 +159,7 @@ function AppContent() {
       <main className="pt-16">
       <Suspense fallback={<PageLoader />}>
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<SmartHome />} />
         <Route
           path="/marketplace"
           element={
@@ -250,14 +261,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/messages"
-          element={
-            <ProtectedRoute>
-              <Messages />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/messages" element={<Navigate to="/dashboard" replace />} />
         <Route
           path="/influencer/:id"
           element={<InfluencerProfile />}

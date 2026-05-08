@@ -57,7 +57,7 @@ export function MarketplaceFilters({
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-6">
           <div>
-            <p className="text-xs text-chalk-faint uppercase tracking-widest mb-3">Genre</p>
+            <p className="text-xs text-chalk uppercase tracking-widest mb-3">Genre</p>
             <div className="flex flex-wrap gap-2">
               {GENRES.map((g) => (
                 <button
@@ -72,7 +72,7 @@ export function MarketplaceFilters({
           </div>
 
           <div>
-            <p className="text-xs text-chalk-faint uppercase tracking-widest mb-3">Gender</p>
+            <p className="text-xs text-chalk uppercase tracking-widest mb-3">Gender</p>
             <div className="flex gap-2">
               {GENDERS.map((g) => (
                 <button

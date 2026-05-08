@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { INDIA_STATES } from "@/lib/constants";
 import { TermsModal } from "@/components/TermsModal";
+import { emailWarning } from "@/lib/emailValidation";
 
 const INDUSTRIES = [
   "Fashion", "Technology", "Food & Beverage", "Health & Wellness",
@@ -101,7 +102,6 @@ export default function BrandRegisterPage() {
           {(
             [
               { key: "contactName", label: "Full Name", type: "text", ph: "Jane Doe" },
-              { key: "email", label: "Work Email", type: "email", ph: "you@brand.com" },
               { key: "phone", label: "WhatsApp Number", type: "tel", ph: "+91 9876543210" },
               { key: "companyName", label: "Brand / Company Name", type: "text", ph: "Acme Corp" },
               { key: "password", label: "Password", type: "password", ph: "Min 8 characters" },
@@ -110,15 +110,18 @@ export default function BrandRegisterPage() {
           ).map(({ key, label, type, ph }) => (
             <div key={key}>
               <label className="block text-sm text-chalk-dim mb-1.5">{label} *</label>
-              <input
-                type={type}
-                value={form[key]}
-                onChange={set(key)}
-                className="dark-input w-full px-4 py-3 text-sm"
-                placeholder={ph}
-              />
+              <input type={type} value={form[key]} onChange={set(key)}
+                className="dark-input w-full px-4 py-3 text-sm" placeholder={ph} />
             </div>
           ))}
+          <div>
+            <label className="block text-sm text-chalk-dim mb-1.5">Work Email *</label>
+            <input type="email" value={form.email} onChange={set("email")}
+              className="dark-input w-full px-4 py-3 text-sm" placeholder="you@brand.com" />
+            {emailWarning(form.email) && (
+              <p className="text-amber-400 text-xs mt-1">{emailWarning(form.email)}</p>
+            )}
+          </div>
 
           <div>
             <label className="block text-sm text-chalk-dim mb-1.5">Industry *</label>

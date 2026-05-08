@@ -200,19 +200,40 @@ export default function InfluencerRegisterPage() {
           {step === 3 && (
             <div className="space-y-4">
               <h2 className="font-display text-xl font-bold text-chalk">Set Your Rates</h2>
-              <div className="grid grid-cols-2 gap-3">
-                {([
-                  { key: "reelRate", label: "Instagram Reel (₹)", ph: "15000" },
-                  { key: "storyRate", label: "Story (₹)", ph: "5000" },
-                  { key: "longVideoRate", label: "YouTube Long (₹)", ph: "25000" },
-                  { key: "shortsRate", label: "Shorts (₹)", ph: "8000" },
-                ] as const).map(({ key, label, ph }) => (
-                  <div key={key}>
-                    <label className="block text-xs text-chalk-dim mb-1.5">{label}</label>
-                    <input type="number" value={form[key]} onChange={set(key)} className="dark-input w-full px-3 py-2.5 text-sm" placeholder={ph} />
+              <p className="text-xs text-chalk-faint">Rates shown are base rates. A 5% creator commercial fee applies on branded content.</p>
+              {form.instagram && (
+                <div>
+                  <p className="text-xs text-chalk-dim uppercase tracking-widest mb-2">📸 Instagram</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-chalk-dim mb-1.5">Reel (₹)</label>
+                      <input type="number" value={form.reelRate} onChange={set("reelRate")} className="dark-input w-full px-3 py-2.5 text-sm" placeholder="15000" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-chalk-dim mb-1.5">Story (₹)</label>
+                      <input type="number" value={form.storyRate} onChange={set("storyRate")} className="dark-input w-full px-3 py-2.5 text-sm" placeholder="5000" />
+                    </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+              {form.youtube && (
+                <div>
+                  <p className="text-xs text-chalk-dim uppercase tracking-widest mb-2">▶️ YouTube</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-chalk-dim mb-1.5">Long Video (₹)</label>
+                      <input type="number" value={form.longVideoRate} onChange={set("longVideoRate")} className="dark-input w-full px-3 py-2.5 text-sm" placeholder="25000" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-chalk-dim mb-1.5">Shorts (₹)</label>
+                      <input type="number" value={form.shortsRate} onChange={set("shortsRate")} className="dark-input w-full px-3 py-2.5 text-sm" placeholder="8000" />
+                    </div>
+                  </div>
+                </div>
+              )}
+              {!form.instagram && !form.youtube && (
+                <p className="text-sm text-amber-400">Go back to Step 3 and add at least one platform handle to set rates.</p>
+              )}
               <div>
                 <label className="block text-sm text-chalk-dim mb-1.5">Bio (optional)</label>
                 <textarea value={form.bio} onChange={set("bio")} rows={3} maxLength={300}

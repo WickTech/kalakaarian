@@ -8,42 +8,71 @@ import { ExternalLink } from "lucide-react";
 
 export { WalletTab } from "./WalletTab";
 
+type Platform = "instagram" | "youtube";
+
 export function UploadTab() {
   const { toast } = useToast();
-  const [link, setLink] = useState("");
-  const [platform, setPlatform] = useState<"instagram" | "youtube">("instagram");
+  const [link1, setLink1] = useState("");
+  const [link2, setLink2] = useState("");
+  const [campaignLink, setCampaignLink] = useState("");
+  const [platforms, setPlatforms] = useState<Set<Platform>>(new Set(["instagram"]));
   const [confirmed, setConfirmed] = useState(false);
 
+  const togglePlatform = (p: Platform) => {
+    setPlatforms((prev) => {
+      const next = new Set(prev);
+      if (next.has(p)) { next.delete(p); } else { next.add(p); }
+      return next;
+    });
+  };
+
   const submit = async () => {
-    if (!link || !confirmed) { toast({ title: "Please fill all fields", variant: "destructive" }); return; }
+    if (!link1.trim() || !confirmed || platforms.size === 0) {
+      toast({ title: "Please fill all required fields", variant: "destructive" }); return;
+    }
     try {
-      await api.uploadVideo(link, platform);
+      const pArr = Array.from(platforms);
+      await api.uploadVideo(link1.trim(), pArr[0]);
+      if (link2.trim()) await api.uploadVideo(link2.trim(), pArr[pArr.length - 1]);
       toast({ title: "Submitted!", description: "Your content is under review." });
-      setLink(""); setConfirmed(false);
+      setLink1(""); setLink2(""); setCampaignLink(""); setConfirmed(false);
     } catch { toast({ title: "Error", description: "Failed to submit content", variant: "destructive" }); }
   };
 
   return (
     <div className="bento-card p-6 space-y-4">
       <h2 className="font-display font-bold text-chalk">Submit Content</h2>
-      <div className="flex gap-2">
-        {(["instagram", "youtube"] as const).map((p) => (
-          <button key={p} onClick={() => setPlatform(p)}
-            className={`px-4 py-2 rounded-full text-xs border transition-all ${platform === p ? "border-gold text-gold bg-gold/10" : "border-white/10 text-chalk-dim"}`}>
-            {p.charAt(0).toUpperCase() + p.slice(1)}
-          </button>
-        ))}
+      <div>
+        <p className="text-xs text-chalk-dim mb-2">Platform *</p>
+        <div className="flex gap-2">
+          {(["instagram", "youtube"] as const).map((p) => (
+            <button key={p} type="button" onClick={() => togglePlatform(p)}
+              className={`px-4 py-2 rounded-full text-xs border transition-all ${platforms.has(p) ? "border-gold text-gold bg-gold/10" : "border-white/10 text-chalk-dim"}`}>
+              {p === "instagram" ? "📸 Instagram" : "▶️ YouTube"}
+            </button>
+          ))}
+        </div>
       </div>
       <div>
-        <label className="block text-sm text-chalk-dim mb-1.5">Content Link / Drive URL</label>
-        <input value={link} onChange={(e) => setLink(e.target.value)}
+        <label className="block text-sm text-chalk-dim mb-1.5">Content Link 1 * (Drive / Post URL)</label>
+        <input value={link1} onChange={(e) => setLink1(e.target.value)}
           className="dark-input w-full px-4 py-3 text-sm" placeholder="https://drive.google.com/..." />
+      </div>
+      <div>
+        <label className="block text-sm text-chalk-dim mb-1.5">Content Link 2 (optional)</label>
+        <input value={link2} onChange={(e) => setLink2(e.target.value)}
+          className="dark-input w-full px-4 py-3 text-sm" placeholder="https://youtube.com/..." />
+      </div>
+      <div>
+        <label className="block text-sm text-chalk-dim mb-1.5">Campaign Link (optional)</label>
+        <input value={campaignLink} onChange={(e) => setCampaignLink(e.target.value)}
+          className="dark-input w-full px-4 py-3 text-sm" placeholder="Campaign brief or reference link" />
       </div>
       <label className="flex items-center gap-3 cursor-pointer">
         <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="w-4 h-4 rounded accent-purple-600" />
-        <span className="text-sm text-chalk-dim">I confirm the content is submitted and ready for review</span>
+        <span className="text-sm text-chalk-dim">I confirm this content is ready for brand review</span>
       </label>
-      <button onClick={submit} className="purple-pill w-full py-3 text-sm">✅ Task Completed</button>
+      <button onClick={submit} className="purple-pill w-full py-3 text-sm">✅ Submit for Review</button>
     </div>
   );
 }

@@ -1,5 +1,6 @@
-import { useParams, Link } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Loader2, Upload, BarChart2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, InfluencerProfile as InfluencerProfileData, VideoItem, SocialStats } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +13,7 @@ import { SocialConnect } from '@/components/SocialConnect';
 import { InfluencerTrustSection } from '@/components/InfluencerTrustSection';
 import { BadgeStrip } from '@/components/BadgeStrip';
 import { SimilarProfiles } from '@/components/SimilarProfiles';
+import { CelebCallbackModal } from '@/components/CelebCallbackModal';
 import { openRazorpayCheckout } from '@/lib/razorpay';
 
 export default function InfluencerProfile() {
@@ -20,7 +22,9 @@ export default function InfluencerProfile() {
   const { toast } = useToast();
   const qc = useQueryClient();
 
+  const navigate = useNavigate();
   const isOwnProfile = user?.id === id;
+  const [showCelebModal, setShowCelebModal] = useState(false);
 
   const { data: profile, isLoading } = useQuery<InfluencerProfileData>({
     queryKey: ['influencer-profile', id],
@@ -106,6 +110,7 @@ export default function InfluencerProfile() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
         <ProfileHeader
@@ -121,6 +126,23 @@ export default function InfluencerProfile() {
           isOwnProfile={isOwnProfile}
           onStatusToggle={handleStatusToggle}
         />
+
+        {isOwnProfile && (
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate('/influencer/dashboard?tab=upload')}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all"
+            >
+              <Upload className="w-4 h-4" /> Submit Content
+            </button>
+            <button
+              onClick={() => navigate('/influencer/dashboard?tab=analytics')}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all"
+            >
+              <BarChart2 className="w-4 h-4" /> My Analytics
+            </button>
+          </div>
+        )}
 
         <div>
           <h2 className="text-lg font-semibold mb-4">Analytics</h2>
@@ -161,8 +183,26 @@ export default function InfluencerProfile() {
 
         <VideoGrid videos={videos} isOwnProfile={isOwnProfile} onUpload={handleVideoUpload} />
 
+        {profile.tier === 'celeb' && !isOwnProfile && (
+          <div className="bento-card p-5 text-center space-y-3">
+            <p className="text-sm text-chalk-dim">Interested in collaborating with {profile.name}?</p>
+            <button onClick={() => setShowCelebModal(true)} className="gold-pill px-8 py-2.5 text-sm">
+              Get In Touch
+            </button>
+          </div>
+        )}
+
         <SimilarProfiles currentId={id!} />
       </div>
     </div>
+
+    {showCelebModal && profile && (
+      <CelebCallbackModal
+        influencerId={id!}
+        influencerName={profile.name || 'this creator'}
+        onClose={() => setShowCelebModal(false)}
+      />
+    )}
+    </>
   );
 }

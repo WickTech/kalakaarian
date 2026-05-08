@@ -1,11 +1,14 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { Instagram, Youtube, SlidersHorizontal, CheckSquare, Square, Megaphone } from "lucide-react";
+import { useSearchParams, Link } from "react-router-dom";
+import { Instagram, Youtube, SlidersHorizontal, CheckSquare, Megaphone } from "lucide-react";
 import { api, InfluencerProfile } from "@/lib/api";
 import { Influencer } from "@/lib/store";
 import { MarketplaceFilters } from "@/components/MarketplaceFilters";
 import { RisingStarsCarousel } from "@/components/RisingStarsCarousel";
+import { CelebCallbackModal } from "@/components/CelebCallbackModal";
+import { CreatorCard } from "@/components/CreatorCard";
+import { CreatorCardSkeleton } from "@/components/CreatorCardSkeleton";
 import { Search } from "lucide-react";
 
 interface MarketplaceProps {
@@ -37,7 +40,6 @@ const parseUrlTier = (raw: string | null): Tier | "all" => {
 };
 
 export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tier: Tier | "all" = parseUrlTier(searchParams.get("tier"));
   const [platform, setPlatform] = useState<"all" | "instagram" | "youtube">("all");
@@ -50,6 +52,7 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  const [celebModal, setCelebModal] = useState<{ id: string; name: string } | null>(null);
 
   const genreKey = selectedGenres.join(',');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -131,6 +134,17 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
   const clearSelection = () => setSelectedIds(new Set());
   const addSelectedToCart = () => { paged.filter((i) => selectedIds.has(i.id) && !isInCart(i.id)).forEach(addToCart); clearSelection(); };
 
+  const handleSelectCount = (val: string) => {
+    if (val === "all") {
+      selectAll();
+    } else {
+      const n = parseInt(val);
+      if (!isNaN(n)) {
+        setSelectedIds(new Set(paged.slice(0, n).map((i) => i.id)));
+      }
+    }
+  };
+
   const activeFilterCount = selectedGenres.length + (gender !== "all" ? 1 : 0) + (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (location ? 1 : 0);
   const clearFilters = () => { setSelectedGenres([]); setGender("all"); setPriceMin(""); setPriceMax(""); setLocation(""); setPage(1); };
 
@@ -170,8 +184,8 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
         activeCount={activeFilterCount}
       />
 
-      {/* Main */}
-      <main className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Sticky search + controls bar */}
+      <div className="sticky top-16 z-30 bg-obsidian border-b border-white/5 px-4 py-2 space-y-2">
         {/* Search bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-chalk-faint pointer-events-none" />
@@ -183,9 +197,6 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
             className="w-full bg-charcoal/50 border border-white/10 rounded-full pl-9 pr-4 py-2 text-xs text-chalk placeholder:text-chalk-faint focus:outline-none focus:border-gold/50"
           />
         </div>
-
-        {/* Rising Stars */}
-        <RisingStarsCarousel />
 
         {/* Controls bar */}
         <div className="flex flex-wrap gap-2 items-center">
@@ -217,16 +228,26 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
             ))}
           </div>
 
-          {/* Select All */}
-          <button
-            onClick={selectedIds.size === paged.length && paged.length > 0 ? clearSelection : selectAll}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border border-white/10 text-chalk-dim hover:text-chalk transition-all"
-          >
-            {selectedIds.size === paged.length && paged.length > 0
-              ? <><CheckSquare className="w-3 h-3 text-gold" /> Deselect All</>
-              : <><Square className="w-3 h-3" /> Select All</>
-            }
-          </button>
+          {/* Select No. / All */}
+          <div className="flex items-center gap-1">
+            <select
+              value=""
+              onChange={(e) => handleSelectCount(e.target.value)}
+              className="bg-charcoal/50 border border-white/10 rounded-full px-2 py-1.5 text-xs text-chalk-dim focus:outline-none focus:border-gold/50"
+            >
+              <option value="" disabled>Select No.</option>
+              {[5, 10, 20].map((n) => (
+                <option key={n} value={n} disabled={paged.length < n}>{n}</option>
+              ))}
+              <option value="all">All ({paged.length})</option>
+            </select>
+            {selectedIds.size > 0 && (
+              <button onClick={clearSelection}
+                className="flex items-center gap-1 px-2 py-1.5 rounded-full text-xs border border-white/10 text-chalk-dim hover:text-chalk transition-all">
+                <CheckSquare className="w-3 h-3 text-gold" /> {selectedIds.size} selected
+              </button>
+            )}
+          </div>
 
           {/* Add selected to cart */}
           {selectedIds.size > 0 && (
@@ -251,11 +272,17 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Main */}
+      <main className="flex-1 p-4 space-y-4">
+        {/* Rising Stars */}
+        <RisingStarsCarousel />
 
         {/* Grid */}
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="w-8 h-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+            {Array.from({ length: 8 }).map((_, i) => <CreatorCardSkeleton key={i} />)}
           </div>
         ) : paged.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3 text-chalk-dim">
@@ -266,73 +293,17 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-            {paged.map((inf) => {
-              const inCart = isInCart(inf.id);
-              const selected = selectedIds.has(inf.id);
-              return (
-                <div
-                  key={inf.id}
-                  onClick={() => toggleSelect(inf.id)}
-                  className={`creator-card p-3 cursor-pointer transition-all ${selected ? "ring-2 ring-gold ring-offset-1 ring-offset-obsidian" : ""}`}
-                >
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="relative shrink-0">
-                      <img src={inf.photo} alt={inf.name} loading="lazy" className="w-12 h-12 rounded-xl object-cover bg-charcoal" />
-                      {selected && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gold flex items-center justify-center">
-                          <CheckSquare className="w-3 h-3 text-obsidian" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <Link
-                        to={`/influencer/${inf.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="font-medium text-chalk text-sm hover:text-gold transition-colors truncate block"
-                      >{inf.name}</Link>
-                      <p className="text-xs text-chalk-dim truncate">{inf.handle ? `@${inf.handle.replace("@", "")}` : "—"}</p>
-                      {inf.city && <p className="text-xs text-chalk-faint">{inf.city}</p>}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TIER_CLASS[inf.tier] || ""}`}>{(TIER_LABEL[inf.tier] ?? inf.tier).toUpperCase()}</span>
-                    {inf.genre && <span className="text-[10px] text-chalk-faint border border-white/10 px-2 py-0.5 rounded-full">{inf.genre}</span>}
-                    {inf.isOnline && <span className="ml-auto w-2 h-2 rounded-full bg-green-400 shrink-0" title="Online" />}
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 mb-4 text-center">
-                    <div className="bento-card-dark p-2 rounded-lg">
-                      <p className="text-xs text-chalk-faint">Followers</p>
-                      <p className="text-sm font-bold text-chalk">{inf.followers ? `${(inf.followers / 1000).toFixed(0)}K` : "—"}</p>
-                    </div>
-                    <div className="bento-card-dark p-2 rounded-lg">
-                      <p className="text-xs text-chalk-faint">Rating</p>
-                      <p className="text-sm font-bold text-chalk">
-                        {inf.avgRating ? `${inf.avgRating}★` : '—'}
-                      </p>
-                    </div>
-                    <div className="bento-card-dark p-2 rounded-lg">
-                      <p className="text-xs text-chalk-faint">Cost</p>
-                      <p className="text-sm font-bold text-chalk">{inf.price ? `₹${inf.price.toLocaleString("en-IN")}` : "—"}</p>
-                    </div>
-                  </div>
-                  {inf.tier === "celeb" ? (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); navigate("/contact"); }}
-                      className="w-full py-1.5 text-[10px] rounded-full font-bold border border-gold/40 text-gold hover:bg-gold/10 transition-all"
-                    >
-                      Get In Touch
-                    </button>
-                  ) : (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); if (!inCart) addToCart(inf); }}
-                      className={`w-full py-1.5 text-[10px] rounded-full font-bold transition-all ${inCart ? "bg-green-500/20 text-green-400 border border-green-500/30 cursor-default" : "purple-pill"}`}
-                    >
-                      {inCart ? "✓ Added to Cart" : "Add to Cart"}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+            {paged.map((inf) => (
+              <CreatorCard
+                key={inf.id}
+                inf={inf}
+                selected={selectedIds.has(inf.id)}
+                inCart={isInCart(inf.id)}
+                onToggleSelect={() => toggleSelect(inf.id)}
+                onAddToCart={() => { if (!isInCart(inf.id)) addToCart(inf); }}
+                onGetInTouch={() => setCelebModal({ id: inf.id, name: inf.name })}
+              />
+            ))}
           </div>
         )}
 
@@ -352,6 +323,14 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
           </div>
         )}
       </main>
+
+      {celebModal && (
+        <CelebCallbackModal
+          influencerId={celebModal.id}
+          influencerName={celebModal.name}
+          onClose={() => setCelebModal(null)}
+        />
+      )}
     </div>
   );
 }

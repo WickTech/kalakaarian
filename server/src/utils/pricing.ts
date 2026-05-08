@@ -5,6 +5,12 @@ export const PLATFORM_MARGIN_RATE = 0.05;
 // Additional platform fee charged at checkout (on top of margin-inclusive prices).
 export const PLATFORM_FEE_RATE = 0.08;
 
+// GST rate applied on (subtotal + platform fee) for Indian regulatory compliance.
+export const GST_RATE = 0.18;
+
+// Creator commercial fee applied on top of raw influencer ask for commercial/branded content.
+export const CREATOR_COMMERCIAL_RATE = 0.05;
+
 type Pricing = {
   story?: number;
   reel?: number;

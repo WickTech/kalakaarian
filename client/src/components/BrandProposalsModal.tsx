@@ -39,11 +39,9 @@ export function BrandProposalsModal({ campaignId, proposals, onClose }: Props) {
                 <p className="text-sm font-medium text-chalk">{p.influencerName || "Creator"}</p>
                 <p className="text-xs text-chalk-dim mt-1">{p.message}</p>
                 <p className="text-sm font-bold text-gold mt-2">₹{p.bidAmount.toLocaleString("en-IN")}</p>
-                {import.meta.env.VITE_WORKFLOW_V2_ENABLED === 'true' && p.workflow_stage && (
-                  <Link to={`/proposals/${p._id}`} className="text-xs text-purple-400 hover:text-purple-300 mt-1 inline-block">
-                    View workflow →
-                  </Link>
-                )}
+                <Link to={`/proposals/${p._id}`} className="text-xs text-purple-400 hover:text-purple-300 mt-1 inline-block">
+                  View workflow →
+                </Link>
               </div>
               {p.status === "submitted" ? (
                 <div className="flex gap-2 ml-4">

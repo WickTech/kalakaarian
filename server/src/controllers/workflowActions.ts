@@ -3,13 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { adminClient } from '../config/supabase';
 import { validationResult } from 'express-validator';
 
-const WORKFLOW_ENABLED = process.env.WORKFLOW_V2_ENABLED === 'true';
-const AUTO_APPROVE_HOURS = Number(process.env.WORKFLOW_AUTO_APPROVE_HOURS) || 72;
-
-function featureGate(res: Response): boolean {
-  if (!WORKFLOW_ENABLED) { res.status(404).json({ message: 'Workflow v2 not enabled' }); return true; }
-  return false;
-}
+const AUTO_APPROVE_HOURS = Number(process.env.WORKFLOW_AUTO_APPROVE_HOURS) || 4;
 
 function handleValidation(req: AuthRequest, res: Response): boolean {
   const errors = validationResult(req);
@@ -54,7 +48,7 @@ async function callRpc(
 }
 
 export async function shortlist(req: AuthRequest, res: Response): Promise<void> {
-  if (featureGate(res) || handleValidation(req, res)) return;
+  if (handleValidation(req, res)) return;
   const { id } = req.params;
   if (req.user!.role !== 'brand') { res.status(403).json({ message: 'Brands only' }); return; }
   const data = await callRpc(id, req.user!.userId, 'brand', null, 'shortlisted', 'shortlist', null, res);
@@ -62,7 +56,7 @@ export async function shortlist(req: AuthRequest, res: Response): Promise<void> 
 }
 
 export async function acceptWorkflow(req: AuthRequest, res: Response): Promise<void> {
-  if (featureGate(res) || handleValidation(req, res)) return;
+  if (handleValidation(req, res)) return;
   const { id } = req.params;
   if (req.user!.role !== 'brand') { res.status(403).json({ message: 'Brands only' }); return; }
   const data = await callRpc(id, req.user!.userId, 'brand', 'shortlisted', 'accepted', 'accept', null, res);
@@ -70,24 +64,16 @@ export async function acceptWorkflow(req: AuthRequest, res: Response): Promise<v
 }
 
 export async function startContent(req: AuthRequest, res: Response): Promise<void> {
-  if (featureGate(res) || handleValidation(req, res)) return;
+  if (handleValidation(req, res)) return;
   const { id } = req.params;
   if (req.user!.role !== 'influencer') { res.status(403).json({ message: 'Creators only' }); return; }
-
-  // Brief gate: campaign must have budget + deadline before creator can start
-  const { data: prop } = await adminClient.from('proposals').select('campaign_id').eq('id', id).single();
-  if (!prop) { res.status(404).json({ message: 'Proposal not found' }); return; }
-  const { data: camp } = await adminClient.from('campaigns').select('budget, deadline').eq('id', prop.campaign_id).single();
-  if (!camp || !(camp.budget > 0) || !camp.deadline) {
-    res.status(400).json({ message: 'Campaign brief incomplete. Brand must set budget and deadline first.' }); return;
-  }
 
   const data = await callRpc(id, req.user!.userId, 'influencer', 'accepted', 'content_in_progress', 'start_content', null, res);
   if (data) res.json({ proposal: data });
 }
 
 export async function submitContent(req: AuthRequest, res: Response): Promise<void> {
-  if (featureGate(res) || handleValidation(req, res)) return;
+  if (handleValidation(req, res)) return;
   const { id } = req.params;
   if (req.user!.role !== 'influencer') { res.status(403).json({ message: 'Creators only' }); return; }
   const { url, platform, notes } = req.body as { url: string; platform: string; notes?: string };
@@ -106,7 +92,7 @@ export async function submitContent(req: AuthRequest, res: Response): Promise<vo
 }
 
 export async function approveContent(req: AuthRequest, res: Response): Promise<void> {
-  if (featureGate(res) || handleValidation(req, res)) return;
+  if (handleValidation(req, res)) return;
   const { id } = req.params;
   if (req.user!.role !== 'brand') { res.status(403).json({ message: 'Brands only' }); return; }
   const data = await callRpc(id, req.user!.userId, 'brand', 'under_review', 'approved', 'approve', null, res);
@@ -114,7 +100,7 @@ export async function approveContent(req: AuthRequest, res: Response): Promise<v
 }
 
 export async function requestRevision(req: AuthRequest, res: Response): Promise<void> {
-  if (featureGate(res) || handleValidation(req, res)) return;
+  if (handleValidation(req, res)) return;
   const { id } = req.params;
   if (req.user!.role !== 'brand') { res.status(403).json({ message: 'Brands only' }); return; }
   const { category, severity, required_changes, notes } = req.body as {
@@ -126,7 +112,7 @@ export async function requestRevision(req: AuthRequest, res: Response): Promise<
 }
 
 export async function sendFeedback(req: AuthRequest, res: Response): Promise<void> {
-  if (featureGate(res) || handleValidation(req, res)) return;
+  if (handleValidation(req, res)) return;
   const { id } = req.params;
   if (req.user!.role !== 'brand') { res.status(403).json({ message: 'Brands only' }); return; }
   const { category, severity, required_changes, notes } = req.body as {
@@ -147,7 +133,7 @@ export async function sendFeedback(req: AuthRequest, res: Response): Promise<voi
 }
 
 export async function markPaymentPending(req: AuthRequest, res: Response): Promise<void> {
-  if (featureGate(res) || handleValidation(req, res)) return;
+  if (handleValidation(req, res)) return;
   const { id } = req.params;
   if (!req.user!.isAdmin) { res.status(403).json({ message: 'Admin only' }); return; }
   const { transaction_ref } = req.body as { transaction_ref: string };
@@ -156,7 +142,7 @@ export async function markPaymentPending(req: AuthRequest, res: Response): Promi
 }
 
 export async function releasePayment(req: AuthRequest, res: Response): Promise<void> {
-  if (featureGate(res) || handleValidation(req, res)) return;
+  if (handleValidation(req, res)) return;
   const { id } = req.params;
   if (!req.user!.isAdmin) { res.status(403).json({ message: 'Admin only' }); return; }
   const { transaction_ref } = req.body as { transaction_ref: string };
@@ -165,7 +151,7 @@ export async function releasePayment(req: AuthRequest, res: Response): Promise<v
 }
 
 export async function rejectWorkflow(req: AuthRequest, res: Response): Promise<void> {
-  if (featureGate(res) || handleValidation(req, res)) return;
+  if (handleValidation(req, res)) return;
   const { id } = req.params;
   if (req.user!.role !== 'brand') { res.status(403).json({ message: 'Brands only' }); return; }
   const { current_stage } = req.body as { current_stage: string };

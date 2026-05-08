@@ -2,33 +2,47 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { api } from "@/lib/api";
+import { ArrowLeft, Eye, EyeOff, MessageCircle } from "lucide-react";
+import { BrandCompletionModal } from "@/components/BrandCompletionModal";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [role, setRole] = useState<"creator" | "brand">("creator");
+  const [tab, setTab] = useState<"email" | "whatsapp">("email");
+  const [showCompletion, setShowCompletion] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState<string | undefined>();
 
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
   const showGoogle =
     GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "your-google-client-id.apps.googleusercontent.com";
 
+  const redirectAfterLogin = (userRole: string) => {
+    if (userRole === "brand") navigate("/marketplace");
+    else navigate("/influencer/dashboard");
+  };
+
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) {
-      setError("Please enter both email and password.");
-      return;
-    }
+    if (!email.trim() || !password.trim()) { setError("Please enter both email and password."); return; }
     setError("");
     setLoading(true);
     try {
       await login(email, password);
-      navigate("/dashboard");
+      // role comes from stored user after login
+      const stored = localStorage.getItem("kalakariaan_user");
+      const u = stored ? JSON.parse(stored) : null;
+      redirectAfterLogin(u?.role ?? "influencer");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed. Please try again.");
     } finally {
@@ -40,14 +54,61 @@ export default function LoginPage() {
     try {
       setError("");
       setLoading(true);
-      await loginWithGoogle(cr.credential, role === "creator" ? "influencer" : "brand");
-      navigate("/dashboard");
+      const result = await loginWithGoogle(cr.credential, role === "creator" ? "influencer" : "brand");
+      const stored = localStorage.getItem("kalakariaan_user");
+      const u = stored ? JSON.parse(stored) : null;
+      setGoogleEmail(u?.email);
+      if (result.isNewUser && u?.role === "brand") {
+        setShowCompletion(true);
+      } else {
+        redirectAfterLogin(u?.role ?? "influencer");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google login failed.");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleSendOtp = async () => {
+    const cleaned = phone.replace(/\D/g, "");
+    if (cleaned.length < 10) { setError("Enter a valid phone number."); return; }
+    setError("");
+    setLoading(true);
+    try {
+      await api.sendOTP(cleaned);
+      setOtpSent(true);
+    } catch {
+      setError("Failed to send OTP. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const cleaned = phone.replace(/\D/g, "");
+    if (!otp || otp.length !== 6) { setError("Enter the 6-digit OTP."); return; }
+    setError("");
+    setLoading(true);
+    try {
+      await api.verifyOTP(cleaned, otp);
+      setTab("email");
+      setSuccess("Phone verified! Sign in with your password to continue.");
+    } catch {
+      setError("Invalid OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (showCompletion) {
+    return (
+      <BrandCompletionModal
+        email={googleEmail}
+        onComplete={() => redirectAfterLogin("brand")}
+      />
+    );
+  }
 
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-obsidian overflow-hidden p-4">
@@ -56,7 +117,6 @@ export default function LoginPage() {
       <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-pink-500/15 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-md">
-        {/* Back button */}
         <button onClick={() => navigate("/")} className="flex items-center gap-1.5 text-chalk-dim hover:text-chalk text-xs mb-6 transition-colors">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to home
         </button>
@@ -80,70 +140,101 @@ export default function LoginPage() {
         </div>
 
         <div className="bento-card p-6 space-y-5">
-          {showGoogle && (
+          {/* Auth method tabs */}
+          <div className="flex rounded-lg border border-white/10 overflow-hidden text-xs">
+            <button onClick={() => { setTab("email"); setError(""); }}
+              className={`flex-1 py-2 font-medium transition-all ${tab === "email" ? "bg-white/10 text-chalk" : "text-chalk-dim"}`}>
+              Email / Password
+            </button>
+            <button onClick={() => { setTab("whatsapp"); setError(""); setSuccess(""); }}
+              className={`flex-1 py-2 font-medium transition-all flex items-center justify-center gap-1.5 ${tab === "whatsapp" ? "bg-white/10 text-chalk" : "text-chalk-dim"}`}>
+              <MessageCircle className="w-3 h-3" /> WhatsApp OTP
+            </button>
+          </div>
+
+          {tab === "email" && (
             <>
-              <div className="flex justify-center">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => setError("Google login failed")}
-                  useOneTap
-                  theme="filled_blue"
-                  shape="rectangular"
-                  width="336"
-                />
-              </div>
-              <div className="relative flex items-center">
-                <div className="flex-grow border-t border-white/10" />
-                <span className="mx-4 text-xs text-chalk-faint uppercase tracking-widest">or</span>
-                <div className="flex-grow border-t border-white/10" />
+              {showGoogle && (
+                <>
+                  <div className="flex justify-center">
+                    <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError("Google login failed")}
+                      useOneTap theme="filled_blue" shape="rectangular" width="336" />
+                  </div>
+                  <div className="relative flex items-center">
+                    <div className="flex-grow border-t border-white/10" />
+                    <span className="mx-4 text-xs text-chalk-faint uppercase tracking-widest">or</span>
+                    <div className="flex-grow border-t border-white/10" />
+                  </div>
+                </>
+              )}
+              <form onSubmit={onSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-chalk-dim mb-1.5">Email</label>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                    className="dark-input w-full px-4 py-3 text-sm" placeholder="you@example.com" />
+                </div>
+                <div>
+                  <label className="block text-sm text-chalk-dim mb-1.5">Password</label>
+                  <div className="relative">
+                    <input type={showPw ? "text" : "password"} value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="dark-input w-full px-4 py-3 text-sm pr-10" placeholder="••••••••" />
+                    <button type="button" onClick={() => setShowPw((p) => !p)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-chalk-faint hover:text-chalk transition-colors">
+                      {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                {success && <p className="text-green-400 text-sm">{success}</p>}
+                {error && <p className="text-red-400 text-sm">{error}</p>}
+                <button type="submit" disabled={loading} className="purple-pill w-full py-3 text-sm disabled:opacity-50">
+                  {loading ? "Signing in..." : "Sign In"}
+                </button>
+              </form>
+              <div className="text-center text-sm text-chalk-dim">
+                {role === "creator" ? (
+                  <p>New here? <Link to="/influencer-register" className="text-gold hover:underline font-medium">Join as Creator</Link></p>
+                ) : (
+                  <p>New here? <Link to="/brand-register" className="text-gold hover:underline font-medium">Register as Brand</Link></p>
+                )}
               </div>
             </>
           )}
 
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm text-chalk-dim mb-1.5">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="dark-input w-full px-4 py-3 text-sm"
-                placeholder="you@example.com"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-chalk-dim mb-1.5">Password</label>
-              <div className="relative">
-                <input
-                  type={showPw ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="dark-input w-full px-4 py-3 text-sm pr-10"
-                  placeholder="••••••••"
-                />
-                <button type="button" onClick={() => setShowPw((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-chalk-faint hover:text-chalk transition-colors">
-                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+          {tab === "whatsapp" && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-chalk-dim mb-1.5">WhatsApp Number</label>
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+                  disabled={otpSent}
+                  className="dark-input w-full px-4 py-3 text-sm" placeholder="+91 9876543210" />
               </div>
+              {otpSent && (
+                <div>
+                  <label className="block text-sm text-chalk-dim mb-1.5">6-digit OTP</label>
+                  <input type="text" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    className="dark-input w-full px-4 py-3 text-sm tracking-widest text-center font-mono" placeholder="000000" maxLength={6} />
+                </div>
+              )}
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+              {!otpSent ? (
+                <button onClick={handleSendOtp} disabled={loading} className="purple-pill w-full py-3 text-sm disabled:opacity-50">
+                  {loading ? "Sending OTP…" : "Send OTP"}
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button onClick={() => { setOtpSent(false); setOtp(""); setError(""); }}
+                    className="flex-1 py-3 rounded-full border border-white/10 text-chalk-dim hover:text-chalk text-sm transition-colors">
+                    Change Number
+                  </button>
+                  <button onClick={handleVerifyOtp} disabled={loading || otp.length !== 6}
+                    className="flex-1 purple-pill py-3 text-sm disabled:opacity-50">
+                    {loading ? "Verifying…" : "Verify OTP"}
+                  </button>
+                </div>
+              )}
             </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-            <button
-              type="submit"
-              disabled={loading}
-              className="purple-pill w-full py-3 text-sm disabled:opacity-50"
-            >
-              {loading ? "Signing in..." : "Sign In"}
-            </button>
-          </form>
-
-          <div className="text-center text-sm text-chalk-dim">
-            {role === "creator" ? (
-              <p>New here? <Link to="/influencer-register" className="text-gold hover:underline font-medium">Join as Creator</Link></p>
-            ) : (
-              <p>New here? <Link to="/brand-register" className="text-gold hover:underline font-medium">Register as Brand</Link></p>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </main>

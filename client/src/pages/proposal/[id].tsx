@@ -10,8 +10,6 @@ import { RatingWidget } from '@/components/workflow/RatingWidget';
 import { STAGE_LABELS, nextActionsFor, WorkflowStage } from '@/lib/workflow';
 import { Button } from '@/components/ui/button';
 
-const WORKFLOW_ENABLED = import.meta.env.VITE_WORKFLOW_V2_ENABLED === 'true';
-
 export default function ProposalDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -42,7 +40,6 @@ export default function ProposalDetailPage() {
     return () => clearInterval(iv);
   }, [proposal?.auto_approve_at, stage]);
 
-  if (!WORKFLOW_ENABLED) { navigate('/dashboard', { replace: true }); return null; }
   if (!id) return null;
 
   const role = user?.role as 'brand' | 'influencer' | undefined;

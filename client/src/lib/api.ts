@@ -288,6 +288,7 @@ export interface LoginResponse {
   message: string;
   user: User;
   token: string;
+  isNewUser?: boolean;
 }
 
 class ApiError extends Error {
@@ -813,6 +814,27 @@ export const api = {
     return request<{ message: string }>('/api/contact', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  },
+
+  verifyOTP: async (phone: string, otp: string): Promise<{ message: string }> => {
+    return request<{ message: string }>('/api/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone, otp }),
+    });
+  },
+
+  submitAppRating: async (data: { score: number; feedback?: string }): Promise<{ message: string }> => {
+    return request<{ message: string }>('/api/feedback/app-rating', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  requestCelebCallback: async (data: { influencerId: string; name?: string; email?: string; phone?: string; message?: string }): Promise<{ message: string }> => {
+    return request<{ message: string }>('/api/contact', {
+      method: 'POST',
+      body: JSON.stringify({ ...data, type: 'callback' }),
     });
   },
 };

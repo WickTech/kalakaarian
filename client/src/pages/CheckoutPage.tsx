@@ -4,6 +4,7 @@ import { ShoppingCart, FileText, CheckCircle2 } from "lucide-react";
 import { useCartContext } from "@/contexts/CartContext";
 import { api } from "@/lib/api";
 import { openRazorpayCheckout } from "@/lib/razorpay";
+import { AppRatingModal } from "@/components/AppRatingModal";
 
 function formatPrice(n: number) {
   if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
@@ -18,8 +19,12 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [paid, setPaid] = useState(false);
-  const fee = Math.round(total * 0.08);
-  const grand = total + fee;
+  const [showRating, setShowRating] = useState(false);
+
+  const platformFee = Math.round(total * 0.08);
+  const subtotalWithFee = total + platformFee;
+  const gst = Math.round(subtotalWithFee * 0.18);
+  const grand = subtotalWithFee + gst;
 
   const handlePay = async () => {
     setProcessing(true);
@@ -29,6 +34,7 @@ export default function CheckoutPage() {
       if (!order.orderId || !order.keyId) {
         clearCart();
         setPaid(true);
+        setShowRating(true);
         return;
       }
       await openRazorpayCheckout({
@@ -37,7 +43,7 @@ export default function CheckoutPage() {
         currency: order.currency,
         keyId: order.keyId,
         name: "Kalakaarian — Cart Checkout",
-        onSuccess: async () => { clearCart(); setPaid(true); },
+        onSuccess: async () => { clearCart(); setPaid(true); setShowRating(true); },
         onDismiss: () => {},
       });
     } catch {
@@ -69,6 +75,7 @@ export default function CheckoutPage() {
             </button>
           </div>
         </div>
+        {showRating && <AppRatingModal onClose={() => setShowRating(false)} />}
       </div>
     );
   }
@@ -77,25 +84,21 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-background">
       <div className="max-w-lg mx-auto p-4 space-y-5">
         <h1 className="font-semibold text-lg">Checkout</h1>
-        {/* Campaign Section */}
+
         <div className="border border-border rounded-xl p-4 space-y-2">
           <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-3">
-            <FileText className="w-4 h-4" />
-            Campaign
+            <FileText className="w-4 h-4" /> Campaign
           </div>
           {campaignName ? (
             <>
               <p className="font-semibold text-foreground">{campaignName}</p>
-              {campaignDescription && (
-                <p className="text-sm text-muted-foreground">{campaignDescription}</p>
-              )}
+              {campaignDescription && <p className="text-sm text-muted-foreground">{campaignDescription}</p>}
             </>
           ) : (
             <p className="text-sm text-muted-foreground italic">No campaign selected</p>
           )}
         </div>
 
-        {/* Creators */}
         <div className="border border-border rounded-xl p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
             <ShoppingCart className="w-4 h-4" /> Selected Creators ({items.length})
@@ -116,35 +119,27 @@ export default function CheckoutPage() {
 
         {/* Order Summary */}
         <div className="border border-border rounded-xl p-4 space-y-2">
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(total)}</span></div>
-          <div className="flex justify-between text-sm"><span className="text-muted-foreground">Platform Fee (8%)</span><span>{formatPrice(fee)}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground">Creator Subtotal</span><span>{formatPrice(total)}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground">Platform Fee (8%)</span><span>{formatPrice(platformFee)}</span></div>
+          <div className="flex justify-between text-sm"><span className="text-muted-foreground">GST (18%)</span><span>{formatPrice(gst)}</span></div>
           <div className="h-px bg-border my-1" />
-          <div className="flex justify-between font-bold text-base"><span>Total</span><span className="text-primary">{formatPrice(grand)}</span></div>
+          <div className="flex justify-between font-bold text-base"><span>Grand Total</span><span className="text-primary">{formatPrice(grand)}</span></div>
         </div>
 
         {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
         <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={termsAgreed}
-            onChange={(e) => setTermsAgreed(e.target.checked)}
-            className="mt-0.5 accent-purple-600 w-4 h-4 flex-shrink-0"
-          />
+          <input type="checkbox" checked={termsAgreed} onChange={(e) => setTermsAgreed(e.target.checked)}
+            className="mt-0.5 accent-purple-600 w-4 h-4 flex-shrink-0" />
           <span className="text-sm text-muted-foreground">
             I agree to the{" "}
-            <a href="/terms" target="_blank" className="text-purple-600 hover:underline">
-              campaign execution terms
-            </a>{" "}
+            <a href="/terms" target="_blank" className="text-purple-600 hover:underline">campaign execution terms</a>{" "}
             (24–48h delivery, escrow payment, auto-approval policy)
           </span>
         </label>
 
-        <button
-          onClick={handlePay}
-          disabled={items.length === 0 || processing || !termsAgreed}
-          className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-        >
+        <button onClick={handlePay} disabled={items.length === 0 || processing || !termsAgreed}
+          className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-opacity">
           {processing ? "Processing..." : `Pay ${formatPrice(grand)}`}
         </button>
       </div>

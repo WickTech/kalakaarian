@@ -177,7 +177,8 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
 
     // Create profile rows if first login
     const { data: existing } = await adminClient.from('profiles').select('id').eq('id', userId).single();
-    if (!existing) {
+    const isNewUser = !existing;
+    if (isNewUser) {
       const userRole = role || 'brand';
       const googleEmail = data.user.email ?? '';
       const googleName = data.user.user_metadata?.full_name ?? data.user.user_metadata?.name ?? '';
@@ -221,6 +222,7 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
       message: 'Google login successful',
       user: { ...profile, isAdmin: data.user.user_metadata?.is_admin ?? false },
       token: data.session.access_token,
+      isNewUser,
     });
   } catch (error) {
     console.error('Google login error:', error);

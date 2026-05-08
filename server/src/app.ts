@@ -28,6 +28,7 @@ import gamificationRoutes from './routes/gamification';
 import walletRoutes from './routes/wallet';
 import brandRoutes from './routes/brands';
 import analyticsCampaignHistoryRoutes from './routes/analyticsCampaignHistory';
+import feedbackRoutes from './routes/feedback';
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -117,6 +118,7 @@ app.use('/api/gamification', gamificationRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/analytics', analyticsCampaignHistoryRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);

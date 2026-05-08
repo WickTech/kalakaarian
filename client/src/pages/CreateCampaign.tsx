@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, CheckCircle, X, Info } from "lucide-react";
+import { ArrowLeft, CheckCircle, X, Info, Link2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ export default function CreateCampaign() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
-  const [form, setForm] = useState({ title: "", description: "", deliverables: "" });
+  const [form, setForm] = useState({ title: "", description: "", deliverables: "", referenceLink: "" });
   const [files, setFiles] = useState<CampaignFileEntry[]>([]);
   const [fileType, setFileType] = useState<"brief" | "contract" | "other">("brief");
   const [createdTitle, setCreatedTitle] = useState("");
@@ -81,9 +81,10 @@ export default function CreateCampaign() {
           <div>
             <p className="font-bold text-xl mb-1">Campaign Created!</p>
             <p className="text-muted-foreground text-sm">"{createdTitle}" is live and ready for creator proposals.</p>
+          <p className="text-muted-foreground text-sm">Now browse the marketplace to add creators to your campaign.</p>
           </div>
-          <Button onClick={() => navigate("/brand/dashboard")} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90">
-            View Dashboard →
+          <Button onClick={() => navigate("/marketplace")} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90">
+            Browse Creators →
           </Button>
         </Card>
       </main>
@@ -97,8 +98,8 @@ export default function CreateCampaign() {
           <ArrowLeft className="h-4 w-4" /> Back to Dashboard
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">Create New Campaign</h1>
-          <p className="text-muted-foreground text-sm mt-1">Fill in the details to attract the right creators.</p>
+          <h1 className="text-2xl font-bold">Upload Campaign Brief</h1>
+          <p className="text-muted-foreground text-sm mt-1">Describe your campaign to attract the right creators.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -121,6 +122,13 @@ export default function CreateCampaign() {
               <div className="space-y-1.5">
                 <Label>Deliverables *</Label>
                 <Textarea value={form.deliverables} onChange={set("deliverables")} placeholder="e.g. 1 Instagram Reel + 2 Stories" rows={2} required />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Label>Reference Link</Label>
+                  <Link2 className="w-3.5 h-3.5 text-muted-foreground" />
+                </div>
+                <Input value={form.referenceLink} onChange={set("referenceLink")} placeholder="https://example.com/inspiration" type="url" />
               </div>
             </CardContent>
           </Card>
@@ -164,7 +172,7 @@ export default function CreateCampaign() {
           </Card>
 
           <Button type="submit" className="w-full py-6 text-base font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90" disabled={loading}>
-            {loading ? "Creating Campaign…" : "Create Campaign"}
+            {loading ? "Uploading Brief…" : "Upload Campaign Brief"}
           </Button>
         </form>
       </div>

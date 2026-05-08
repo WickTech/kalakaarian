@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Plus, Search, MessageSquare, FileText, Users, LogOut, BarChart2 } from "lucide-react";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { Plus, Search, FileText, Users, LogOut, BarChart2, Upload } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { api, Campaign, Proposal } from "@/lib/api";
@@ -19,17 +19,21 @@ const STATUS_STYLE: Record<string, string> = {
   archived: "text-chalk-dim border-white/20",
 };
 
+const VALID_TABS = new Set<Tab>(["overview", "campaigns", "analytics", "room", "history"]);
+
 export default function BrandDashboard() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [tab, setTab] = useState<Tab>("overview");
+  const [searchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab") as Tab | null;
+  const [tab, setTab] = useState<Tab>(urlTab && VALID_TABS.has(urlTab) ? urlTab : "overview");
   const [viewingCampaignId, setViewingCampaignId] = useState<string | null>(null);
   const [viewingInfluencersCampaign, setViewingInfluencersCampaign] = useState<Campaign | null>(null);
 
   useEffect(() => {
-    const t = (location.state as { tab?: Tab } | null)?.tab;
-    if (t) { setTab(t); window.history.replaceState({}, ''); }
+    const stateTab = (location.state as { tab?: Tab } | null)?.tab;
+    if (stateTab) { setTab(stateTab); window.history.replaceState({}, ''); }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: campaigns = [], isLoading: campaignsLoading } = useQuery<Campaign[]>({
@@ -63,16 +67,16 @@ export default function BrandDashboard() {
             <h1 className="font-display text-3xl font-bold text-chalk">Brand Dashboard</h1>
             <p className="text-chalk-dim text-sm mt-1">Welcome back, {user?.brandName || user?.name || "Brand"}</p>
           </div>
-          <div className="flex gap-2">
-            <Link to="/messages" className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk text-sm transition-colors">
-              <MessageSquare className="w-4 h-4" />
-            </Link>
+          <div className="flex gap-2 flex-wrap">
             <Link to="/marketplace" className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk text-sm transition-colors">
-              <Search className="w-4 h-4" /> Browse
+              <Search className="w-4 h-4" /> Create Campaign
             </Link>
-            <Link to="/brand-campaign" className="purple-pill flex items-center gap-2 px-4 py-2 text-sm">
-              <Plus className="w-4 h-4" /> New Campaign
+            <Link to="/brand/create-campaign" className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk text-sm transition-colors">
+              <Upload className="w-4 h-4" /> Upload Brief
             </Link>
+            <button onClick={() => setTab("campaigns")} className="purple-pill flex items-center gap-2 px-4 py-2 text-sm">
+              <BarChart2 className="w-4 h-4" /> Campaign Tracker
+            </button>
             <button onClick={() => { logout(); navigate("/"); }}
               className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm transition-colors">
               <LogOut className="w-4 h-4" />
@@ -139,7 +143,7 @@ export default function BrandDashboard() {
                   <div className="flex flex-col items-center justify-center p-12 text-chalk-dim">
                     <FileText className="w-10 h-10 mb-3 opacity-30" />
                     <p>No campaigns yet.</p>
-                    <Link to="/brand-campaign" className="purple-pill mt-4 px-5 py-2 text-sm">Create First Campaign</Link>
+                    <Link to="/brand/create-campaign" className="purple-pill mt-4 px-5 py-2 text-sm">Upload Campaign Brief</Link>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">

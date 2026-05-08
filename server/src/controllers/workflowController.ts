@@ -2,16 +2,6 @@ import { Response, Request } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { adminClient } from '../config/supabase';
 
-const WORKFLOW_ENABLED = process.env.WORKFLOW_V2_ENABLED === 'true';
-
-function featureGate(res: Response): boolean {
-  if (!WORKFLOW_ENABLED) {
-    res.status(404).json({ message: 'Workflow v2 not enabled' });
-    return true;
-  }
-  return false;
-}
-
 async function getProposalParties(proposalId: string): Promise<{ influencer_id: string; brand_id: string } | null> {
   const { data } = await adminClient
     .from('proposals')
@@ -24,7 +14,6 @@ async function getProposalParties(proposalId: string): Promise<{ influencer_id: 
 }
 
 export async function getWorkflow(req: AuthRequest, res: Response): Promise<void> {
-  if (featureGate(res)) return;
   const userId = req.user!.userId;
   const { id } = req.params;
 
@@ -45,7 +34,6 @@ export async function getWorkflow(req: AuthRequest, res: Response): Promise<void
 }
 
 export async function getActivityLog(req: AuthRequest, res: Response): Promise<void> {
-  if (featureGate(res)) return;
   const userId = req.user!.userId;
   const { id } = req.params;
   const limit = Math.min(Number(req.query.limit) || 50, 100);
@@ -70,7 +58,6 @@ export async function getActivityLog(req: AuthRequest, res: Response): Promise<v
 
 // Public (no auth) — sanitized view for share links; omits submission details and private feedback.
 export async function getPublicWorkflow(req: Request, res: Response): Promise<void> {
-  if (featureGate(res)) return;
   const { id } = req.params;
 
   const { data: proposal } = await adminClient

@@ -169,10 +169,14 @@ export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, to
               <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Platform Fee (8%)</span>
               <span className="font-mono text-sm text-muted-foreground">{formatPrice(Math.round(total * 0.08))}</span>
             </div>
+            <div className="flex justify-between items-center">
+              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">GST (18%)</span>
+              <span className="font-mono text-sm text-muted-foreground">{formatPrice(Math.round(total * 1.08 * 0.18))}</span>
+            </div>
             <div className="h-px bg-border" />
             <div className="flex justify-between items-center">
               <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Grand Total</span>
-              <span className="font-mono text-lg text-terminal font-bold">{formatPrice(Math.round(total * 1.08))}</span>
+              <span className="font-mono text-lg text-terminal font-bold">{formatPrice(Math.round(total * 1.08 * 1.18))}</span>
             </div>
           </div>
           <button

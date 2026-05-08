@@ -21,8 +21,9 @@ async function main() {
   for (const row of rows) {
     const handle = row.instagram_handle as string;
     process.stdout.write(`  @${handle} ... `);
-    const url = await syncInstagramAvatar(row.id as string, handle);
-    console.log(url ? `OK` : 'SKIPPED (could not fetch from Instagram)');
+    const { avatarUrl, followerCount } = await syncInstagramAvatar(row.id as string, handle);
+    const parts = [avatarUrl ? 'avatar OK' : 'no avatar', followerCount != null ? `${followerCount.toLocaleString()} followers` : 'no follower count'];
+    console.log(parts.join(' | ') || 'SKIPPED');
   }
 
   console.log('Done.');

@@ -195,7 +195,7 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
     if (instagramHandle !== undefined) update.instagram_handle = instagramHandle;
     if (youtubeHandle !== undefined) update.youtube_handle = youtubeHandle;
 
-    // Fire-and-forget avatar sync when Instagram handle is (re)set
+    // Fire-and-forget: sync avatar + follower count when Instagram handle is (re)set
     if (instagramHandle && typeof instagramHandle === 'string') {
       syncInstagramAvatar(req.user.userId, instagramHandle).catch(() => { /* silent */ });
     }

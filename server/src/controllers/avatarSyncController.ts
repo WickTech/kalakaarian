@@ -14,8 +14,8 @@ export const syncAllInstagramAvatars = async (_req: AuthRequest, res: Response):
     const results: Array<{ id: string; handle: string; ok: boolean }> = [];
     for (const row of (data ?? [])) {
       if (!row.instagram_handle) continue;
-      const url = await syncInstagramAvatar(row.id, row.instagram_handle as string);
-      results.push({ id: row.id, handle: row.instagram_handle as string, ok: !!url });
+      const { avatarUrl } = await syncInstagramAvatar(row.id, row.instagram_handle as string);
+      results.push({ id: row.id, handle: row.instagram_handle as string, ok: !!avatarUrl });
     }
 
     res.json({ synced: results.length, results });

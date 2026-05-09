@@ -13,10 +13,21 @@ router.get('/stats/:userId', optionalAuth, async (req: Request, res: Response) =
       .select('instagram_handle, youtube_handle').eq('id', userId).single();
     if (!profile) { res.status(404).json({ message: 'Profile not found' }); return; }
 
+    const { data: ipData } = await adminClient
+      .from('influencer_profiles')
+      .select('followers_count')
+      .eq('id', userId)
+      .single();
+
     const [instagramStats, youtubeStats] = await Promise.all([
       profile.instagram_handle ? getInstagramStats(profile.instagram_handle) : Promise.resolve(null),
       profile.youtube_handle ? getYouTubeStats(profile.youtube_handle) : Promise.resolve(null),
     ]);
+
+    // Pin followers to DB value when using mock data (no real token = isMock true)
+    if (instagramStats?.isMock && ipData?.followers_count) {
+      instagramStats.followers = ipData.followers_count;
+    }
 
     res.json({ instagram: instagramStats, youtube: youtubeStats, analytics: calculateAnalytics(instagramStats, youtubeStats) });
   } catch (error) {

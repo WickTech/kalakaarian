@@ -119,6 +119,9 @@ export default function InfluencerProfile() {
             handle: `@${profile.socialHandles?.instagram || 'user'}`,
             profileImage: profile.profileImage || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default',
             tier: membership.tier as 'gold' | 'silver' | 'regular',
+            influencerTier: profile.tier,
+            avgRating: profile.avgRating,
+            ratingCount: profile.ratingCount,
             city: profile.city,
             socialHandles: profile.socialHandles,
             isOnline: profile.isOnline,
@@ -181,7 +184,9 @@ export default function InfluencerProfile() {
           </div>
         )}
 
-        <VideoGrid videos={videos} isOwnProfile={isOwnProfile} onUpload={handleVideoUpload} />
+        {(isOwnProfile || videos.length > 0) && (
+          <VideoGrid videos={videos} isOwnProfile={isOwnProfile} onUpload={handleVideoUpload} />
+        )}
 
         {profile.tier === 'celeb' && !isOwnProfile && (
           <div className="bento-card p-5 text-center space-y-3">

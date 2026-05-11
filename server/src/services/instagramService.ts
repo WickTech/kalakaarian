@@ -58,6 +58,22 @@ export async function getInstagramStats(handle: string): Promise<InstagramStats>
   return generateMockStats(cleanHandle);
 }
 
+export async function getInstagramStatsForUser(igUserId: string, pageToken: string): Promise<InstagramStats> {
+  const { data } = await axios.get(`https://graph.facebook.com/v20.0/${igUserId}`, {
+    params: { fields: 'followers_count,follows_count,media_count,username', access_token: pageToken },
+  });
+  return {
+    handle: data.username || '',
+    followers: data.followers_count || 0,
+    following: data.follows_count || 0,
+    posts: data.media_count || 0,
+    avgLikes: 0,
+    avgComments: 0,
+    engagementRate: 0,
+    isMock: false,
+  };
+}
+
 export async function getInstagramPosts(handle: string, limit = 9): Promise<InstagramPost[]> {
   const cleanHandle = handle.replace('@', '');
   if (!validateHandle(cleanHandle)) throw new Error(`Invalid Instagram handle: ${handle}`);

@@ -56,7 +56,15 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
         </div>
         <div className="bento-card-dark p-2 rounded-lg">
           <p className="text-xs text-chalk-faint">Rating</p>
-          <p className="text-sm font-bold text-chalk">{inf.avgRating ? `${inf.avgRating}★` : "—"}</p>
+          {inf.avgRating ? (
+            <div className="flex gap-px justify-center">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <span key={s} className={`text-xs ${s <= Math.round(inf.avgRating!) ? 'text-green-400' : 'text-white/20'}`}>★</span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm font-bold text-chalk">—</p>
+          )}
         </div>
         <div className="bento-card-dark p-2 rounded-lg">
           <p className="text-xs text-chalk-faint">Cost</p>

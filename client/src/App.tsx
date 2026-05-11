@@ -40,6 +40,7 @@ const SharedWorkflowView = lazy(() => import("./pages/proposal/SharedView"));
 const BrandPublicProfile = lazy(() => import("./pages/BrandPublicProfile"));
 const CampaignTrackPage = lazy(() => import("./pages/campaign/TrackPage"));
 const NotificationsPage = lazy(() => import("./pages/Notifications"));
+const BrandWelcome = lazy(() => import("./pages/BrandWelcome"));
 
 function PageLoader() {
   return (
@@ -122,7 +123,7 @@ function SmartHome() {
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700" />
     </div>
   );
-  if (user?.role === "brand") return <Navigate to="/marketplace" replace />;
+  if (user?.role === "brand") return <Navigate to="/brand/welcome" replace />;
   if (user?.role === "influencer") return <Navigate to="/influencer/dashboard" replace />;
   return <Landing />;
 }
@@ -195,6 +196,14 @@ function AppContent() {
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/brand/welcome"
+          element={
+            <BrandRoute>
+              <BrandWelcome />
+            </BrandRoute>
           }
         />
         <Route

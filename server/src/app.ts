@@ -29,6 +29,7 @@ import walletRoutes from './routes/wallet';
 import brandRoutes from './routes/brands';
 import analyticsCampaignHistoryRoutes from './routes/analyticsCampaignHistory';
 import feedbackRoutes from './routes/feedback';
+import instagramOAuthRoutes from './routes/instagramOAuth';
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -107,6 +108,7 @@ app.use('/api/campaigns', campaignWorkflowRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/social', socialStatsRoutes);
+app.use('/api/social', instagramOAuthRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);

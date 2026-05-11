@@ -28,7 +28,7 @@ export default function LoginPage() {
     GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "your-google-client-id.apps.googleusercontent.com";
 
   const redirectAfterLogin = (userRole: string) => {
-    if (userRole === "brand") navigate("/marketplace");
+    if (userRole === "brand") navigate("/brand/welcome");
     else navigate("/influencer/dashboard");
   };
 

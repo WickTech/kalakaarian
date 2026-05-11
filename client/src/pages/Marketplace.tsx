@@ -186,16 +186,28 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
 
       {/* Sticky search + controls bar */}
       <div className="sticky top-16 z-30 bg-obsidian border-b border-white/5 px-4 py-2 space-y-2">
-        {/* Search bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-chalk-faint pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search by name, category, or platform..."
-            className="w-full bg-charcoal/50 border border-white/10 rounded-full pl-9 pr-4 py-2 text-xs text-chalk placeholder:text-chalk-faint focus:outline-none focus:border-gold/50"
-          />
+        {/* Search bar + platform toggle */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-chalk-faint pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Search creators..."
+              className="w-full bg-charcoal/50 border border-white/10 rounded-full pl-9 pr-4 py-2 text-xs text-chalk placeholder:text-chalk-faint focus:outline-none focus:border-gold/50"
+            />
+          </div>
+          <div className="flex rounded-full border border-white/10 overflow-hidden shrink-0">
+            {(["instagram", "youtube"] as const).map((p) => (
+              <button key={p}
+                onClick={() => { setPlatform(platform === p ? "all" : p); setPage(1); }}
+                className={`flex items-center gap-1.5 px-3 py-2 transition-all text-xs ${platform === p ? "bg-white/10 text-chalk" : "text-chalk-dim hover:text-chalk"}`}>
+                {p === "instagram" ? <Instagram className="w-3.5 h-3.5" /> : <Youtube className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">{p === "instagram" ? "Instagram" : "YouTube"}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Controls bar */}
@@ -259,18 +271,6 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
           {/* Creator count */}
           <span className="text-xs text-chalk-dim">{filtered.length} creators</span>
 
-          {/* Platform toggle — right side */}
-          <div className="ml-auto flex rounded-full border border-white/10 overflow-hidden text-sm shrink-0">
-            <button onClick={() => { setPlatform("all"); setPage(1); }}
-              className={`px-4 py-2 transition-all text-xs ${platform === "all" ? "bg-white/10 text-chalk" : "text-chalk-dim"}`}>All</button>
-            {(["instagram", "youtube"] as const).map((p) => (
-              <button key={p} onClick={() => { setPlatform(p); setPage(1); }}
-                className={`flex items-center gap-1.5 px-3 py-2 transition-all text-xs ${platform === p ? "bg-white/10 text-chalk" : "text-chalk-dim"}`}>
-                {p === "instagram" ? <Instagram className="w-3.5 h-3.5" /> : <Youtube className="w-3.5 h-3.5" />}
-                <span className="hidden sm:inline">{p.charAt(0).toUpperCase() + p.slice(1)}</span>
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 

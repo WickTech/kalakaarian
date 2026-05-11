@@ -715,6 +715,18 @@ export const api = {
     return request<SocialStats>(`/api/social/youtube/stats/${channelId}`);
   },
 
+  getInstagramAuthUrl: async (): Promise<{ url: string }> => {
+    return request<{ url: string }>('/api/social/instagram/auth');
+  },
+
+  getInstagramStatus: async (): Promise<{ connected: boolean; expiresAt: string | null; followerCount: number | null }> => {
+    return request<{ connected: boolean; expiresAt: string | null; followerCount: number | null }>('/api/social/instagram/status');
+  },
+
+  disconnectInstagram: async (): Promise<{ success: boolean }> => {
+    return request<{ success: boolean }>('/api/social/instagram/disconnect', { method: 'DELETE' });
+  },
+
   // Feed
   getFeed: async (params?: { page?: number; limit?: number; tier?: string; genre?: string }): Promise<{
     posts: object[];

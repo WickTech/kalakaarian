@@ -7,6 +7,9 @@ interface ProfileHeaderProps {
     handle: string;
     profileImage: string;
     tier: 'gold' | 'silver' | 'regular';
+    influencerTier?: string;
+    avgRating?: number | null;
+    ratingCount?: number;
     city: string;
     socialHandles?: { instagram?: string; youtube?: string };
     isOnline?: boolean;
@@ -20,6 +23,22 @@ const tierStyles = {
   gold: 'bg-gradient-to-r from-yellow-400 to-amber-500 text-yellow-900',
   silver: 'bg-gradient-to-r from-gray-300 to-gray-400 text-gray-800',
   regular: 'bg-secondary text-secondary-foreground',
+};
+
+const getRatingLabel = (r: number | null | undefined) => {
+  if (!r) return 'No Ratings';
+  if (r < 2) return 'Below Average';
+  if (r < 3) return 'Average';
+  if (r < 4) return 'Good';
+  if (r < 4.5) return 'Very Good';
+  return 'Excellent';
+};
+
+const INFLUENCER_TIER_CLASS: Record<string, string> = {
+  nano: 'tier-nano', micro: 'tier-micro', macro: 'tier-macro', celeb: 'tier-celebrity',
+};
+const INFLUENCER_TIER_LABEL: Record<string, string> = {
+  nano: 'Nano', micro: 'Micro', macro: 'Macro', celeb: 'Celebrity',
 };
 
 export function ProfileHeader({ profile, isOwnProfile, onImageUpload, onStatusToggle }: ProfileHeaderProps) {
@@ -79,11 +98,18 @@ export function ProfileHeader({ profile, isOwnProfile, onImageUpload, onStatusTo
 
         {/* Profile Info */}
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-2 flex-wrap mb-2">
             <h1 className="text-2xl font-bold">{profile.name}</h1>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${tierStyles[profile.tier]}`}>
-              {profile.tier === 'gold' ? '★ Gold' : profile.tier === 'silver' ? '◇ Silver' : profile.tier}
-            </span>
+            {profile.influencerTier && INFLUENCER_TIER_CLASS[profile.influencerTier] && (
+              <span className={`px-3 py-1 rounded-full text-xs font-bold ${INFLUENCER_TIER_CLASS[profile.influencerTier]}`}>
+                {INFLUENCER_TIER_LABEL[profile.influencerTier] ?? profile.influencerTier}
+              </span>
+            )}
+            {profile.tier !== 'regular' && (
+              <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${tierStyles[profile.tier]}`}>
+                {profile.tier === 'gold' ? '★ Gold' : '◇ Silver'}
+              </span>
+            )}
           </div>
           <p className="text-muted-foreground mb-3">{profile.handle}</p>
 
@@ -116,6 +142,24 @@ export function ProfileHeader({ profile, isOwnProfile, onImageUpload, onStatusTo
                 {profile.socialHandles.youtube}
               </a>
             )}
+          </div>
+        </div>
+
+        {/* Rating Box */}
+        <div className="flex rounded-xl border border-border overflow-hidden shrink-0 self-start min-w-[180px]">
+          <div className="flex flex-col items-center justify-center gap-1 px-4 py-3 bg-card">
+            <div className="flex gap-0.5">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <span key={s} className={`text-lg ${s <= Math.round(profile.avgRating ?? 0) ? 'text-green-500' : 'text-muted-foreground/30'}`}>★</span>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {profile.avgRating ? profile.avgRating.toFixed(1) : '—'} ({profile.ratingCount ?? 0})
+            </p>
+          </div>
+          <div className="w-px bg-border" />
+          <div className="flex items-center justify-center px-4 py-3 bg-card">
+            <p className="text-sm font-semibold text-foreground text-center">{getRatingLabel(profile.avgRating)}</p>
           </div>
         </div>
 

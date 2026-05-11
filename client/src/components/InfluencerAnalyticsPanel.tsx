@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Star, ShieldCheck, Instagram, Youtube } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Star, ShieldCheck, Instagram, Youtube, Check, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { api, Proposal } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { RecommendedCampaigns } from "./RecommendedCampaigns";
 import { EarningsChart } from "./EarningsChart";
 
@@ -22,7 +24,44 @@ type PlatformTab = "overview" | "instagram" | "youtube";
 
 export function InfluencerAnalyticsPanel({ proposals, stats }: Props) {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [platformTab, setPlatformTab] = useState<PlatformTab>("overview");
+  const [connecting, setConnecting] = useState(false);
+
+  useEffect(() => {
+    const igConnected = searchParams.get('ig_connected');
+    const igError = searchParams.get('ig_error');
+    if (igConnected) {
+      toast({ title: 'Instagram connected!', description: 'Real follower stats are now active.' });
+      queryClient.invalidateQueries({ queryKey: ['instagram-status'] });
+      queryClient.invalidateQueries({ queryKey: ['social-stats-own'] });
+      navigate('/influencer/dashboard?tab=analytics', { replace: true });
+    } else if (igError) {
+      toast({ title: 'Instagram connection failed', description: 'Make sure your account is a Business or Creator account.', variant: 'destructive' });
+      navigate('/influencer/dashboard?tab=analytics', { replace: true });
+    }
+  }, []);
+
+  const { data: igStatus } = useQuery({
+    queryKey: ['instagram-status'],
+    queryFn: () => api.getInstagramStatus(),
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+
+  const handleConnect = async () => {
+    try {
+      setConnecting(true);
+      const { url } = await api.getInstagramAuthUrl();
+      window.location.href = url;
+    } catch {
+      toast({ title: 'Failed to start Instagram connection', variant: 'destructive' });
+      setConnecting(false);
+    }
+  };
 
   const { data: deep } = useQuery({
     queryKey: ["influencer-deep-analytics"],
@@ -106,6 +145,22 @@ export function InfluencerAnalyticsPanel({ proposals, stats }: Props) {
 
       {platformTab === "instagram" && ig && (
         <div className="space-y-4">
+          {igStatus && !igStatus.connected && (
+            <div className="bento-card p-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-chalk">Connect for real stats</p>
+                <p className="text-xs text-chalk-dim">Currently showing estimated data</p>
+              </div>
+              <Button onClick={handleConnect} disabled={connecting} size="sm" className="shrink-0">
+                {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Connect Instagram'}
+              </Button>
+            </div>
+          )}
+          {igStatus?.connected && (
+            <div className="flex items-center gap-1.5 text-xs text-green-400 px-1">
+              <Check className="w-3 h-3" /> Real stats via Instagram OAuth
+            </div>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
               { label: "Followers", value: ig.followers.toLocaleString("en-IN") },

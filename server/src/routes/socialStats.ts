@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { adminClient } from '../config/supabase';
 import { optionalAuth } from '../middleware/auth';
 import { getInstagramStats, getInstagramPosts, getYouTubeStats, getYouTubeVideos } from '../services/socialMediaService';
+import { getInstagramStatsForUser } from '../services/instagramService';
 import { calculateAnalytics } from '../services/analyticsService';
 
 const router = Router();
@@ -10,23 +11,23 @@ router.get('/stats/:userId', optionalAuth, async (req: Request, res: Response) =
   try {
     const { userId } = req.params;
     const { data: profile } = await adminClient.from('influencer_profiles')
-      .select('instagram_handle, youtube_handle').eq('id', userId).single();
+      .select('instagram_handle, youtube_handle, instagram_ig_user_id, instagram_access_token, followers_count')
+      .eq('id', userId).single();
     if (!profile) { res.status(404).json({ message: 'Profile not found' }); return; }
 
-    const { data: ipData } = await adminClient
-      .from('influencer_profiles')
-      .select('followers_count')
-      .eq('id', userId)
-      .single();
+    const igStatsFn = profile.instagram_ig_user_id && profile.instagram_access_token
+      ? getInstagramStatsForUser(profile.instagram_ig_user_id, profile.instagram_access_token)
+          .catch(() => profile.instagram_handle ? getInstagramStats(profile.instagram_handle) : null)
+      : profile.instagram_handle ? getInstagramStats(profile.instagram_handle) : Promise.resolve(null);
 
     const [instagramStats, youtubeStats] = await Promise.all([
-      profile.instagram_handle ? getInstagramStats(profile.instagram_handle) : Promise.resolve(null),
+      igStatsFn,
       profile.youtube_handle ? getYouTubeStats(profile.youtube_handle) : Promise.resolve(null),
     ]);
 
-    // Pin followers to DB value when using mock data (no real token = isMock true)
-    if (instagramStats?.isMock && ipData?.followers_count) {
-      instagramStats.followers = ipData.followers_count;
+    // Pin followers to DB value when using mock data
+    if (instagramStats?.isMock && profile?.followers_count) {
+      instagramStats.followers = profile.followers_count;
     }
 
     res.json({ instagram: instagramStats, youtube: youtubeStats, analytics: calculateAnalytics(instagramStats, youtubeStats) });

@@ -57,6 +57,15 @@ export default function InfluencerProfile() {
   const ig = socialStats?.instagram;
   const displayIg = ig ?? MOCK_IG;
 
+  const displayAnalytics = {
+    engagementRate: analytics?.engagementRate ?? displayIg.engagementRate,
+    avgViews: analytics?.avgViews ?? Math.round(displayIg.followers * 0.15),
+    totalFollowers: analytics?.totalFollowers ?? displayIg.followers,
+    reachEstimate: analytics?.reachEstimate ?? Math.round(displayIg.followers * 2.3),
+    source: analytics?.source,
+    authenticityScore: analytics?.authenticityScore,
+  };
+
   const handleStatusToggle = async (isOnline: boolean) => {
     try { await api.updatePresence(isOnline); }
     catch { toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' }); }
@@ -155,12 +164,12 @@ export default function InfluencerProfile() {
         <div>
           <h2 className="text-lg font-semibold mb-4">Analytics</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <AnalyticsCard title="Engagement Rate" value={`${analytics?.engagementRate || 0}%`} icon="er"
-              subtitle={analytics?.source ? `Based on ${analytics.source}` : undefined} />
-            <AnalyticsCard title="Avg Views" value={(analytics?.avgViews || 0).toLocaleString()} icon="views" />
-            <AnalyticsCard title="Total Followers" value={(analytics?.totalFollowers || 0).toLocaleString()} icon="fake" />
-            <AnalyticsCard title="Reach Estimate" value={(analytics?.reachEstimate || 0).toLocaleString()} icon="views"
-              subtitle={analytics?.authenticityScore ? `Authenticity: ${analytics.authenticityScore}%` : undefined} />
+            <AnalyticsCard title="Engagement Rate" value={`${displayAnalytics.engagementRate}%`} icon="er"
+              subtitle={displayAnalytics.source ? `Based on ${displayAnalytics.source}` : undefined} />
+            <AnalyticsCard title="Avg Views" value={displayAnalytics.avgViews.toLocaleString()} icon="views" />
+            <AnalyticsCard title="Total Followers" value={displayAnalytics.totalFollowers.toLocaleString()} icon="fake" />
+            <AnalyticsCard title="Reach Estimate" value={displayAnalytics.reachEstimate.toLocaleString()} icon="views"
+              subtitle={displayAnalytics.authenticityScore ? `Authenticity: ${displayAnalytics.authenticityScore}%` : undefined} />
           </div>
         </div>
 

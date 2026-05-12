@@ -15,6 +15,7 @@ import { BadgeStrip } from '@/components/BadgeStrip';
 import { SimilarProfiles } from '@/components/SimilarProfiles';
 import { CelebCallbackModal } from '@/components/CelebCallbackModal';
 import { openRazorpayCheckout } from '@/lib/razorpay';
+import { PerformanceBarChart, GenderPieChart } from '@/components/SocialMediaCharts';
 
 export default function InfluencerProfile() {
   const { id } = useParams<{ id: string }>();
@@ -51,6 +52,10 @@ export default function InfluencerProfile() {
   });
 
   const analytics = (socialStats as SocialStats & { analytics?: { engagementRate?: number; avgViews?: number; totalFollowers?: number; reachEstimate?: number; source?: string; authenticityScore?: number } })?.analytics || null;
+
+  const MOCK_IG = { followers: 18_400, following: 620, posts: 94, engagementRate: 4.8 };
+  const ig = socialStats?.instagram;
+  const displayIg = ig ?? MOCK_IG;
 
   const handleStatusToggle = async (isOnline: boolean) => {
     try { await api.updatePresence(isOnline); }
@@ -175,6 +180,12 @@ export default function InfluencerProfile() {
             isOwnProfile={isOwnProfile}
             onConnect={handleSocialConnect}
           />
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Performance</h2>
+          <PerformanceBarChart ig={displayIg} isMock={!ig} />
+          <GenderPieChart />
         </div>
 
         {isOwnProfile && (

@@ -12,7 +12,7 @@ type Tab = "proposals" | "analytics" | "rewards" | "wallet" | "upload" | "member
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "proposals", label: "📋 Proposals" },
-  { key: "analytics", label: "📈 Analytics" },
+  { key: "analytics", label: "📈 Creator Analytics" },
   { key: "rewards", label: "🏆 Rewards" },
   { key: "wallet", label: "💰 Wallet" },
   { key: "upload", label: "🎥 Upload" },

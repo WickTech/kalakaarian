@@ -8,6 +8,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { RecommendedCampaigns } from "./RecommendedCampaigns";
 import { EarningsChart } from "./EarningsChart";
+import { PerformanceBarChart, GenderPieChart } from "./SocialMediaCharts";
+import { BrandCollabHistory } from "./BrandCollabHistory";
 
 const STATUS_STYLE: Record<string, string> = {
   submitted: "text-gold border-gold/30",
@@ -161,7 +163,7 @@ export function InfluencerAnalyticsPanel({ proposals, stats }: Props) {
               <Check className="w-3 h-3" /> Real stats via Instagram OAuth
             </div>
           )}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: "Followers", value: ig.followers.toLocaleString("en-IN") },
               { label: "Following", value: ig.following.toLocaleString("en-IN") },
@@ -174,6 +176,8 @@ export function InfluencerAnalyticsPanel({ proposals, stats }: Props) {
               </div>
             ))}
           </div>
+          <PerformanceBarChart ig={ig} />
+          <GenderPieChart />
         </div>
       )}
 
@@ -194,8 +198,10 @@ export function InfluencerAnalyticsPanel({ proposals, stats }: Props) {
         </div>
       )}
 
+      <BrandCollabHistory proposals={proposals} />
+
       <div className="bento-card overflow-hidden">
-        <div className="p-4 border-b border-white/5"><h2 className="font-display font-bold text-chalk text-sm">Collaborations</h2></div>
+        <div className="p-4 border-b border-white/5"><h2 className="font-display font-bold text-chalk text-sm">All Proposals</h2></div>
         {proposals.length === 0 ? (
           <div className="p-8 text-center text-chalk-dim text-sm">
             No proposals yet. <Link to="/campaigns" className="text-gold hover:underline">Browse campaigns →</Link>

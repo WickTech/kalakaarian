@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
-import { Plus, Search, FileText, Users, LogOut, BarChart2, Upload } from "lucide-react";
+import { Plus, Search, FileText, Users, LogOut, BarChart2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { api, Campaign, Proposal } from "@/lib/api";
@@ -10,6 +10,7 @@ import { RecommendedCreators } from "@/components/RecommendedCreators";
 import { BrandAnalyticsPanel } from "@/components/BrandAnalyticsPanel";
 import { BrandRoomPanel } from "@/components/BrandRoomPanel";
 import { BrandCampaignHistoryPanel } from "@/components/BrandCampaignHistoryPanel";
+import { RunningCampaignTracker } from "@/components/RunningCampaignTracker";
 
 type Tab = "overview" | "campaigns" | "analytics" | "room" | "history";
 
@@ -54,9 +55,7 @@ export default function BrandDashboard() {
 
   const statCards = [
     { label: "Active Campaigns", value: campaigns.filter((c) => c.status === "open").length, icon: "🚀" },
-    { label: "Creators Hired", value: analytics?.proposals?.accepted || 0, icon: "👥" },
     { label: "Total Spent", value: `₹${(analytics?.spend || 0).toLocaleString("en-IN")}`, icon: "💰" },
-    { label: "Proposals", value: analytics?.proposals?.total || 0, icon: "📊" },
   ];
 
   return (
@@ -64,18 +63,18 @@ export default function BrandDashboard() {
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-3xl font-bold text-chalk">Brand Dashboard</h1>
-            <p className="text-chalk-dim text-sm mt-1">Welcome back, {user?.brandName || user?.name || "Brand"}</p>
+            <h1 className="font-display text-3xl font-bold text-chalk">{user?.brandName || user?.name || "My Brand"}</h1>
+            <p className="text-chalk-dim text-sm mt-1">Welcome, {user?.name || "Team"}</p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Link to="/marketplace" className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk text-sm transition-colors">
-              <Search className="w-4 h-4" /> Create Campaign
-            </Link>
             <Link to="/brand/create-campaign" className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk text-sm transition-colors">
-              <Upload className="w-4 h-4" /> Upload Brief
+              <Plus className="w-4 h-4" /> New Campaign
+            </Link>
+            <Link to="/marketplace" className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk text-sm transition-colors">
+              <Search className="w-4 h-4" /> Find Creators
             </Link>
             <button onClick={() => setTab("campaigns")} className="purple-pill flex items-center gap-2 px-4 py-2 text-sm">
-              <BarChart2 className="w-4 h-4" /> Campaign Tracker
+              <BarChart2 className="w-4 h-4" /> Campaigns
             </button>
             <button onClick={() => { logout(); navigate("/"); }}
               className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm transition-colors">
@@ -101,36 +100,18 @@ export default function BrandDashboard() {
           <>
             {tab === "overview" && (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   {statCards.map(({ label, value, icon }) => (
-                    <div key={label} className="bento-card p-4">
+                    <div key={label} className="bento-card p-5">
                       <div className="text-2xl mb-2">{icon}</div>
-                      <p className="result-numeral text-2xl">{value}</p>
+                      <p className="result-numeral text-3xl">{value}</p>
                       <p className="text-xs text-chalk-dim mt-1">{label}</p>
                     </div>
                   ))}
                 </div>
 
+                <RunningCampaignTracker campaigns={campaigns} />
                 <RecommendedCreators />
-                {campaigns.filter((c) => c.status !== "archived").length > 0 && (
-                  <div className="bento-card p-5">
-                    <h2 className="font-display font-bold text-chalk mb-4">Running Campaigns</h2>
-                    {campaigns.filter((c) => c.status !== "archived").slice(0, 3).map((c) => (
-                      <div key={c.id} className="flex items-center justify-between mb-3 last:mb-0">
-                        <div>
-                          <p className="text-sm font-medium text-chalk">{c.title}</p>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded border ${STATUS_STYLE[c.status] || ""}`}>
-                            {c.status}
-                          </span>
-                        </div>
-                        <Link to={`/brand/campaigns/${c.id}/track`}
-                          className="flex items-center gap-1 text-xs text-gold hover:underline">
-                          <BarChart2 className="w-3 h-3" /> Track →
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             )}
 

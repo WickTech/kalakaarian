@@ -80,7 +80,8 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
     followers: inf.followerCount || 0, activeFollowers: 0, fakeFollowers: 0,
     avgViews: 0, avgLikes: 0,
     genderSplit: { male: 45, female: 52, other: 3 },
-    price: null, isOnline: inf.isOnline, lastSeenAt: inf.lastSeenAt,
+    price: inf.pricing ? (Math.min(...Object.values(inf.pricing).filter(v => v > 0)) || null) : null,
+    isOnline: inf.isOnline, lastSeenAt: inf.lastSeenAt,
     avgRating: inf.avgRating ?? null, ratingCount: inf.ratingCount ?? 0,
   });
 

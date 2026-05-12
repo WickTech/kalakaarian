@@ -80,6 +80,7 @@ export interface InfluencerProfile {
   youtubeVideos?: Array<{ url: string; thumbnail?: string; title?: string }>;
   avgRating?: number | null;
   ratingCount?: number;
+  pricing?: Record<string, number>;
 }
 
 export interface UpdateInfluencerProfileData {

@@ -19,6 +19,7 @@ export interface Influencer {
   lastSeenAt?: string;
   avgRating?: number | null;
   ratingCount?: number;
+  engagementRate?: number;
 }
 
 export interface CartItem {

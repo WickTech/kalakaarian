@@ -33,11 +33,14 @@ const ttStyle = {
   fontSize: 11,
 };
 
-export function PerformanceBarChart({ ig }: { ig: IgStats }) {
+export function PerformanceBarChart({ ig, isMock }: { ig: IgStats; isMock?: boolean }) {
   const data = buildPerfData(ig);
   return (
     <div className="bento-card p-4">
-      <p className="text-xs font-semibold text-chalk">Reel & Post Performance</p>
+      <div className="flex items-center justify-between mb-0.5">
+        <p className="text-xs font-semibold text-chalk">Reel & Post Performance</p>
+        {isMock && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-white/5 text-chalk-faint">Sample data</span>}
+      </div>
       <p className="text-[10px] text-chalk-faint mb-3 mt-0.5">Estimated from engagement data</p>
       <ResponsiveContainer width="100%" height={150}>
         <BarChart data={data} barCategoryGap="22%" margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>

@@ -81,6 +81,10 @@ export function InfluencerAnalyticsPanel({ proposals, stats }: Props) {
   const ig = socialStats?.instagram;
   const yt = socialStats?.youtube;
 
+  // Fallback mock stats so charts always render even before real data loads
+  const MOCK_IG = { followers: 18_400, following: 620, posts: 94, engagementRate: 4.8 };
+  const displayIg = ig ?? MOCK_IG;
+
   return (
     <div className="space-y-4">
       {/* Platform tabs */}
@@ -141,6 +145,11 @@ export function InfluencerAnalyticsPanel({ proposals, stats }: Props) {
             <p className="text-xs text-chalk-dim mb-3">Monthly Earnings (last 6 months)</p>
             <EarningsChart />
           </div>
+
+          {/* Charts always visible — real ig if available, mock otherwise */}
+          <PerformanceBarChart ig={displayIg} isMock={!ig} />
+          <GenderPieChart />
+
           <RecommendedCampaigns />
         </>
       )}

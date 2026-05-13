@@ -132,7 +132,18 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 ### Social Stats
 - Instagram stats: followers, ER, recent posts (live API or mock fallback)
 - YouTube stats: subscribers, views, recent videos (live API or mock fallback)
-- `GET /api/social/stats/:userId` — combined stats endpoint
+- `GET /api/social/stats/:userId` — combined stats endpoint (reads from `creator_platform_metrics` when available, falls back to mock)
+
+### Creator Platform Integration (Instagram + YouTube OAuth)
+- **Unified schema** (`creator_platform_accounts`, `creator_platform_metrics`, `creator_platform_metric_history`) — one row per creator-platform connection; supports IG + YT today, extensible to TikTok/X
+- **AES-256-GCM token encryption** at rest — access + refresh tokens encrypted with `TOKEN_ENCRYPTION_KEY` env var; never returned in any API response
+- **Instagram OAuth** — Facebook Login + Graph API v20.0, scopes: `instagram_basic, pages_show_list, instagram_manage_insights, pages_read_engagement`. Long-lived 60-day page token. Reach, impressions, audience gender-age + country, engagement rate, top 5 media
+- **YouTube OAuth** — Google OAuth2 with auto-refresh; scopes: `youtube.readonly, yt-analytics.readonly`. Channel stats + YT Analytics API (views, demographics, country breakdown). Access token auto-refreshes when <5min remaining
+- **Authenticity Score (0-100)** — free heuristic combining reach rate (40%), engagement (30%), audience country diversity (20%), demographic data completeness (10%). Shown as "Audience Authenticity" badge with green/amber/red tiers
+- **Sync pipeline** — manual `POST /api/platforms/:platform/sync` button (rate-limited 10/hr/user) + daily Supabase `pg_cron` job at 03:00 UTC hitting `/api/internal/cron/sync-platforms` (header-secret guarded, returns 404 on bad secret to avoid endpoint signaling)
+- **Daily history snapshots** — `creator_platform_metric_history` captures follower count + engagement + reach per day for trend charts
+- **Frontend** — `PlatformConnectCard` (Connect / Refresh / Disconnect) on Instagram + YouTube tabs of `/influencer/dashboard?tab=analytics`. Real metric cards, audience demographics (gender donut + top 6 countries bar), 30/90-day follower trend line, top 5 content thumbnails, authenticity badge
+- **API**: `GET /api/platforms`, `GET /api/platforms/:platform/metrics`, `GET /api/platforms/:platform/auth`, `GET /api/platforms/:platform/callback`, `POST /api/platforms/:platform/sync`, `DELETE /api/platforms/:platform`
 
 ### Membership
 - Silver and Gold tiers with Razorpay payment flow
@@ -283,11 +294,20 @@ cp .env.example .env
 | `RAZORPAY_WEBHOOK_SECRET` | Razorpay → Webhooks → your endpoint secret | ✅ (payments) |
 | `VITE_RAZORPAY_KEY_ID` | Same as `RAZORPAY_KEY_ID` | ✅ |
 | `RESEND_API_KEY` | resend.com | ✅ (email) |
+| `TOKEN_ENCRYPTION_KEY` | `openssl rand -base64 32` (32-byte base64) | ✅ (platform OAuth) |
+| `CRON_SECRET` | `openssl rand -hex 32` — used by pg_cron + internal jobs | ✅ (sync cron) |
+| `INSTAGRAM_APP_ID` | Meta for Developers → app dashboard | ✅ (IG OAuth) |
+| `INSTAGRAM_APP_SECRET` | Meta for Developers → app dashboard | ✅ (IG OAuth) |
+| `INSTAGRAM_CALLBACK_URL` | `https://<server>/api/platforms/instagram/callback` | ✅ (IG OAuth) |
+| `YOUTUBE_OAUTH_CLIENT_ID` | Google Cloud Console → OAuth credentials | ✅ (YT OAuth) |
+| `YOUTUBE_OAUTH_CLIENT_SECRET` | Google Cloud Console → OAuth credentials | ✅ (YT OAuth) |
+| `YOUTUBE_OAUTH_CALLBACK_URL` | `https://<server>/api/platforms/youtube/callback` | ✅ (YT OAuth) |
+| `FRONTEND_URL` | `https://kalakaarian.com` (used for OAuth post-callback redirect) | ✅ (OAuth) |
 | `SENTRY_DSN` | sentry.io | Optional |
 | `WHATSAPP_PHONE_NUMBER_ID` | Meta Business → WhatsApp | Optional |
 | `WHATSAPP_ACCESS_TOKEN` | Meta Business → WhatsApp | Optional |
-| `INSTAGRAM_ACCESS_TOKEN` | Meta for Developers | Optional |
-| `YOUTUBE_API_KEY` | Google Cloud Console | Optional |
+| `INSTAGRAM_ACCESS_TOKEN` | Meta for Developers (legacy app-level token) | Optional |
+| `YOUTUBE_API_KEY` | Google Cloud Console (legacy public read fallback) | Optional |
 
 > Server fail-fasts at boot if `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` are missing.
 
@@ -306,7 +326,19 @@ supabase/migrations/015_workflow_stages.sql
 supabase/migrations/016_cart_orders.sql
 supabase/migrations/017_ratings.sql
 supabase/migrations/018_withdrawal_requests.sql
+supabase/migrations/019_app_ratings.sql
+supabase/migrations/020_instagram_oauth.sql          # superseded by 021 — apply only if rolling back
+supabase/migrations/021_creator_platforms.sql        # unified platform schema (IG + YT)
+supabase/migrations/023_pgcron_sync_platforms.sql    # daily analytics sync (edit <SERVER_URL> + <CRON_SECRET> first)
 ```
+
+> Migration 022 (drop legacy IG columns) is intentionally skipped — run it manually after `021` has been on prod for ~1 week and code no longer references the old `influencer_profiles.instagram_*` columns.
+
+> Before applying `023`, enable required Postgres extensions in the Supabase dashboard:
+> ```sql
+> CREATE EXTENSION IF NOT EXISTS pg_cron;
+> CREATE EXTENSION IF NOT EXISTS pg_net;
+> ```
 
 ### 4. Supabase Auth
 
@@ -370,6 +402,10 @@ See [docs/API.md](./docs/API.md) for the full endpoint list.
 - Tier enum: `nano | micro | macro | celeb` — no `mid`, no `mega`
 - `PUT /api/auth/password` — verifies `currentPassword` via `signInWithPassword` before updating; requires auth JWT; 400 on wrong current password
 - `PUT /api/auth/profile` (brand) — now also accepts `phone` (writes to `profiles.phone`) and `email` (writes to `profiles.email` + syncs Supabase Auth)
+- **Platform tokens never leak** — `creator_platform_accounts.access_token_encrypted` is AES-256-GCM encrypted; `sanitize()` in `platformAccountService.ts` strips token columns from every read; no API response includes raw tokens
+- **OAuth state CSRF** — both IG + YT use HMAC-SHA256 signed state (`buildOAuthState` / `verifyOAuthState`) with 15-min expiry and `crypto.timingSafeEqual` comparison
+- **Cron endpoint** — `POST /api/internal/cron/sync-platforms` returns 404 (not 401) on missing/wrong `X-Cron-Secret` to avoid signaling endpoint existence to unauthenticated probes
+- **Token refresh** — YouTube `syncYouTube()` auto-refreshes access token via stored refresh_token when <5min remaining; Instagram (page tokens never expire) flagged with `last_sync_status='token_expired'` when 60-day reconnect is needed, UI shows Reconnect CTA
 
 ---
 

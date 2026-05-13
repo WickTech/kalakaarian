@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import { adminClient } from '../config/supabase';
+import { listAllActiveForSync } from '../services/platformAccountService';
+import { syncInstagram } from '../services/instagramSyncService';
+import { syncYouTube } from '../services/youtubeSyncService';
 
 const AUTO_APPROVE_HOURS = Number(process.env.WORKFLOW_AUTO_APPROVE_HOURS) || 72;
 
@@ -55,4 +58,40 @@ export async function autoApproveExpired(req: Request, res: Response): Promise<v
     return;
   }
   res.json({ ok: true, processed });
+}
+
+export async function syncAllPlatforms(_req: Request, res: Response): Promise<void> {
+  const runId = (
+    await adminClient.from('cron_runs').insert({ job: 'sync_platforms' }).select('id').single()
+  ).data?.id as string | undefined;
+
+  let processed = 0;
+  let failed = 0;
+
+  try {
+    const accounts = await listAllActiveForSync();
+    for (const account of accounts) {
+      try {
+        if (account.platform === 'instagram') await syncInstagram(account);
+        else if (account.platform === 'youtube') await syncYouTube(account);
+        processed++;
+      } catch (err) {
+        failed++;
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`sync_platforms failed for ${account.id} (${account.platform}):`, msg);
+      }
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (runId) {
+      await adminClient.from('cron_runs').update({ finished_at: new Date().toISOString(), processed, error: msg }).eq('id', runId);
+    }
+    res.status(500).json({ ok: false, error: msg });
+    return;
+  }
+
+  if (runId) {
+    await adminClient.from('cron_runs').update({ finished_at: new Date().toISOString(), processed, error: failed > 0 ? `${failed} accounts failed` : null }).eq('id', runId);
+  }
+  res.json({ ok: true, processed, failed });
 }

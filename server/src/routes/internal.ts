@@ -1,17 +1,19 @@
 import { Router, Request, Response } from 'express';
-import { autoApproveExpired } from '../controllers/cronController';
+import { autoApproveExpired, syncAllPlatforms } from '../controllers/cronController';
 
 const router = Router();
 
 function cronAuth(req: Request, res: Response, next: () => void): void {
   const secret = process.env.CRON_SECRET;
   if (!secret || req.header('x-cron-secret') !== secret) {
-    res.status(401).json({ message: 'Unauthorized' });
+    res.status(404).json({ message: 'Not found' });
     return;
   }
   next();
 }
 
 router.post('/cron/auto-approve', cronAuth, autoApproveExpired);
+router.post('/cron/sync-platforms', cronAuth, syncAllPlatforms);
+router.get('/cron/sync-platforms', cronAuth, syncAllPlatforms);
 
 export default router;

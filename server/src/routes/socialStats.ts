@@ -1,41 +1,88 @@
 import { Router, Request, Response } from 'express';
 import { adminClient } from '../config/supabase';
 import { optionalAuth } from '../middleware/auth';
-import { getInstagramStats, getInstagramPosts, getYouTubeStats, getYouTubeVideos } from '../services/socialMediaService';
-import { getInstagramStatsForUser } from '../services/instagramService';
+import {
+  getInstagramStats, getInstagramPosts, getYouTubeStats, getYouTubeVideos,
+  InstagramStats, YouTubeStats,
+} from '../services/socialMediaService';
 import { calculateAnalytics } from '../services/analyticsService';
+import { listForUser } from '../services/platformAccountService';
+import { getMetrics } from '../services/platformMetricsService';
 
 const router = Router();
 
 router.get('/stats/:userId', optionalAuth, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { data: profile } = await adminClient.from('influencer_profiles')
-      .select('instagram_handle, youtube_handle, instagram_ig_user_id, instagram_access_token, followers_count')
-      .eq('id', userId).single();
+    const { data: profile } = await adminClient
+      .from('influencer_profiles')
+      .select('instagram_handle, youtube_handle, followers_count')
+      .eq('id', userId)
+      .single();
     if (!profile) { res.status(404).json({ message: 'Profile not found' }); return; }
 
-    const igStatsFn = profile.instagram_ig_user_id && profile.instagram_access_token
-      ? getInstagramStatsForUser(profile.instagram_ig_user_id, profile.instagram_access_token)
-          .catch(() => profile.instagram_handle ? getInstagramStats(profile.instagram_handle) : null)
-      : profile.instagram_handle ? getInstagramStats(profile.instagram_handle) : Promise.resolve(null);
+    const accounts = await listForUser(userId);
+    const igAcc = accounts.find((a) => a.platform === 'instagram');
+    const ytAcc = accounts.find((a) => a.platform === 'youtube');
 
     const [instagramStats, youtubeStats] = await Promise.all([
-      igStatsFn,
-      profile.youtube_handle ? getYouTubeStats(profile.youtube_handle) : Promise.resolve(null),
+      buildIgStats(igAcc?.id, igAcc?.platform_username ?? profile.instagram_handle, profile.followers_count),
+      buildYtStats(ytAcc?.id, ytAcc?.platform_username ?? profile.youtube_handle),
     ]);
 
-    // Pin followers to DB value when using mock data
-    if (instagramStats?.isMock && profile?.followers_count) {
-      instagramStats.followers = profile.followers_count;
-    }
-
-    res.json({ instagram: instagramStats, youtube: youtubeStats, analytics: calculateAnalytics(instagramStats, youtubeStats) });
+    res.json({
+      instagram: instagramStats,
+      youtube: youtubeStats,
+      analytics: calculateAnalytics(instagramStats, youtubeStats),
+    });
   } catch (error) {
     console.error('Social stats error:', error);
     res.status(500).json({ message: 'Error fetching social stats' });
   }
 });
+
+async function buildIgStats(accountId: string | undefined, handle: string | null, fallbackFollowers: number | null): Promise<InstagramStats | null> {
+  if (accountId) {
+    const m = await getMetrics(accountId);
+    if (m) {
+      const followers = m.followers ?? 0;
+      return {
+        handle: handle ?? '',
+        followers,
+        following: m.following ?? 0,
+        posts: m.posts_count ?? 0,
+        avgLikes: m.avg_likes ?? 0,
+        avgComments: m.avg_comments ?? 0,
+        engagementRate: (m.engagement_rate ?? 0) / 100,
+        isMock: false,
+      };
+    }
+  }
+  if (!handle) return null;
+  const mock = await getInstagramStats(handle);
+  if (mock.isMock && fallbackFollowers) mock.followers = fallbackFollowers;
+  return mock;
+}
+
+async function buildYtStats(accountId: string | undefined, handle: string | null): Promise<YouTubeStats | null> {
+  if (accountId) {
+    const m = await getMetrics(accountId);
+    if (m) {
+      const subs = m.followers ?? 0;
+      return {
+        handle: handle ?? '',
+        channelId: handle ?? '',
+        subscribers: subs,
+        videos: m.posts_count ?? 0,
+        totalViews: 0,
+        avgViews: 0,
+        isMock: false,
+      };
+    }
+  }
+  if (!handle) return null;
+  return await getYouTubeStats(handle);
+}
 
 router.get('/instagram/:handle/posts', async (req: Request, res: Response) => {
   try {

@@ -12,6 +12,55 @@ export interface User {
   isAdmin?: boolean;
 }
 
+export type PlatformKind = 'instagram' | 'youtube';
+
+export interface ConnectedPlatform {
+  connected: boolean;
+  username?: string | null;
+  profileUrl?: string | null;
+  tokenExpiresAt?: string | null;
+  lastSyncedAt?: string | null;
+  lastSyncStatus?: 'ok' | 'token_expired' | 'failed' | null;
+}
+
+export type ConnectedPlatformsMap = Record<PlatformKind, ConnectedPlatform>;
+
+export interface PlatformMetrics {
+  account_id: string;
+  followers: number | null;
+  following: number | null;
+  posts_count: number | null;
+  reach_28d: number | null;
+  impressions_28d: number | null;
+  avg_likes: number | null;
+  avg_comments: number | null;
+  engagement_rate: number | null;
+  audience_gender_age: Record<string, number> | null;
+  audience_country: Record<string, number> | null;
+  top_media: Array<{ id: string; url: string | null; thumbnail: string | null; title?: string | null; likes: number; comments: number; views?: number; timestamp: string | null }> | null;
+  authenticity_score: number | null;
+  fetched_at: string;
+}
+
+export interface PlatformHistoryPoint {
+  captured_at: string;
+  followers: number | null;
+  engagement_rate: number | null;
+  reach_28d: number | null;
+}
+
+export interface PlatformMetricsResponse {
+  connected: boolean;
+  account?: {
+    username: string | null;
+    profileUrl: string | null;
+    lastSyncedAt: string | null;
+    lastSyncStatus: string | null;
+  };
+  metrics: PlatformMetrics | null;
+  history: PlatformHistoryPoint[];
+}
+
 export interface BrandProfile {
   companyName: string;
   contactPerson?: string;
@@ -728,16 +777,25 @@ export const api = {
     return request<SocialStats>(`/api/social/youtube/stats/${channelId}`);
   },
 
-  getInstagramAuthUrl: async (): Promise<{ url: string }> => {
-    return request<{ url: string }>('/api/social/instagram/auth');
+  // Unified creator platform OAuth + analytics
+  getConnectedPlatforms: async (): Promise<ConnectedPlatformsMap> => {
+    return request<ConnectedPlatformsMap>('/api/platforms');
   },
 
-  getInstagramStatus: async (): Promise<{ connected: boolean; expiresAt: string | null; followerCount: number | null }> => {
-    return request<{ connected: boolean; expiresAt: string | null; followerCount: number | null }>('/api/social/instagram/status');
+  getPlatformAuthUrl: async (platform: PlatformKind): Promise<{ url: string }> => {
+    return request<{ url: string }>(`/api/platforms/${platform}/auth`);
   },
 
-  disconnectInstagram: async (): Promise<{ success: boolean }> => {
-    return request<{ success: boolean }>('/api/social/instagram/disconnect', { method: 'DELETE' });
+  getPlatformMetrics: async (platform: PlatformKind): Promise<PlatformMetricsResponse> => {
+    return request<PlatformMetricsResponse>(`/api/platforms/${platform}/metrics`);
+  },
+
+  syncPlatform: async (platform: PlatformKind): Promise<{ ok: boolean }> => {
+    return request<{ ok: boolean }>(`/api/platforms/${platform}/sync`, { method: 'POST' });
+  },
+
+  disconnectPlatform: async (platform: PlatformKind): Promise<{ ok: boolean }> => {
+    return request<{ ok: boolean }>(`/api/platforms/${platform}`, { method: 'DELETE' });
   },
 
   // Feed

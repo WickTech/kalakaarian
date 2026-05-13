@@ -37,9 +37,8 @@ export default function EditBrandProfile() {
       setEmail(user.email || profile.email || "");
       setPhone(user.phone || profile.phone || "");
       setIndustry(profile.industry || "");
-      if ((profile as any).logo_url || profile.logo) {
-        setAvatarPreview((profile as any).logo_url || profile.logo);
-      }
+      const logoUrl = (profile as { logo_url?: string }).logo_url || profile.logo;
+      if (logoUrl) setAvatarPreview(logoUrl);
     }).catch(() => toast({ title: "Failed to load profile", variant: "destructive" }))
       .finally(() => setLoading(false));
   }, [toast]);
@@ -81,8 +80,9 @@ export default function EditBrandProfile() {
       await api.changePassword(pw.current, pw.next);
       toast({ title: "Password updated" });
       setPw({ current: "", next: "", confirm: "" });
-    } catch (err: any) {
-      toast({ title: err?.message || "Password update failed", variant: "destructive" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Password update failed";
+      toast({ title: msg, variant: "destructive" });
     } finally {
       setPwSaving(false);
     }

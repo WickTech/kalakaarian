@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Star, ShieldCheck, Instagram, Youtube, Check, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Star, ShieldCheck, Instagram, Youtube } from "lucide-react";
 import { api, Proposal } from "@/lib/api";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useConnectedPlatforms } from "@/hooks/useConnectedPlatforms";
 import { RecommendedCampaigns } from "./RecommendedCampaigns";
 import { EarningsChart } from "./EarningsChart";
-import { PerformanceBarChart, GenderPieChart } from "./SocialMediaCharts";
 import { BrandCollabHistory } from "./BrandCollabHistory";
+import { PlatformAnalyticsTab } from "./PlatformAnalyticsTab";
 
 const STATUS_STYLE: Record<string, string> = {
   submitted: "text-gold border-gold/30",
@@ -25,45 +24,30 @@ interface Props {
 type PlatformTab = "overview" | "instagram" | "youtube";
 
 export function InfluencerAnalyticsPanel({ proposals, stats }: Props) {
-  const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const [platformTab, setPlatformTab] = useState<PlatformTab>("overview");
-  const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
-    const igConnected = searchParams.get('ig_connected');
-    const igError = searchParams.get('ig_error');
-    if (igConnected) {
-      toast({ title: 'Instagram connected!', description: 'Real follower stats are now active.' });
-      queryClient.invalidateQueries({ queryKey: ['instagram-status'] });
-      queryClient.invalidateQueries({ queryKey: ['social-stats-own'] });
-      navigate('/influencer/dashboard?tab=analytics', { replace: true });
-    } else if (igError) {
-      toast({ title: 'Instagram connection failed', description: 'Make sure your account is a Business or Creator account.', variant: 'destructive' });
+    const ig = searchParams.get('ig_connected');
+    const yt = searchParams.get('yt_connected');
+    const igErr = searchParams.get('ig_error');
+    const ytErr = searchParams.get('yt_error');
+    if (ig || yt) {
+      toast({ title: `${ig ? 'Instagram' : 'YouTube'} connected!`, description: 'Real audience analytics are now active.' });
+      setPlatformTab(ig ? 'instagram' : 'youtube');
+    } else if (igErr || ytErr) {
+      toast({ title: `${igErr ? 'Instagram' : 'YouTube'} connection failed`, description: 'Make sure you have the right account type and try again.', variant: 'destructive' });
+    }
+    if (ig || yt || igErr || ytErr) {
+      queryClient.invalidateQueries({ queryKey: ['connected-platforms'] });
       navigate('/influencer/dashboard?tab=analytics', { replace: true });
     }
   }, []);
 
-  const { data: igStatus } = useQuery({
-    queryKey: ['instagram-status'],
-    queryFn: () => api.getInstagramStatus(),
-    enabled: !!user?.id,
-    staleTime: 60_000,
-  });
-
-  const handleConnect = async () => {
-    try {
-      setConnecting(true);
-      const { url } = await api.getInstagramAuthUrl();
-      window.location.href = url;
-    } catch {
-      toast({ title: 'Failed to start Instagram connection', variant: 'destructive' });
-      setConnecting(false);
-    }
-  };
+  const { data: platforms } = useConnectedPlatforms();
 
   const { data: deep } = useQuery({
     queryKey: ["influencer-deep-analytics"],
@@ -71,31 +55,21 @@ export function InfluencerAnalyticsPanel({ proposals, stats }: Props) {
     staleTime: 60_000,
   });
 
-  const { data: socialStats } = useQuery({
-    queryKey: ["social-stats-own", user?.id],
-    queryFn: () => api.getSocialStats(user!.id),
-    enabled: !!user?.id,
-    staleTime: 5 * 60_000,
-  });
-
-  const ig = socialStats?.instagram;
-  const yt = socialStats?.youtube;
-
-  // Fallback mock stats so charts always render even before real data loads
-  const MOCK_IG = { followers: 18_400, following: 620, posts: 94, engagementRate: 4.8 };
-  const displayIg = ig ?? MOCK_IG;
-
   return (
     <div className="space-y-4">
-      {/* Platform tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {([
           { key: "overview", label: "Overview" },
-          { key: "instagram", label: "Instagram", icon: Instagram, hidden: !ig },
-          { key: "youtube", label: "YouTube", icon: Youtube, hidden: !yt },
-        ] as const).filter(t => !('hidden' in t && t.hidden)).map(({ key, label, icon: Icon }) => (
-          <button key={key} onClick={() => setPlatformTab(key as PlatformTab)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all ${platformTab === key ? "bg-purple-600 text-white" : "border border-white/10 text-chalk-dim hover:text-chalk"}`}>
+          { key: "instagram", label: "Instagram", icon: Instagram },
+          { key: "youtube", label: "YouTube", icon: Youtube },
+        ] as const).map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setPlatformTab(key as PlatformTab)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all ${
+              platformTab === key ? "bg-purple-600 text-white" : "border border-white/10 text-chalk-dim hover:text-chalk"
+            }`}
+          >
             {Icon && <Icon className="w-3 h-3" />}
             {label}
           </button>
@@ -146,66 +120,12 @@ export function InfluencerAnalyticsPanel({ proposals, stats }: Props) {
             <EarningsChart />
           </div>
 
-          {/* Charts always visible — real ig if available, mock otherwise */}
-          <PerformanceBarChart ig={displayIg} isMock={!ig} />
-          <GenderPieChart />
-
           <RecommendedCampaigns />
         </>
       )}
 
-      {platformTab === "instagram" && ig && (
-        <div className="space-y-4">
-          {igStatus && !igStatus.connected && (
-            <div className="bento-card p-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-chalk">Connect for real stats</p>
-                <p className="text-xs text-chalk-dim">Currently showing estimated data</p>
-              </div>
-              <Button onClick={handleConnect} disabled={connecting} size="sm" className="shrink-0">
-                {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Connect Instagram'}
-              </Button>
-            </div>
-          )}
-          {igStatus?.connected && (
-            <div className="flex items-center gap-1.5 text-xs text-green-400 px-1">
-              <Check className="w-3 h-3" /> Real stats via Instagram OAuth
-            </div>
-          )}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: "Followers", value: ig.followers.toLocaleString("en-IN") },
-              { label: "Following", value: ig.following.toLocaleString("en-IN") },
-              { label: "Posts", value: ig.posts.toLocaleString("en-IN") },
-              { label: "Engagement Rate", value: ig.engagementRate ? `${ig.engagementRate}%` : "—" },
-            ].map(({ label, value }) => (
-              <div key={label} className="bento-card p-4 text-center">
-                <p className="result-numeral text-xl text-chalk">{value}</p>
-                <p className="text-xs text-chalk-dim mt-1">{label}</p>
-              </div>
-            ))}
-          </div>
-          <PerformanceBarChart ig={ig} />
-          <GenderPieChart />
-        </div>
-      )}
-
-      {platformTab === "youtube" && yt && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              { label: "Subscribers", value: yt.subscribers.toLocaleString("en-IN") },
-              { label: "Videos", value: yt.videos.toLocaleString("en-IN") },
-              { label: "Total Views", value: yt.totalViews ? yt.totalViews.toLocaleString("en-IN") : "—" },
-            ].map(({ label, value }) => (
-              <div key={label} className="bento-card p-4 text-center">
-                <p className="result-numeral text-xl text-chalk">{value}</p>
-                <p className="text-xs text-chalk-dim mt-1">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {platformTab === "instagram" && <PlatformAnalyticsTab platform="instagram" status={platforms?.instagram} />}
+      {platformTab === "youtube"   && <PlatformAnalyticsTab platform="youtube"   status={platforms?.youtube} />}
 
       <BrandCollabHistory proposals={proposals} />
 

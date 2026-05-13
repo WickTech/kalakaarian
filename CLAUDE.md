@@ -49,6 +49,11 @@ npm run test:e2e     # client playwright suite
 - **Influencer presence**: `isOnline` (bool) + `lastSeenAt` (Date) on `influencer_profiles`. Updated only via `PUT /api/influencers/presence`.
 - **Gender field**: `gender` on `influencer_profiles`, enum `male|female|non_binary|prefer_not_to_say`. Validated against `ALLOWED_GENDERS` whitelist in controller before use in Supabase query.
 - **Tier enum**: `nano | micro | macro | celeb`. No `mid`, no `mega`. `mega` is aliased to `celeb` as a backwards-compat shim in `normalizeTier()`.
+- **Creator platform accounts** (`creator_platform_accounts`): one row per creator-platform connection. `platform` enum is `instagram | youtube`. All OAuth tokens **must** go through `encryptToken()` / `decryptToken()` from `utils/tokenCrypto.ts` (AES-256-GCM, key from `TOKEN_ENCRYPTION_KEY`). Never store plaintext tokens. Never include `access_token_encrypted` / `refresh_token_encrypted` in any API response — `sanitize()` in `platformAccountService.ts` strips them.
+- **Platform OAuth state**: use `buildOAuthState()` / `verifyOAuthState()` from `utils/oauthState.ts` for both IG + YT — never roll a new HMAC pattern. 15-min expiry, `timingSafeEqual` comparison.
+- **Platform sync**: per-platform sync services live in `services/instagramSyncService.ts` and `services/youtubeSyncService.ts`. They write metrics via `platformMetricsService.writeMetrics()` and `appendHistory()`. Always call `markSyncResult()` in the catch path so the UI can show `token_expired` / `failed` states.
+- **YouTube token refresh**: `refreshAccessTokenIfNeeded()` in `youtubeSyncService.ts` auto-refreshes when <5min remaining and persists via `updateAccessToken()`. Instagram tokens never refresh — if Graph API returns error code 190 / OAuthException, mark `last_sync_status='token_expired'` so user sees Reconnect CTA.
+- **Cron secret**: `process.env.CRON_SECRET` must be a long random hex string. `/api/internal/cron/*` routes return **404** (not 401) on missing/wrong header to avoid signaling endpoint existence.
 
 ## Controller / Service Split Map
 | File | Responsibility |
@@ -60,9 +65,20 @@ npm run test:e2e     # client playwright suite
 | `controllers/campaignController.ts` | campaign CRUD, open-listing |
 | `controllers/proposalController.ts` | reads + createProposal + submitProposal |
 | `controllers/proposalActions.ts` | updateProposal, deleteProposal, respondToProposal, updateProposalStatus |
-| `services/instagramService.ts` | Instagram API + mock |
-| `services/youtubeService.ts` | YouTube API + mock |
+| `services/instagramService.ts` | Instagram public-API helpers (handle-based) + mock |
+| `services/youtubeService.ts` | YouTube public-API helpers (channel-id based) + mock |
 | `services/socialMediaService.ts` | re-export barrel only |
+| `services/platformAccountService.ts` | DAO over `creator_platform_accounts` (upsert, list, soft-delete, token decrypt) |
+| `services/platformMetricsService.ts` | DAO over `creator_platform_metrics` + `creator_platform_metric_history` |
+| `services/instagramSyncService.ts` | `syncInstagram()` — fetches Graph API insights + media, persists metrics |
+| `services/youtubeSyncService.ts` | `syncYouTube()` — refreshes token, fetches YT Data + Analytics, persists metrics |
+| `services/authenticityScoreService.ts` | `computeAuthenticityScore()` pure 0-100 formula |
+| `controllers/platformsController.ts` | unified `GET /api/platforms`, `:platform/metrics`, `:platform/sync`, `:platform DELETE` |
+| `controllers/instagramOAuthController.ts` | IG-specific OAuth URL builder + Facebook callback |
+| `controllers/youtubeOAuthController.ts` | YT-specific OAuth URL builder + Google callback |
+| `controllers/cronController.ts` | `autoApproveExpired`, `syncAllPlatforms` — both header-secret guarded via `routes/internal.ts` |
+| `utils/tokenCrypto.ts` | `encryptToken()` / `decryptToken()` — AES-256-GCM |
+| `utils/oauthState.ts` | `buildOAuthState()` / `verifyOAuthState()` — HMAC CSRF |
 | `utils/pricing.ts` | `PLATFORM_MARGIN_RATE` (5%), `PLATFORM_FEE_RATE` (8%), `applyPlatformMargin(pricing)` |
 
 ## Security Checklist (must hold for every PR)

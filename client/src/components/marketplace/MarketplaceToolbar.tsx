@@ -27,14 +27,28 @@ export function MarketplaceToolbar(p: Props) {
   return (
     <div className="sticky top-16 z-30 bg-obsidian border-b border-white/5 px-4 py-2 space-y-2">
       <div className="flex w-full rounded-full border border-white/10 overflow-hidden">
-        {(["instagram", "youtube"] as const).map((pl) => (
-          <button key={pl}
-            onClick={() => p.setPlatform(p.platform === pl ? "all" : pl)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 transition-all text-xs ${p.platform === pl ? "bg-white/10 text-chalk" : "text-chalk-dim hover:text-chalk"}`}>
-            {pl === "instagram" ? <Instagram className="w-3.5 h-3.5" /> : <Youtube className="w-3.5 h-3.5" />}
-            <span>{pl === "instagram" ? "Instagram" : "YouTube"}</span>
-          </button>
-        ))}
+        <button
+          onClick={() => p.setPlatform(p.platform === "instagram" ? "all" : "instagram")}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 transition-all text-xs ${
+            p.platform === "instagram"
+              ? "bg-gradient-to-r from-purple-500/40 via-pink-500/40 to-orange-400/40 text-chalk"
+              : "text-chalk-dim hover:text-chalk hover:bg-white/5"
+          }`}
+        >
+          <Instagram className={`w-3.5 h-3.5 ${p.platform === "instagram" ? "text-pink-400" : ""}`} />
+          <span>Instagram</span>
+        </button>
+        <button
+          onClick={() => p.setPlatform(p.platform === "youtube" ? "all" : "youtube")}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 transition-all text-xs ${
+            p.platform === "youtube"
+              ? "bg-red-600/30 text-red-300"
+              : "text-chalk-dim hover:text-chalk hover:bg-white/5"
+          }`}
+        >
+          <Youtube className={`w-3.5 h-3.5 ${p.platform === "youtube" ? "text-red-400" : ""}`} />
+          <span>YouTube</span>
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2 items-center">

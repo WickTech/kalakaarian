@@ -94,22 +94,22 @@ export function SocialPlatformPanel({
       </div>
 
       {!isCelebTier && connected.length > 0 && (
-        <div className="rounded-xl border border-white/10 bg-charcoal/40 p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="premium-card p-5 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-[11px] tracking-[0.18em] uppercase text-chalk-faint">Combined Total</p>
-            <p className="text-2xl font-light text-chalk mt-0.5">
+            <p className="section-eyebrow text-[10px]">Combined Total</p>
+            <p className="stat-numeral text-3xl mt-1.5">
               {total > 0 ? fmtPrice(total) : "—"}
             </p>
-            <p className="text-[11px] text-chalk-dim mt-1">
+            <p className="text-[11px] text-chalk-dim mt-1.5">
               {selected.size === 0
                 ? "Select at least one platform"
-                : `${Array.from(selected).map((p) => (p === "instagram" ? "Instagram" : "YouTube")).join(" + ")}`}
+                : Array.from(selected).map((p) => (p === "instagram" ? "Instagram" : "YouTube")).join(" + ")}
             </p>
           </div>
           <button
             onClick={handleConfirm}
             disabled={selected.size === 0 || total <= 0 || submitting}
-            className="purple-pill px-6 py-2.5 text-xs font-bold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="purple-pill px-6 py-3 text-xs font-bold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-glow-purple"
           >
             {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
               inCart ? <Check className="w-3.5 h-3.5" /> : <ShoppingCart className="w-3.5 h-3.5" />}
@@ -143,12 +143,12 @@ function PlatformCard({ platform, handle, followers, engagementRate, price, chec
       type="button"
       onClick={onToggle}
       disabled={!isConnected}
-      className={`text-left rounded-xl border p-4 transition-all ${
+      className={`group text-left rounded-2xl border p-5 transition-all duration-300 ${
         !isConnected
           ? "border-white/5 bg-charcoal/20 opacity-50 cursor-not-allowed"
           : checked
-            ? `border-gold/50 bg-gold/5 ${highlight ? "ring-2 ring-gold/40 ring-offset-2 ring-offset-obsidian" : ""}`
-            : "border-white/10 bg-charcoal/40 hover:border-white/20"
+            ? `border-gold/50 bg-gradient-to-br from-gold/10 to-charcoal/40 shadow-glow-gold ${highlight ? "ring-2 ring-gold/40 ring-offset-2 ring-offset-obsidian" : ""}`
+            : "premium-card !rounded-2xl"
       }`}
     >
       <div className="flex items-center justify-between mb-3">

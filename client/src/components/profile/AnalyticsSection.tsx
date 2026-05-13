@@ -56,17 +56,16 @@ export function AnalyticsSection({ socialStats, serverAnalytics, socialHandles }
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h2 className="text-lg font-semibold text-chalk">Analytics</h2>
-        <div className="flex rounded-full border border-white/10 overflow-hidden">
+        <div>
+          <p className="section-eyebrow text-[10px] mb-1">Performance</p>
+          <h2 className="section-title text-2xl">Analytics</h2>
+        </div>
+        <div className="glass-card flex p-1 rounded-full">
           {(["instagram", "youtube"] as const).map((p) => (
             <button
               key={p}
               onClick={() => setPlatform(p)}
-              className={`flex items-center gap-1.5 px-4 py-1.5 text-xs transition-all ${
-                platform === p
-                  ? "bg-white/10 text-chalk"
-                  : "text-chalk-dim hover:text-chalk"
-              }`}
+              className={`tab-pill flex items-center gap-1.5 px-4 py-2 text-xs ${platform === p ? "active" : ""}`}
             >
               {p === "instagram" ? <Instagram className="w-3.5 h-3.5" /> : <Youtube className="w-3.5 h-3.5" />}
               {p === "instagram" ? "Instagram" : "YouTube"}

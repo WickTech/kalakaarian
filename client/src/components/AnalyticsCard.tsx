@@ -8,40 +8,39 @@ interface AnalyticsCardProps {
   trend?: { value: number; positive: boolean };
 }
 
-const iconMap = {
-  er: TrendingUp,
-  views: Eye,
-  cpv: DollarSign,
-  fake: Users,
-};
+const iconMap = { er: TrendingUp, views: Eye, cpv: DollarSign, fake: Users };
 
-const iconColors = {
-  er: 'text-blue-500 bg-blue-500/10',
-  views: 'text-purple-500 bg-purple-500/10',
-  cpv: 'text-green-500 bg-green-500/10',
-  fake: 'text-red-500 bg-red-500/10',
+const iconStyle = {
+  er:    'text-blue-400 bg-blue-500/10 ring-1 ring-blue-500/20',
+  views: 'text-purple-400 bg-purple-500/10 ring-1 ring-purple-500/20',
+  cpv:   'text-green-400 bg-green-500/10 ring-1 ring-green-500/20',
+  fake:  'text-rose-400 bg-rose-500/10 ring-1 ring-rose-500/20',
 };
 
 export function AnalyticsCard({ title, value, subtitle, icon, trend }: AnalyticsCardProps) {
   const Icon = iconMap[icon];
 
   return (
-    <div className="bg-card rounded-lg border border-border p-4">
-      <div className="flex items-start justify-between">
-        <div className={`p-2 rounded-lg ${iconColors[icon]}`}>
-          <Icon className="w-5 h-5" />
+    <div className="metric-tile group">
+      <div className="flex items-start justify-between gap-2">
+        <div className={`p-2 rounded-lg transition-transform duration-300 group-hover:scale-105 ${iconStyle[icon]}`}>
+          <Icon className="w-4 h-4" />
         </div>
         {trend && (
-          <span className={`text-xs font-medium ${trend.positive ? 'text-green-500' : 'text-red-500'}`}>
+          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
+            trend.positive
+              ? 'bg-green-500/10 text-green-400 ring-1 ring-green-500/20'
+              : 'bg-rose-500/10 text-rose-400 ring-1 ring-rose-500/20'
+          }`}>
             {trend.positive ? '↑' : '↓'} {Math.abs(trend.value)}%
           </span>
         )}
       </div>
-      <div className="mt-3">
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-sm text-muted-foreground mt-1">{title}</p>
+      <div className="mt-4">
+        <p className="stat-numeral text-2xl">{value}</p>
+        <p className="text-[11px] tracking-wider uppercase text-chalk-faint mt-2">{title}</p>
         {subtitle && (
-          <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+          <p className="text-[11px] text-chalk-dim mt-1">{subtitle}</p>
         )}
       </div>
     </div>

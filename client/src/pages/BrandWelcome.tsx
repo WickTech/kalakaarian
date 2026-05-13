@@ -30,11 +30,12 @@ export default function BrandWelcome() {
   });
 
   return (
-    <div className="min-h-screen bg-obsidian flex flex-col items-center justify-center px-6 py-20">
-      <div className="w-full max-w-6xl">
-        <div className="text-center mb-16">
-          <p className="text-[11px] tracking-[0.3em] uppercase text-gold mb-4">Influence.Market</p>
-          <h1 className="text-5xl md:text-6xl font-light text-chalk mb-5 tracking-tight">
+    <div className="min-h-screen bg-obsidian flex flex-col items-center justify-center px-6 py-20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(212,168,67,0.08),transparent_50%)] pointer-events-none" />
+      <div className="w-full max-w-6xl relative">
+        <div className="text-center mb-16 fade-up">
+          <p className="section-eyebrow mb-5">Influence.Market</p>
+          <h1 className="section-title text-5xl md:text-6xl mb-5">
             Find Your Perfect Creators
           </h1>
           <p className="text-chalk-dim text-base md:text-lg font-light max-w-xl mx-auto">
@@ -43,16 +44,17 @@ export default function BrandWelcome() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
-          {TIERS.map((tier) => {
+          {TIERS.map((tier, idx) => {
             const inventory = counts[tier.key] ?? 0;
             return (
               <button
                 key={tier.key}
                 onClick={() => navigate(`/marketplace?tier=${tier.key}`)}
-                className="group relative text-left rounded-2xl border border-white/10 bg-charcoal/40 p-7 flex flex-col gap-6 hover:border-gold/40 hover:bg-charcoal/60 transition-all duration-300"
+                style={{ animationDelay: `${idx * 60}ms` }}
+                className="group premium-card text-left p-7 flex flex-col gap-6 fade-up"
               >
                 <div className="flex items-baseline justify-between">
-                  <h2 className="text-3xl font-light text-chalk tracking-tight">{tier.label}</h2>
+                  <h2 className="section-title text-3xl">{tier.label}</h2>
                   <span className="text-[10px] tracking-[0.25em] uppercase text-chalk-faint">
                     {inventory} {inventory === 1 ? "creator" : "creators"}
                   </span>
@@ -64,9 +66,9 @@ export default function BrandWelcome() {
                   <Stat label="Inventory" value={`${inventory.toLocaleString("en-IN")} live`} />
                 </div>
 
-                <div className="flex items-center gap-2 pt-4 border-t border-white/5 text-sm text-gold group-hover:gap-3 transition-all">
+                <div className="flex items-center gap-2 pt-4 border-t border-white/5 text-sm text-gold transition-all group-hover:gap-3">
                   <span className="font-light tracking-wide">Explore {tier.label}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                 </div>
               </button>
             );
@@ -74,10 +76,7 @@ export default function BrandWelcome() {
         </div>
 
         <div className="flex justify-center">
-          <button
-            onClick={() => navigate("/marketplace")}
-            className="px-10 py-3.5 rounded-full border border-white/15 text-chalk text-sm tracking-wide font-light hover:border-gold/50 hover:text-gold transition-all"
-          >
+          <button onClick={() => navigate("/marketplace")} className="btn-outline px-10 py-3.5 text-sm">
             View All Creators
           </button>
         </div>

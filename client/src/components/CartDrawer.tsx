@@ -57,15 +57,20 @@ export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, to
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-card border-l border-border flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5 text-terminal" />
-            <span className="font-mono text-sm uppercase tracking-widest text-foreground">Cart ({items.length})</span>
+    <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-200">
+      <div className="absolute inset-0 bg-obsidian/80 backdrop-blur-md" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-charcoal border-l border-white/10 flex flex-col shadow-premium-lg fade-up">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-purple-500/10 ring-1 ring-purple-500/20">
+              <ShoppingCart className="w-4 h-4 text-purple-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-chalk">Cart</p>
+              <p className="text-[11px] text-chalk-dim">{items.length} {items.length === 1 ? "creator" : "creators"}</p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-1 border border-border hover:border-terminal">
+          <button onClick={onClose} className="btn-ghost w-8 h-8 flex items-center justify-center">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -154,46 +159,43 @@ export function CartDrawer({ open, onClose, items, removeFromCart, clearCart, to
             </div>
           ))}
         </div>
-        <div className="border-t border-border p-4 space-y-3">
+        <div className="border-t border-white/5 p-5 space-y-4 bg-obsidian/40">
           {campaignName && (
-            <div className="text-xs text-muted-foreground">
-              Campaign: <span className="font-medium text-foreground">{campaignName}</span>
+            <div className="text-xs text-chalk-dim">
+              Campaign: <span className="font-medium text-chalk">{campaignName}</span>
             </div>
           )}
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center">
-              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Subtotal</span>
-              <span className="font-mono text-sm text-foreground">{formatPrice(total)}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Platform Fee (8%)</span>
-              <span className="font-mono text-sm text-muted-foreground">{formatPrice(Math.round(total * 0.08))}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">GST (18%)</span>
-              <span className="font-mono text-sm text-muted-foreground">{formatPrice(Math.round(total * 1.08 * 0.18))}</span>
-            </div>
-            <div className="h-px bg-border" />
-            <div className="flex justify-between items-center">
-              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Grand Total</span>
-              <span className="font-mono text-lg text-terminal font-bold">{formatPrice(Math.round(total * 1.08 * 1.18))}</span>
+          <div className="space-y-2">
+            <Row label="Subtotal" value={formatPrice(total)} />
+            <Row label="Platform Fee (8%)" value={formatPrice(Math.round(total * 0.08))} muted />
+            <Row label="GST (18%)" value={formatPrice(Math.round(total * 1.08 * 0.18))} muted />
+            <div className="divider-soft my-2" />
+            <div className="flex justify-between items-baseline">
+              <span className="text-[11px] tracking-[0.18em] uppercase text-chalk-faint">Grand Total</span>
+              <span className="stat-numeral text-2xl text-gold">{formatPrice(Math.round(total * 1.08 * 1.18))}</span>
             </div>
           </div>
           <button
             onClick={handleCheckout}
             disabled={items.length === 0}
-            className="w-full border border-terminal py-2 font-mono text-xs uppercase tracking-widest text-terminal hover:bg-terminal hover:text-background transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="purple-pill w-full py-3 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed shadow-glow-purple"
           >
             Checkout →
           </button>
-          <button
-            onClick={clearCart}
-            className="w-full border border-border py-2 font-mono text-xs uppercase tracking-widest text-muted-foreground hover:border-destructive hover:text-destructive transition-colors"
-          >
+          <button onClick={clearCart} className="btn-outline w-full py-2 text-xs">
             Clear Cart
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Row({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+  return (
+    <div className="flex justify-between items-center">
+      <span className="text-[11px] tracking-wider uppercase text-chalk-faint">{label}</span>
+      <span className={`text-sm ${muted ? "text-chalk-dim" : "text-chalk"}`}>{value}</span>
     </div>
   );
 }

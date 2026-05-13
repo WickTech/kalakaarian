@@ -58,11 +58,11 @@ export function ProfileHeader({ profile, isOwnProfile, onImageUpload, onStatusTo
   };
 
   return (
-    <div className="bg-card rounded-xl border border-border p-6">
+    <div className="premium-card p-6 sm:p-8">
       <div className="flex flex-col sm:flex-row gap-6">
         {/* Profile Image */}
         <div className="relative">
-          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-border">
+          <div className="w-32 h-32 rounded-full overflow-hidden ring-2 ring-white/10 shadow-premium">
             <img
               src={profile.profileImage}
               alt={profile.name}
@@ -146,30 +146,27 @@ export function ProfileHeader({ profile, isOwnProfile, onImageUpload, onStatusTo
         </div>
 
         {/* Rating Box */}
-        <div className="flex rounded-xl border border-border overflow-hidden shrink-0 self-start min-w-[180px]">
-          <div className="flex flex-col items-center justify-center gap-1 px-4 py-3 bg-card">
+        <div className="glass-card flex overflow-hidden shrink-0 self-start min-w-[180px] rounded-2xl">
+          <div className="flex flex-col items-center justify-center gap-1.5 px-4 py-3.5">
             <div className="flex gap-0.5">
               {[1, 2, 3, 4, 5].map((s) => (
-                <span key={s} className={`text-lg ${s <= Math.round(profile.avgRating ?? 0) ? 'text-green-500' : 'text-muted-foreground/30'}`}>★</span>
+                <span key={s} className={`text-lg ${s <= Math.round(profile.avgRating ?? 0) ? 'text-gold' : 'text-white/15'}`}>★</span>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-chalk-dim">
               {profile.avgRating ? profile.avgRating.toFixed(1) : '—'} ({profile.ratingCount ?? 0})
             </p>
           </div>
-          <div className="w-px bg-border" />
-          <div className="flex items-center justify-center px-4 py-3 bg-card">
-            <p className="text-sm font-semibold text-foreground text-center">{getRatingLabel(profile.avgRating)}</p>
+          <div className="w-px bg-white/5" />
+          <div className="flex items-center justify-center px-4 py-3.5">
+            <p className="text-sm font-medium text-chalk text-center">{getRatingLabel(profile.avgRating)}</p>
           </div>
         </div>
 
         {/* Edit Button */}
         {isOwnProfile && (
           <div className="flex items-start">
-            <a
-              href="/profile/edit"
-              className="px-4 py-2 border border-border rounded-md hover:bg-secondary transition-colors text-sm font-medium"
-            >
+            <a href="/profile/edit" className="btn-outline px-4 py-2 text-sm">
               Edit Profile
             </a>
           </div>

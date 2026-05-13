@@ -178,6 +178,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 
 | Feature | Status | What's Missing |
 |---|---|---|
+| **Creator Platform Integration** | Code shipped, prod blocked on config | Code shipped 2026-05-13 (commit `5f6140a`). To go live: apply migrations 021 + 023, generate `TOKEN_ENCRYPTION_KEY` + `CRON_SECRET`, configure Meta app permissions + Google Cloud OAuth client. Full checklist in [docs/PLAN_2026-05-14.md](./docs/PLAN_2026-05-14.md). |
 | **Social handle ownership verification** | Partial | "Verify" button opens profile in new tab (manual check). No automated OAuth-based ownership proof. |
 | **WhatsApp OTP** | Conditional | Route and handler exist. Requires `WHATSAPP_PHONE_NUMBER_ID` + `WHATSAPP_ACCESS_TOKEN` env vars. Falls back to mock response without them. |
 | **Instagram / YouTube analytics** | Conditional | API wired up with mock fallback. Requires `INSTAGRAM_ACCESS_TOKEN` + `YOUTUBE_API_KEY`. Without keys, mock data is returned. |

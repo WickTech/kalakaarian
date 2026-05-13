@@ -193,36 +193,36 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
 
       {/* Sticky search + controls bar */}
       <div className="sticky top-16 z-30 bg-obsidian border-b border-white/5 px-4 py-2 space-y-2">
-        {/* Search bar + platform toggle */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 max-w-sm">
+        {/* Platform toggle — full width */}
+        <div className="flex w-full rounded-full border border-white/10 overflow-hidden">
+          {(["instagram", "youtube"] as const).map((p) => (
+            <button key={p}
+              onClick={() => { setPlatform(platform === p ? "all" : p); setPage(1); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 transition-all text-xs ${platform === p ? "bg-white/10 text-chalk" : "text-chalk-dim hover:text-chalk"}`}>
+              {p === "instagram" ? <Instagram className="w-3.5 h-3.5" /> : <Youtube className="w-3.5 h-3.5" />}
+              <span>{p === "instagram" ? "Instagram" : "YouTube"}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Search + filters + tier pills on same row */}
+        <div className="flex flex-wrap gap-2 items-center">
+          {/* Search */}
+          <div className="relative shrink-0 w-36 sm:w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-chalk-faint pointer-events-none" />
             <input
               type="text"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Search creators..."
-              className="w-full bg-charcoal/50 border border-white/10 rounded-full pl-9 pr-4 py-2 text-xs text-chalk placeholder:text-chalk-faint focus:outline-none focus:border-gold/50"
+              placeholder="Search..."
+              className="w-full bg-charcoal/50 border border-white/10 rounded-full pl-9 pr-4 py-1.5 text-xs text-chalk placeholder:text-chalk-faint focus:outline-none focus:border-gold/50"
             />
           </div>
-          <div className="flex rounded-full border border-white/10 overflow-hidden shrink-0">
-            {(["instagram", "youtube"] as const).map((p) => (
-              <button key={p}
-                onClick={() => { setPlatform(platform === p ? "all" : p); setPage(1); }}
-                className={`flex items-center gap-1.5 px-3 py-2 transition-all text-xs ${platform === p ? "bg-white/10 text-chalk" : "text-chalk-dim hover:text-chalk"}`}>
-                {p === "instagram" ? <Instagram className="w-3.5 h-3.5" /> : <Youtube className="w-3.5 h-3.5" />}
-                <span className="hidden sm:inline">{p === "instagram" ? "Instagram" : "YouTube"}</span>
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* Controls bar */}
-        <div className="flex flex-wrap gap-2 items-center">
           {/* Filters button */}
           <button
             onClick={() => setDrawerOpen(true)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs border transition-all shrink-0 ${
               activeFilterCount > 0
                 ? "border-gold text-gold bg-gold/10"
                 : "border-white/10 text-chalk-dim hover:text-chalk"

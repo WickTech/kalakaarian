@@ -1,258 +1,198 @@
-import { FormEvent, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Camera, Loader2, Lock, Save, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { api, BrandProfile, UpdateBrandProfileData } from "@/lib/api";
+import { api } from "@/lib/api";
 
-interface FormData {
-  companyName: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  industry: string;
-  website: string;
-  description: string;
-}
-
-interface FormErrors {
-  companyName?: string;
-  contactPerson?: string;
-  email?: string;
-  phone?: string;
-  industry?: string;
-}
-
-const INDUSTRY_OPTIONS = [
-  "Fashion",
-  "Technology",
-  "Food & Beverage",
-  "Health & Wellness",
-  "Finance",
-  "Entertainment",
-  "Retail",
-  "Education",
-  "Other",
+const CATEGORIES = [
+  "Fashion", "Technology", "Food & Beverage", "Health & Wellness",
+  "Finance", "Entertainment", "Retail", "Education", "Travel", "Beauty", "Other",
 ];
+
+interface PwForm { current: string; next: string; confirm: string }
 
 export default function EditBrandProfile() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const fileRef = useRef<HTMLInputElement>(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [form, setForm] = useState<FormData>({
-    companyName: "",
-    contactPerson: "",
-    email: "",
-    phone: "",
-    industry: "",
-    website: "",
-    description: "",
-  });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [industry, setIndustry] = useState("");
+  const [pw, setPw] = useState<PwForm>({ current: "", next: "", confirm: "" });
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const profile: BrandProfile = await api.getBrandProfile();
-        setForm({
-          companyName: profile.companyName || "",
-          contactPerson: profile.contactPerson || "",
-          email: profile.email || "",
-          phone: profile.phone || "",
-          industry: profile.industry || "",
-          website: profile.website || "",
-          description: profile.description || "",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load profile data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+    api.getBrandSettings().then(({ user, profile }) => {
+      setName(user.name || profile.contactPerson || "");
+      setEmail(user.email || profile.email || "");
+      setPhone(user.phone || profile.phone || "");
+      setIndustry(profile.industry || "");
+      if ((profile as any).logo_url || profile.logo) {
+        setAvatarPreview((profile as any).logo_url || profile.logo);
       }
-    };
-    fetchProfile();
+    }).catch(() => toast({ title: "Failed to load profile", variant: "destructive" }))
+      .finally(() => setLoading(false));
   }, [toast]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleAvatar = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
 
-    const nextErrors: FormErrors = {};
-    if (!form.companyName.trim()) nextErrors.companyName = "Company Name is required.";
-    if (!form.contactPerson.trim()) nextErrors.contactPerson = "Contact Person is required.";
-    if (!form.email.trim()) nextErrors.email = "Email is required.";
-    if (!form.phone.trim()) nextErrors.phone = "Phone is required.";
-    if (!form.industry) nextErrors.industry = "Industry is required.";
+  const uploadAvatar = async (): Promise<string | undefined> => {
+    if (!avatarFile) return undefined;
+    const { uploadUrl, fileUrl } = await api.getUploadUrl(avatarFile.name, avatarFile.type, "profile");
+    await fetch(uploadUrl, { method: "PUT", body: avatarFile, headers: { "Content-Type": avatarFile.type } });
+    return fileUrl;
+  };
 
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
-
-    const updateData: UpdateBrandProfileData = {
-      companyName: form.companyName,
-      contactPerson: form.contactPerson,
-      email: form.email,
-      phone: form.phone,
-      industry: form.industry,
-      website: form.website || undefined,
-      description: form.description || undefined,
-    };
-
+  const handleSave = async (e: FormEvent) => {
+    e.preventDefault();
     setSaving(true);
     try {
-      await api.updateBrandProfile(updateData);
-      toast({
-        title: "Profile updated",
-        description: "Your brand profile has been saved successfully.",
-      });
-      navigate("/profile");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive",
-      });
+      const logo = await uploadAvatar();
+      await api.updateBrandProfile({ companyName: name, email, phone, industry, ...(logo ? { logo } : {}) });
+      toast({ title: "Settings saved" });
+    } catch {
+      toast({ title: "Save failed", variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
+  const handlePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    if (pw.next !== pw.confirm) { toast({ title: "Passwords don't match", variant: "destructive" }); return; }
+    if (pw.next.length < 8) { toast({ title: "Password must be 8+ characters", variant: "destructive" }); return; }
+    setPwSaving(true);
+    try {
+      await api.changePassword(pw.current, pw.next);
+      toast({ title: "Password updated" });
+      setPw({ current: "", next: "", confirm: "" });
+    } catch (err: any) {
+      toast({ title: err?.message || "Password update failed", variant: "destructive" });
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
+  if (loading) return (
+    <div className="flex min-h-screen items-center justify-center bg-obsidian">
+      <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
+    </div>
+  );
+
+  const field = "w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-chalk placeholder:text-chalk-dim focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition-colors";
+  const card = "rounded-xl border border-white/10 bg-white/[0.03] p-6 space-y-4";
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-600 via-cyan-600 to-sky-500 px-4 py-10">
-      <div className="w-full max-w-xl space-y-4">
-        <Link to="/profile" className="inline-flex items-center gap-2 text-sm text-white/90 hover:text-white">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Profile
-        </Link>
+    <div className="min-h-screen bg-obsidian py-10 px-4">
+      <div className="mx-auto max-w-xl space-y-6">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-chalk-dim hover:text-chalk transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Back
+        </button>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Edit Brand Profile</CardTitle>
-            <CardDescription>Update your brand information.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name *</Label>
-                <Input
-                  id="companyName"
-                  value={form.companyName}
-                  onChange={(event) => setForm((prev) => ({ ...prev, companyName: event.target.value }))}
-                  placeholder="Enter company name"
-                />
-                {errors.companyName && <p className="text-xs text-destructive">{errors.companyName}</p>}
+        <div>
+          <h1 className="text-2xl font-bold text-chalk">Account Settings</h1>
+          <p className="text-sm text-chalk-dim mt-1">Manage your brand profile and security</p>
+        </div>
+
+        {/* Profile image */}
+        <div className={card}>
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-purple-400" />
+            <h2 className="text-sm font-semibold text-chalk uppercase tracking-wide">Profile Image</h2>
+          </div>
+          <div className="flex items-center gap-5">
+            <div className="relative">
+              <div className="h-20 w-20 rounded-full border border-white/15 bg-white/5 overflow-hidden flex items-center justify-center">
+                {avatarPreview
+                  ? <img src={avatarPreview} alt="avatar" className="h-full w-full object-cover" />
+                  : <User className="h-8 w-8 text-chalk-dim" />}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="contactPerson">Contact Person *</Label>
-                <Input
-                  id="contactPerson"
-                  value={form.contactPerson}
-                  onChange={(event) => setForm((prev) => ({ ...prev, contactPerson: event.target.value }))}
-                  placeholder="Enter contact person name"
-                />
-                {errors.contactPerson && <p className="text-xs text-destructive">{errors.contactPerson}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-                  placeholder="Enter email address"
-                />
-                {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone *</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={form.phone}
-                  onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
-                  placeholder="Enter phone number"
-                />
-                {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Industry *</Label>
-                <Select
-                  value={form.industry}
-                  onValueChange={(value) => setForm((prev) => ({ ...prev, industry: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select industry" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INDUSTRY_OPTIONS.map((industry) => (
-                      <SelectItem key={industry} value={industry}>
-                        {industry}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.industry && <p className="text-xs text-destructive">{errors.industry}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="website">Company Website</Label>
-                <Input
-                  id="website"
-                  type="url"
-                  value={form.website}
-                  onChange={(event) => setForm((prev) => ({ ...prev, website: event.target.value }))}
-                  placeholder="https://example.com"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Company Bio</Label>
-                <Textarea
-                  id="description"
-                  value={form.description}
-                  onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-                  placeholder="Tell influencers about your company"
-                  rows={4}
-                />
-              </div>
-
-              <Button
-                type="submit"
-                disabled={saving}
-                className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-95"
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-purple-600 flex items-center justify-center hover:bg-purple-500 transition-colors"
               >
-                {saving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                <Camera className="h-3.5 w-3.5 text-white" />
+              </button>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-chalk">{name || "Your Name"}</p>
+              <button type="button" onClick={() => fileRef.current?.click()} className="text-xs text-purple-400 hover:text-purple-300 mt-0.5">
+                Change photo
+              </button>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
+          </div>
+        </div>
+
+        {/* Profile info */}
+        <form onSubmit={handleSave} className={`${card} space-y-5`}>
+          <h2 className="text-sm font-semibold text-chalk uppercase tracking-wide">Profile Info</h2>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-chalk-dim">Name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Brand contact name" className={field} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-chalk-dim">Work Email</Label>
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="work@brand.com" className={field} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-chalk-dim">Phone (WhatsApp)</Label>
+            <Input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 9876543210" className={field} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-chalk-dim">Brand Category</Label>
+            <Select value={industry} onValueChange={setIndustry}>
+              <SelectTrigger className={field + " flex"}>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button type="submit" disabled={saving} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-medium">
+            {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : <><Save className="mr-2 h-4 w-4" />Save Changes</>}
+          </Button>
+        </form>
+
+        {/* Password */}
+        <form onSubmit={handlePassword} className={card}>
+          <div className="flex items-center gap-2"><Lock className="h-4 w-4 text-purple-400" /><h2 className="text-sm font-semibold text-chalk uppercase tracking-wide">Change Password</h2></div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-chalk-dim">Current Password</Label>
+            <Input type="password" value={pw.current} onChange={(e) => setPw((p) => ({ ...p, current: e.target.value }))} placeholder="••••••••" className={field} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-chalk-dim">New Password</Label>
+            <Input type="password" value={pw.next} onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))} placeholder="Min 8 characters" className={field} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-chalk-dim">Confirm New Password</Label>
+            <Input type="password" value={pw.confirm} onChange={(e) => setPw((p) => ({ ...p, confirm: e.target.value }))} placeholder="Repeat password" className={field} />
+          </div>
+          <Button type="submit" disabled={pwSaving} variant="outline" className="w-full border-white/10 text-chalk hover:bg-white/5">
+            {pwSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating…</> : "Update Password"}
+          </Button>
+        </form>
       </div>
-    </main>
+    </div>
   );
 }

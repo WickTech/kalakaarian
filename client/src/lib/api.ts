@@ -120,6 +120,7 @@ export interface Proposal {
   message?: string;
   createdAt: string;
   workflow_stage?: string | null;
+  workflow_stage_updated_at?: string | null;
 }
 
 export interface WorkflowSubmission {
@@ -367,6 +368,10 @@ export const api = {
     return res.profile;
   },
 
+  getBrandSettings: async (): Promise<{ user: User; profile: BrandProfile }> => {
+    return request<{ user: User; profile: BrandProfile }>("/api/auth/profile");
+  },
+
   getCampaigns: async (): Promise<Campaign[]> => {
     const res = await request<{ campaigns: Campaign[] }>("/api/campaigns");
     return res.campaigns;
@@ -456,6 +461,13 @@ export const api = {
     return request<BrandProfile>("/api/auth/profile", {
       method: "PUT",
       body: JSON.stringify(data),
+    });
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    return request<void>("/api/auth/password", {
+      method: "PUT",
+      body: JSON.stringify({ currentPassword, newPassword }),
     });
   },
 

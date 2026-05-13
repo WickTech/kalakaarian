@@ -18,7 +18,7 @@ interface GlobalHeaderProps {
   onCartOpen: () => void;
 }
 
-const NAV_LINKS = [
+const BASE_NAV_LINKS = [
   { to: "/", label: "Home", exact: true },
   { to: "/marketplace", label: "Marketplace", exact: false },
   { to: "/campaigns", label: "Campaigns", exact: false },
@@ -57,10 +57,18 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
     user?.role === "influencer" ? "/influencer/dashboard" :
     "/dashboard";
 
-  const isActive = ({ to, exact }: { to: string; exact: boolean }) =>
-    exact ? location.pathname === to : location.pathname.startsWith(to);
+  const isActive = ({ to, exact }: { to: string; exact: boolean }) => {
+    const path = to.split("?")[0];
+    return exact ? location.pathname === path : location.pathname.startsWith(path);
+  };
 
   const handleLogout = () => { logout(); navigate("/"); };
+
+  const NAV_LINKS = BASE_NAV_LINKS.map((link) =>
+    link.to === "/campaigns" && user?.role === "brand"
+      ? { ...link, to: "/brand/dashboard?tab=campaigns", exact: false }
+      : link
+  );
 
   return (
     <header

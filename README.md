@@ -40,6 +40,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Logo, nav links (Home / Marketplace / Campaigns / Contact)
 - Auth-aware: notification bell + cart icon + avatar dropdown for logged-in users; Login / Get Started for guests
 - Role-aware dashboard link (brand → `/brand/dashboard`, influencer → `/influencer/dashboard`)
+- **Role-aware "Campaigns" nav link** — brands go to `/brand/dashboard?tab=campaigns` (campaign tracker); influencers/guests go to `/campaigns` (browse open campaigns)
 - Mobile hamburger Sheet menu
 - Dark obsidian theme — `bg-obsidian/95 backdrop-blur` with white/10 borders
 
@@ -88,7 +89,8 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Campaign list with status badges (no budget/deadline — budget auto-calculated from creator cartPrices)
 - **Campaign Influencers panel** — view all creators added to a campaign, filter by payment status (all/paid/pending), search by name, sort by price or followers; computed total budget; remove pending creators
 - Proposals table per campaign (accept / reject)
-- Campaign workflow timeline (creators selected → content review → payment)
+- **Campaign Progress Tracker** — premium 7-stage horizontal timeline per creator (Campaign Created → Creators Notified → Scripts Reviewed → Content Created → Brand Review → Content Delivered → Payment Released); purple glow on active stage, animated track fill, revision badge, relative timestamps; 15s live refresh; accessible at `/brand/campaigns/:id/track`
+- **Running Campaigns panel** — collapsible campaign cards each with compact tracker + per-creator status list; shows leading creator's stage on aggregate tracker
 - Video review grid — approve / request revision
 - Campaign file management (brief uploads, contract documents)
 - Campaign creation form (title, description, platform, niche, file attachments; brief tooltip with disclaimer)
@@ -113,7 +115,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 ### Profile System
 - Public influencer profile (`/influencer/:id`) — bio, followers, ER, social handles, pricing
 - Edit influencer profile — genres, platforms, pricing by format, location, bio, profile image
-- Edit brand profile — company name, industry, description, location
+- **Brand account settings** (`/profile/edit`) — premium obsidian-themed settings page with profile image upload (presigned → Supabase Storage), name, work email, phone (WhatsApp), brand category; separate secure **password change** section (verifies current password server-side before updating)
 - My profile page — conditional render (brand view / influencer view)
 - Profile image upload (pre-signed URL → Supabase Storage)
 
@@ -366,6 +368,8 @@ See [docs/API.md](./docs/API.md) for the full endpoint list.
 - Auth middleware sets `req.user.userId` + `req.user.role` — use `AuthRequest` type in all protected handlers
 - JWT storage key in browser: `kalakariaan_token` (preserve this typo — renaming silently logs everyone out)
 - Tier enum: `nano | micro | macro | celeb` — no `mid`, no `mega`
+- `PUT /api/auth/password` — verifies `currentPassword` via `signInWithPassword` before updating; requires auth JWT; 400 on wrong current password
+- `PUT /api/auth/profile` (brand) — now also accepts `phone` (writes to `profiles.phone`) and `email` (writes to `profiles.email` + syncs Supabase Auth)
 
 ---
 

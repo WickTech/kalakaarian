@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 import { register, login, googleLogin } from '../controllers/authController';
 import { sendOTP, verifyOTP } from '../controllers/otpController';
-import { getProfile, updateProfile } from '../controllers/profileController';
+import { getProfile, updateProfile, changePassword } from '../controllers/profileController';
 import { auth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
@@ -78,5 +78,16 @@ router.post(
 router.get('/profile', auth, getProfile);
 
 router.put('/profile', auth, updateProfile);
+
+router.put(
+  '/password',
+  auth,
+  [
+    body('currentPassword').notEmpty().withMessage('Current password is required'),
+    body('newPassword').isLength({ min: 8 }).withMessage('New password must be at least 8 characters'),
+  ],
+  validate,
+  changePassword
+);
 
 export default router;

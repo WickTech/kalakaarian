@@ -20,6 +20,7 @@ export interface Influencer {
   avgRating?: number | null;
   ratingCount?: number;
   engagementRate?: number;
+  connectedPlatforms?: Array<"instagram" | "youtube">;
 }
 
 export interface CartItem {

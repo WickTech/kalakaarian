@@ -68,22 +68,30 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [search]);
 
-  const toInfluencer = (inf: InfluencerProfile): Influencer => ({
-    id: inf.id ?? inf._id ?? "",
-    name: inf.name || "",
-    handle: inf.socialHandles?.instagram || inf.socialHandles?.youtube || "",
-    photo: inf.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${inf.name}`,
-    platform: (inf.platform as "instagram" | "youtube") || "instagram",
-    tier: (inf.tier as Tier) || "nano",
-    genre: inf.niches?.[0] || "",
-    city: inf.city || "",
-    followers: inf.followerCount || 0, activeFollowers: 0, fakeFollowers: 0,
-    avgViews: 0, avgLikes: 0,
-    genderSplit: { male: 45, female: 52, other: 3 },
-    price: inf.pricing ? (Math.min(...Object.values(inf.pricing).filter(v => v > 0)) || null) : null,
-    isOnline: inf.isOnline, lastSeenAt: inf.lastSeenAt,
-    avgRating: inf.avgRating ?? null, ratingCount: inf.ratingCount ?? 0,
-  });
+  const toInfluencer = (inf: InfluencerProfile): Influencer => {
+    const connected: Array<"instagram" | "youtube"> = [];
+    if (inf.socialHandles?.instagram) connected.push("instagram");
+    if (inf.socialHandles?.youtube) connected.push("youtube");
+    const primary: "instagram" | "youtube" =
+      connected[0] ?? ((inf.platform?.[0] as "instagram" | "youtube") || "instagram");
+    return {
+      id: inf.id ?? inf._id ?? "",
+      name: inf.name || "",
+      handle: inf.socialHandles?.instagram || inf.socialHandles?.youtube || "",
+      photo: inf.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${inf.name}`,
+      platform: primary,
+      connectedPlatforms: connected,
+      tier: (inf.tier as Tier) || "nano",
+      genre: inf.niches?.[0] || "",
+      city: inf.city || "",
+      followers: inf.followerCount || 0, activeFollowers: 0, fakeFollowers: 0,
+      avgViews: 0, avgLikes: 0,
+      genderSplit: { male: 45, female: 52, other: 3 },
+      price: inf.pricing ? (Math.min(...Object.values(inf.pricing).filter(v => v > 0)) || null) : null,
+      isOnline: inf.isOnline, lastSeenAt: inf.lastSeenAt,
+      avgRating: inf.avgRating ?? null, ratingCount: inf.ratingCount ?? 0,
+    };
+  };
 
   const { data: influencers = [], isLoading: loading } = useQuery({
     queryKey: ['marketplace', gender, tier, platform, location, genreKey, debouncedSearch],
@@ -114,10 +122,8 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
       );
     }
     if (platform !== "all") {
-      r = r.filter((i) => {
-        const p: string[] = Array.isArray(i.platform) ? (i.platform as unknown as string[]) : [i.platform as string].filter(Boolean);
-        return p.length === 0 || p.includes(platform);
-      });
+      // Strict: only show creators with that platform actually connected (handle present)
+      r = r.filter((i) => i.connectedPlatforms?.includes(platform));
     }
     if (selectedGenres.length) r = r.filter((i) => selectedGenres.includes(i.genre));
     if (location) r = r.filter((i) => i.city?.toLowerCase().includes(location.toLowerCase()));

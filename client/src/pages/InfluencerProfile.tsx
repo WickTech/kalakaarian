@@ -1,42 +1,41 @@
-import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, Upload, BarChart2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, InfluencerProfile as InfluencerProfileData, VideoItem, SocialStats } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useCartContext } from '@/contexts/CartContext';
 import { ProfileHeader } from '@/components/ProfileHeader';
-import { AnalyticsCard } from '@/components/AnalyticsCard';
-import { MembershipUpgradeCard } from '@/components/MembershipBadge';
 import { VideoGrid } from '@/components/VideoGrid';
-import { SocialConnect } from '@/components/SocialConnect';
 import { InfluencerTrustSection } from '@/components/InfluencerTrustSection';
 import { BadgeStrip } from '@/components/BadgeStrip';
 import { SimilarProfiles } from '@/components/SimilarProfiles';
 import { CelebCallbackModal } from '@/components/CelebCallbackModal';
-import { openRazorpayCheckout } from '@/lib/razorpay';
-import { PerformanceBarChart, GenderPieChart } from '@/components/SocialMediaCharts';
+import { SocialPlatformPanel } from '@/components/profile/SocialPlatformPanel';
+import { AnalyticsSection } from '@/components/profile/AnalyticsSection';
+import { MembershipSection } from '@/components/profile/MembershipSection';
+import { Influencer } from '@/lib/store';
 
 export default function InfluencerProfile() {
   const { id } = useParams<{ id: string }>();
+  const { hash } = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
-
   const navigate = useNavigate();
+  const { addToCart, isInCart } = useCartContext();
+  const socialRef = useRef<HTMLDivElement>(null);
+
   const isOwnProfile = user?.id === id;
+  const isBrand = user?.role === 'brand';
   const [showCelebModal, setShowCelebModal] = useState(false);
+  const highlightSocial = hash === '#social';
 
   const { data: profile, isLoading } = useQuery<InfluencerProfileData>({
     queryKey: ['influencer-profile', id],
     queryFn: () => api.getInfluencerById(id!),
     enabled: !!id,
-  });
-
-  const { data: membership = { tier: 'regular' } } = useQuery({
-    queryKey: ['membership-status'],
-    queryFn: () => api.getMembershipStatus(),
-    enabled: !!id && isOwnProfile,
   });
 
   const { data: videos = [] as VideoItem[] } = useQuery({
@@ -51,47 +50,19 @@ export default function InfluencerProfile() {
     enabled: !!id && !!profile,
   });
 
-  const analytics = (socialStats as SocialStats & { analytics?: { engagementRate?: number; avgViews?: number; totalFollowers?: number; reachEstimate?: number; source?: string; authenticityScore?: number } })?.analytics || null;
+  const serverAnalytics =
+    (socialStats as SocialStats & { analytics?: { engagementRate?: number; avgViews?: number; totalFollowers?: number; reachEstimate?: number; source?: string; authenticityScore?: number } })?.analytics ?? null;
 
-  const MOCK_IG = { followers: 18_400, following: 620, posts: 94, engagementRate: 4.8 };
-  const ig = socialStats?.instagram;
-  const displayIg = ig ?? MOCK_IG;
-
-  const displayAnalytics = {
-    engagementRate: analytics?.engagementRate ?? displayIg.engagementRate,
-    avgViews: analytics?.avgViews ?? Math.round(displayIg.followers * 0.15),
-    totalFollowers: analytics?.totalFollowers ?? displayIg.followers,
-    reachEstimate: analytics?.reachEstimate ?? Math.round(displayIg.followers * 2.3),
-    source: analytics?.source,
-    authenticityScore: analytics?.authenticityScore,
-  };
+  useEffect(() => {
+    if (highlightSocial && socialRef.current) {
+      const t = setTimeout(() => socialRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+      return () => clearTimeout(t);
+    }
+  }, [highlightSocial, profile?.id]);
 
   const handleStatusToggle = async (isOnline: boolean) => {
     try { await api.updatePresence(isOnline); }
     catch { toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' }); }
-  };
-
-  const handleMembershipUpgrade = async (tier: 'gold' | 'silver') => {
-    try {
-      const order = await api.createMembershipOrder(tier);
-      if (!order.orderId || !order.keyId) {
-        await api.purchaseMembership(tier);
-        qc.invalidateQueries({ queryKey: ['membership-status'] });
-        toast({ title: 'Success', description: `Upgraded to ${tier} membership!` });
-        return;
-      }
-      await openRazorpayCheckout({
-        orderId: order.orderId, amount: order.amount, currency: order.currency, keyId: order.keyId,
-        name: `Kalakaarian ${tier.charAt(0).toUpperCase() + tier.slice(1)} Membership`,
-        prefill: { name: user?.name, email: user?.email },
-        onSuccess: async (paymentId, orderId, signature) => {
-          await api.purchaseMembership(tier, { razorpayOrderId: orderId, razorpayPaymentId: paymentId, razorpaySignature: signature });
-          qc.invalidateQueries({ queryKey: ['membership-status'] });
-          toast({ title: 'Payment successful!', description: `${tier} membership activated.` });
-        },
-        onDismiss: () => toast({ title: 'Payment cancelled' }),
-      });
-    } catch { toast({ title: 'Error', description: 'Failed to process payment', variant: 'destructive' }); }
   };
 
   const handleVideoUpload = async (videoUrl: string, platform: string) => {
@@ -102,18 +73,31 @@ export default function InfluencerProfile() {
     } catch { toast({ title: 'Error', description: 'Failed to upload video', variant: 'destructive' }); }
   };
 
-  const handleSocialConnect = async (platform: 'instagram' | 'youtube', handle: string) => {
-    try {
-      await api.connectSocialMedia(platform, handle);
-      qc.invalidateQueries({ queryKey: ['influencer-profile', id] });
-      toast({ title: 'Success', description: `${platform} connected successfully!` });
-    } catch { toast({ title: 'Error', description: 'Failed to connect social media', variant: 'destructive' }); }
+  const handlePlatformAddToCart = async (totalPrice: number, platforms: Array<'instagram' | 'youtube'>) => {
+    if (!profile || !id) return;
+    if (isInCart(id)) {
+      try { await api.updateCartItem(id, '', totalPrice); } catch { /* non-fatal */ }
+      toast({ title: 'Cart updated', description: `${platforms.length} platform${platforms.length > 1 ? 's' : ''} — ₹${totalPrice.toLocaleString('en-IN')}` });
+      return;
+    }
+    const inf: Influencer = {
+      id, name: profile.name || 'Creator',
+      handle: profile.socialHandles?.instagram || profile.socialHandles?.youtube || '',
+      photo: profile.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`,
+      platform: platforms[0] ?? 'instagram',
+      tier: (profile.tier as Influencer['tier']) || 'micro',
+      genre: profile.niches?.[0] || '', city: profile.city || '',
+      followers: profile.followerCount || 0, activeFollowers: 0, fakeFollowers: 0,
+      avgViews: 0, avgLikes: 0, genderSplit: { male: 45, female: 52, other: 3 },
+      price: totalPrice, avgRating: profile.avgRating ?? null, ratingCount: profile.ratingCount ?? 0,
+    };
+    await addToCart(inf);
+    toast({ title: 'Added to cart', description: `Total: ₹${totalPrice.toLocaleString('en-IN')}` });
   };
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   }
-
   if (!profile) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
@@ -125,109 +109,76 @@ export default function InfluencerProfile() {
 
   return (
     <>
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
-        <ProfileHeader
-          profile={{
-            name: profile.name || 'Unknown',
-            handle: `@${profile.socialHandles?.instagram || 'user'}`,
-            profileImage: profile.profileImage || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default',
-            tier: membership.tier as 'gold' | 'silver' | 'regular',
-            influencerTier: profile.tier,
-            avgRating: profile.avgRating,
-            ratingCount: profile.ratingCount,
-            city: profile.city,
-            socialHandles: profile.socialHandles,
-            isOnline: profile.isOnline,
-          }}
-          isOwnProfile={isOwnProfile}
-          onStatusToggle={handleStatusToggle}
-        />
-
-        {isOwnProfile && (
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate('/influencer/dashboard?tab=upload')}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all"
-            >
-              <Upload className="w-4 h-4" /> Submit Content
-            </button>
-            <button
-              onClick={() => navigate('/influencer/dashboard?tab=analytics')}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all"
-            >
-              <BarChart2 className="w-4 h-4" /> My Analytics
-            </button>
-          </div>
-        )}
-
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Analytics</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <AnalyticsCard title="Engagement Rate" value={`${displayAnalytics.engagementRate}%`} icon="er"
-              subtitle={displayAnalytics.source ? `Based on ${displayAnalytics.source}` : undefined} />
-            <AnalyticsCard title="Avg Views" value={displayAnalytics.avgViews.toLocaleString()} icon="views" />
-            <AnalyticsCard title="Total Followers" value={displayAnalytics.totalFollowers.toLocaleString()} icon="fake" />
-            <AnalyticsCard title="Reach Estimate" value={displayAnalytics.reachEstimate.toLocaleString()} icon="views"
-              subtitle={displayAnalytics.authenticityScore ? `Authenticity: ${displayAnalytics.authenticityScore}%` : undefined} />
-          </div>
-        </div>
-
-        <InfluencerTrustSection
-          influencerId={id!}
-          avgRating={profile.avgRating}
-          ratingCount={profile.ratingCount}
-        />
-
-        <BadgeStrip influencerId={id!} />
-
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Social Media</h2>
-          <SocialConnect
-            socialHandles={profile.socialHandles || {}}
-            stats={socialStats || null}
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
+          <ProfileHeader
+            profile={{
+              name: profile.name || 'Unknown',
+              handle: `@${profile.socialHandles?.instagram || 'user'}`,
+              profileImage: profile.profileImage || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default',
+              tier: 'regular',
+              influencerTier: profile.tier,
+              avgRating: profile.avgRating,
+              ratingCount: profile.ratingCount,
+              city: profile.city || '',
+              socialHandles: profile.socialHandles,
+              isOnline: profile.isOnline,
+            }}
             isOwnProfile={isOwnProfile}
-            onConnect={handleSocialConnect}
+            onStatusToggle={handleStatusToggle}
           />
-        </div>
 
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Performance</h2>
-          <PerformanceBarChart ig={displayIg} isMock={!ig} />
-          <GenderPieChart />
-        </div>
+          {isOwnProfile && (
+            <div className="flex gap-3">
+              <button onClick={() => navigate('/influencer/dashboard?tab=upload')}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all">
+                <Upload className="w-4 h-4" /> Submit Content
+              </button>
+              <button onClick={() => navigate('/influencer/dashboard?tab=analytics')}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all">
+                <BarChart2 className="w-4 h-4" /> My Analytics
+              </button>
+            </div>
+          )}
 
-        {isOwnProfile && (
-          <div>
-            <h2 className="text-lg font-semibold mb-4">Membership</h2>
-            <MembershipUpgradeCard currentTier={membership.tier as 'gold' | 'silver' | 'regular'} onUpgrade={handleMembershipUpgrade} />
+          <div ref={socialRef} id="social" className="scroll-mt-20">
+            <h2 className="text-lg font-semibold mb-4">Social Media</h2>
+            <SocialPlatformPanel
+              socialHandles={profile.socialHandles || {}}
+              pricing={profile.pricing}
+              socialStats={socialStats}
+              followerCount={profile.followerCount || 0}
+              inCart={isInCart(id!)}
+              initiallyHighlight={highlightSocial}
+              isCelebTier={profile.tier === 'celeb' || isOwnProfile || !isBrand}
+              onAddToCart={handlePlatformAddToCart}
+            />
           </div>
-        )}
 
-        {(isOwnProfile || videos.length > 0) && (
-          <VideoGrid videos={videos} isOwnProfile={isOwnProfile} onUpload={handleVideoUpload} />
-        )}
+          <AnalyticsSection socialStats={socialStats} serverAnalytics={serverAnalytics} socialHandles={profile.socialHandles || {}} />
+          <InfluencerTrustSection influencerId={id!} avgRating={profile.avgRating} ratingCount={profile.ratingCount} />
+          <BadgeStrip influencerId={id!} />
 
-        {profile.tier === 'celeb' && !isOwnProfile && (
-          <div className="bento-card p-5 text-center space-y-3">
-            <p className="text-sm text-chalk-dim">Interested in collaborating with {profile.name}?</p>
-            <button onClick={() => setShowCelebModal(true)} className="gold-pill px-8 py-2.5 text-sm">
-              Get In Touch
-            </button>
-          </div>
-        )}
+          {isOwnProfile && <MembershipSection />}
 
-        <SimilarProfiles currentId={id!} />
+          {(isOwnProfile || videos.length > 0) && (
+            <VideoGrid videos={videos} isOwnProfile={isOwnProfile} onUpload={handleVideoUpload} />
+          )}
+
+          {profile.tier === 'celeb' && !isOwnProfile && (
+            <div className="bento-card p-5 text-center space-y-3">
+              <p className="text-sm text-chalk-dim">Interested in collaborating with {profile.name}?</p>
+              <button onClick={() => setShowCelebModal(true)} className="gold-pill px-8 py-2.5 text-sm">Get In Touch</button>
+            </div>
+          )}
+
+          <SimilarProfiles currentId={id!} />
+        </div>
       </div>
-    </div>
 
-    {showCelebModal && profile && (
-      <CelebCallbackModal
-        influencerId={id!}
-        influencerName={profile.name || 'this creator'}
-        onClose={() => setShowCelebModal(false)}
-      />
-    )}
+      {showCelebModal && profile && (
+        <CelebCallbackModal influencerId={id!} influencerName={profile.name || 'this creator'} onClose={() => setShowCelebModal(false)} />
+      )}
     </>
   );
 }

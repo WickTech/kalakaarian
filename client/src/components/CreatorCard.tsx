@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CheckSquare, Star, ShoppingCart, Check } from "lucide-react";
 import { Influencer } from "@/lib/store";
 
@@ -27,6 +27,14 @@ interface Props {
 export function CreatorCard({
   inf, selected, inCart, onToggleSelect, onAddToCart, onGetInTouch,
 }: Props) {
+  const navigate = useNavigate();
+
+  const handleCartClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!inCart) onAddToCart();
+    navigate(`/influencer/${inf.id}#social`);
+  };
+
   return (
     <div
       onClick={onToggleSelect}
@@ -34,7 +42,6 @@ export function CreatorCard({
         selected ? "ring-2 ring-gold ring-offset-1 ring-offset-obsidian" : ""
       }`}
     >
-      {/* Top row: avatar + info + rating */}
       <div className="flex items-start gap-3 mb-3">
         <div className="relative shrink-0">
           <img
@@ -59,14 +66,13 @@ export function CreatorCard({
             >
               {inf.name}
             </Link>
-            {/* Rating — top right */}
             {inf.avgRating != null && inf.avgRating > 0 ? (
-              <span className="flex items-center gap-0.5 shrink-0 text-xs font-semibold text-gold leading-tight">
-                <Star className="w-3 h-3 fill-gold stroke-none" />
+              <span className="flex items-center gap-0.5 shrink-0 text-[10px] font-semibold text-gold leading-tight">
+                <Star className="w-2.5 h-2.5 fill-gold stroke-none" />
                 {Number(inf.avgRating).toFixed(1)}
               </span>
             ) : (
-              <span className="text-xs text-chalk-faint shrink-0 leading-tight">—</span>
+              <span className="text-[10px] text-chalk-faint shrink-0 leading-tight">—</span>
             )}
           </div>
           <p className="text-xs text-chalk-dim truncate mt-0.5">
@@ -78,7 +84,6 @@ export function CreatorCard({
         </div>
       </div>
 
-      {/* Tier + genre + online */}
       <div className="flex items-center gap-2 mb-3">
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TIER_CLASS[inf.tier] || ""}`}>
           {(TIER_LABEL[inf.tier] ?? inf.tier).toUpperCase()}
@@ -93,8 +98,7 @@ export function CreatorCard({
         )}
       </div>
 
-      {/* Bottom stats: Followers | ER% | Cost */}
-      <div className="grid grid-cols-3 gap-2 mb-4 text-center">
+      <div className="grid grid-cols-3 gap-2 mb-3 text-center">
         <div className="bento-card-dark p-2 rounded-lg">
           <p className="text-[10px] text-chalk-faint mb-0.5">Followers</p>
           <p className="text-sm font-bold text-chalk leading-none">
@@ -107,15 +111,29 @@ export function CreatorCard({
             {inf.engagementRate != null ? `${inf.engagementRate}%` : "—"}
           </p>
         </div>
-        <div className="bento-card-dark p-2 rounded-lg">
-          <p className="text-[10px] text-chalk-faint mb-0.5">Cost</p>
-          <p className="text-sm font-bold text-chalk leading-none">
-            {inf.price ? `₹${inf.price.toLocaleString("en-IN")}` : "—"}
-          </p>
+        <div className="bento-card-dark p-2 rounded-lg flex flex-col items-center justify-center gap-1">
+          <p className="text-[10px] text-chalk-faint leading-none">Cost</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-bold text-chalk leading-none">
+              {inf.price ? `₹${inf.price.toLocaleString("en-IN")}` : "—"}
+            </p>
+            {inf.tier !== "celeb" && (
+              <button
+                onClick={handleCartClick}
+                aria-label={inCart ? "In cart" : "Add to cart"}
+                className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
+                  inCart
+                    ? "bg-green-500/20 text-green-400 cursor-default"
+                    : "bg-gold/15 text-gold hover:bg-gold/25 active:scale-95"
+                }`}
+              >
+                {inCart ? <Check className="w-3 h-3" /> : <ShoppingCart className="w-3 h-3" />}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* CTA */}
       {inf.tier === "celeb" ? (
         <button
           onClick={(e) => { e.stopPropagation(); onGetInTouch(); }}
@@ -125,15 +143,15 @@ export function CreatorCard({
         </button>
       ) : (
         <button
-          onClick={(e) => { e.stopPropagation(); onAddToCart(); }}
+          onClick={handleCartClick}
           className={`w-full py-1.5 text-[10px] rounded-full font-bold flex items-center justify-center gap-1 transition-all ${
             inCart
-              ? "bg-green-500/20 text-green-400 border border-green-500/30 cursor-default"
+              ? "bg-green-500/20 text-green-400 border border-green-500/30"
               : "purple-pill"
           }`}
         >
           {inCart
-            ? <><Check className="w-3 h-3" /> Added to Cart</>
+            ? <><Check className="w-3 h-3" /> In Cart — Configure</>
             : <><ShoppingCart className="w-3 h-3" /> Add to Cart</>}
         </button>
       )}

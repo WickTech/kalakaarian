@@ -1,90 +1,96 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight } from "lucide-react";
+import { api } from "@/lib/api";
 
-const TIERS = [
-  {
-    key: "nano",
-    label: "Nano",
-    cssClass: "tier-nano",
-    range: "1K – 10K followers",
-    desc: "Hyper-engaged communities, authentic voice, niche audiences.",
-  },
-  {
-    key: "micro",
-    label: "Micro",
-    cssClass: "tier-micro",
-    range: "10K – 100K followers",
-    desc: "Niche authority with strong community trust and cost-effective reach.",
-  },
-  {
-    key: "macro",
-    label: "Macro",
-    cssClass: "tier-macro",
-    range: "100K – 1M followers",
-    desc: "Wide reach with professional content and brand-safe delivery.",
-  },
-  {
-    key: "celeb",
-    label: "Celebrity",
-    cssClass: "tier-celebrity",
-    range: "1M+ followers",
-    desc: "Maximum exposure with verified stars and premium audiences.",
-  },
-] as const;
+type TierKey = "nano" | "micro" | "macro" | "celeb";
+
+const TIERS: Array<{
+  key: TierKey;
+  label: string;
+  range: string;
+  cpm: string;
+}> = [
+  { key: "nano", label: "Nano", range: "1K – 10K", cpm: "₹500 – ₹2K" },
+  { key: "micro", label: "Micro", range: "10K – 100K", cpm: "₹2K – ₹15K" },
+  { key: "macro", label: "Macro", range: "100K – 1M", cpm: "₹15K – ₹1L" },
+  { key: "celeb", label: "Celebrity", range: "1M+", cpm: "₹1L+" },
+];
 
 export default function BrandWelcome() {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    document.title = "Welcome — Kalakaarian";
-  }, []);
+  useEffect(() => { document.title = "Welcome — Kalakaarian"; }, []);
+
+  const { data: counts = {} } = useQuery<Record<string, number>>({
+    queryKey: ["tier-counts"],
+    queryFn: () => api.getTierCounts(),
+    staleTime: 5 * 60_000,
+  });
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-16">
-      <div className="w-full max-w-5xl">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-3">
+    <div className="min-h-screen bg-obsidian flex flex-col items-center justify-center px-6 py-20">
+      <div className="w-full max-w-6xl">
+        <div className="text-center mb-16">
+          <p className="text-[11px] tracking-[0.3em] uppercase text-gold mb-4">Influence.Market</p>
+          <h1 className="text-5xl md:text-6xl font-light text-chalk mb-5 tracking-tight">
             Find Your Perfect Creators
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-chalk-dim text-base md:text-lg font-light max-w-xl mx-auto">
             Browse by tier to match your campaign goals and budget.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          {TIERS.map((tier) => (
-            <button
-              key={tier.key}
-              onClick={() => navigate(`/marketplace?tier=${tier.key}`)}
-              className="group text-left rounded-2xl border border-border bg-card p-6 flex flex-col gap-4 hover:border-primary/50 hover:shadow-lg transition-all duration-200 cursor-pointer"
-            >
-              <span
-                className={`self-start text-xs font-bold px-3 py-1 rounded-full ${tier.cssClass}`}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+          {TIERS.map((tier) => {
+            const inventory = counts[tier.key] ?? 0;
+            return (
+              <button
+                key={tier.key}
+                onClick={() => navigate(`/marketplace?tier=${tier.key}`)}
+                className="group relative text-left rounded-2xl border border-white/10 bg-charcoal/40 p-7 flex flex-col gap-6 hover:border-gold/40 hover:bg-charcoal/60 transition-all duration-300"
               >
-                {tier.label.toUpperCase()}
-              </span>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-foreground">{tier.range}</p>
-                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                  {tier.desc}
-                </p>
-              </div>
-              <span className="text-xs font-medium text-primary group-hover:underline">
-                Explore {tier.label} →
-              </span>
-            </button>
-          ))}
+                <div className="flex items-baseline justify-between">
+                  <h2 className="text-3xl font-light text-chalk tracking-tight">{tier.label}</h2>
+                  <span className="text-[10px] tracking-[0.25em] uppercase text-chalk-faint">
+                    {inventory} {inventory === 1 ? "creator" : "creators"}
+                  </span>
+                </div>
+
+                <div className="space-y-4 flex-1">
+                  <Stat label="Reach Range" value={tier.range} />
+                  <Stat label="Avg CPM" value={tier.cpm} />
+                  <Stat label="Inventory" value={`${inventory.toLocaleString("en-IN")} live`} />
+                </div>
+
+                <div className="flex items-center gap-2 pt-4 border-t border-white/5 text-sm text-gold group-hover:gap-3 transition-all">
+                  <span className="font-light tracking-wide">Explore {tier.label}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex justify-center">
           <button
             onClick={() => navigate("/marketplace")}
-            className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+            className="px-10 py-3.5 rounded-full border border-white/15 text-chalk text-sm tracking-wide font-light hover:border-gold/50 hover:text-gold transition-all"
           >
             View All Creators
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <span className="text-[11px] tracking-[0.18em] uppercase text-chalk-faint">{label}</span>
+      <span className="text-sm font-medium text-chalk">{value}</span>
     </div>
   );
 }

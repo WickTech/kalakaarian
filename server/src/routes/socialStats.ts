@@ -53,7 +53,7 @@ async function buildIgStats(accountId: string | undefined, handle: string | null
         posts: m.posts_count ?? 0,
         avgLikes: m.avg_likes ?? 0,
         avgComments: m.avg_comments ?? 0,
-        engagementRate: (m.engagement_rate ?? 0) / 100,
+        engagementRate: m.engagement_rate ?? 0,
         isMock: false,
       };
     }

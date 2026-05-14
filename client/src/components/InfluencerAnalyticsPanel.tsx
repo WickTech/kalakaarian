@@ -36,13 +36,21 @@ export function InfluencerAnalyticsPanel({ proposals, stats }: Props) {
     const igErr = searchParams.get('ig_error');
     const ytErr = searchParams.get('yt_error');
     if (ig || yt) {
+      const platform: PlatformTab = ig ? 'instagram' : 'youtube';
       toast({ title: `${ig ? 'Instagram' : 'YouTube'} connected!`, description: 'Real audience analytics are now active.' });
-      setPlatformTab(ig ? 'instagram' : 'youtube');
+      setPlatformTab(platform);
+      queryClient.invalidateQueries({ queryKey: ['connected-platforms'] });
+      navigate('/influencer/dashboard?tab=analytics', { replace: true });
+
+      const start = Date.now();
+      const id = window.setInterval(() => {
+        queryClient.invalidateQueries({ queryKey: ['connected-platforms'] });
+        queryClient.invalidateQueries({ queryKey: ['platform-metrics', platform] });
+        if (Date.now() - start >= 30_000) window.clearInterval(id);
+      }, 5_000);
+      return () => window.clearInterval(id);
     } else if (igErr || ytErr) {
       toast({ title: `${igErr ? 'Instagram' : 'YouTube'} connection failed`, description: 'Make sure you have the right account type and try again.', variant: 'destructive' });
-    }
-    if (ig || yt || igErr || ytErr) {
-      queryClient.invalidateQueries({ queryKey: ['connected-platforms'] });
       navigate('/influencer/dashboard?tab=analytics', { replace: true });
     }
   }, []);

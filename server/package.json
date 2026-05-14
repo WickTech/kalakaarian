@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "seed": "ts-node src/scripts/seed.ts",
     "seed:influencers": "ts-node src/scripts/seedInfluencers.ts",
-    "test": "echo \"No server tests yet\" && exit 0"
+    "test": "node -r ts-node/register --test 'src/**/*.test.ts'"
   },
   "dependencies": {
     "@sentry/node": "^10.49.0",

@@ -22,7 +22,7 @@ function generateMockStats(handle: string): InstagramStats {
     handle, followers: baseFollowers, following: Math.floor(baseFollowers * 0.3),
     posts: Math.floor(Math.random() * 500) + 50,
     avgLikes: Math.floor(baseFollowers * 0.05), avgComments: Math.floor(baseFollowers * 0.005),
-    engagementRate: (Math.random() * 6 + 2) / 100, isMock: true,
+    engagementRate: Math.random() * 6 + 2, isMock: true,
   };
 }
 
@@ -51,7 +51,7 @@ export async function getInstagramStats(handle: string): Promise<InstagramStats>
         handle: cleanHandle, followers: data.followers_count || 0, following: data.follows_count || 0,
         posts: data.media_count || 0, avgLikes: Math.floor(Math.random() * 5000) + 500,
         avgComments: Math.floor(Math.random() * 200) + 20,
-        engagementRate: data.followers_count > 0 ? (Math.random() * 8 + 2) / 100 : 0, isMock: false,
+        engagementRate: data.followers_count > 0 ? Math.random() * 8 + 2 : 0, isMock: false,
       };
     } catch (error) { console.error('Instagram API error:', error); }
   }

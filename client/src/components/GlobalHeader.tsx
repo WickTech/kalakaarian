@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Menu, ShoppingCart, LogOut, User,
-  Bell, Settings, FileText, ChevronDown, BarChart2,
+  Bell, Settings, FileText, ChevronDown, BarChart2, ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCartContext } from "@/contexts/CartContext";
@@ -26,7 +26,7 @@ const BASE_NAV_LINKS = [
 ];
 
 export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, isSuperAdmin, viewAs, setViewAs } = useAuth();
   const cart = useCartContext();
   const location = useLocation();
   const navigate = useNavigate();
@@ -123,11 +123,37 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                     <ChevronDown className="w-3 h-3 opacity-80" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuContent align="end" className="w-56">
                   <div className="px-3 py-2 border-b border-border mb-1">
-                    <p className="text-sm font-semibold truncate">{user.name || "User"}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold truncate flex-1">{user.name || "User"}</p>
+                      {isSuperAdmin && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gold/20 text-gold font-bold shrink-0">Founder</span>}
+                    </div>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {isSuperAdmin ? `Admin · ${viewAs} view` : user.role}
+                    </p>
                   </div>
+                  {isSuperAdmin && (
+                    <>
+                      <div className="px-3 py-2 space-y-1.5 border-b border-border mb-1">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">View as</p>
+                        <div className="flex gap-1">
+                          {(["admin", "brand", "creator"] as const).map((v) => (
+                            <button key={v} onClick={() => setViewAs(v)}
+                              className={`flex-1 py-1 rounded text-[11px] font-medium transition-all capitalize ${viewAs === v ? "bg-purple-600 text-white" : "bg-white/5 text-chalk-dim hover:bg-white/10"}`}>
+                              {v}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
+                          <ShieldCheck className="w-4 h-4 text-gold" /> Admin Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
                       <User className="w-4 h-4" /> Profile
@@ -220,6 +246,25 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                   <div className="border-t border-border my-2" />
                   {user ? (
                     <>
+                      {isSuperAdmin && (
+                        <>
+                          <div className="px-4 py-2 space-y-1.5">
+                            <p className="text-[10px] text-chalk-faint uppercase tracking-wide">View as</p>
+                            <div className="flex gap-1">
+                              {(["admin", "brand", "creator"] as const).map((v) => (
+                                <button key={v} onClick={() => { setViewAs(v); setMobileOpen(false); }}
+                                  className={`flex-1 py-1.5 rounded text-xs font-medium capitalize transition-all ${viewAs === v ? "bg-purple-600 text-white" : "bg-white/5 text-chalk-dim"}`}>
+                                  {v}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <Link to="/admin" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-gold hover:bg-gold/10 transition-colors flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4" /> Admin Dashboard
+                          </Link>
+                          <div className="border-t border-border my-1" />
+                        </>
+                      )}
                       <Link to="/profile" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
                         <User className="w-4 h-4" /> Profile
                       </Link>

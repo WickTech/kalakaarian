@@ -6,10 +6,11 @@ export interface User {
   email?: string;
   username?: string;
   phone?: string;
-  role: "brand" | "influencer";
+  role: "brand" | "influencer" | "super_admin";
   name?: string;
   brandName?: string;
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
 }
 
 export type PlatformKind = 'instagram' | 'youtube';
@@ -840,12 +841,37 @@ export const api = {
     request(`/api/influencers/${influencerId}/ratings`),
 
   // Admin
-  adminGetUsers: async (): Promise<{ users: Array<{ id: string; name: string; email: string; role: string; created_at: string }> }> =>
-    request('/api/admin/users'),
+  adminGetStats: async (): Promise<{
+    totalUsers: number; totalCreators: number; totalBrands: number;
+    totalCampaigns: number; verifiedCreators: number; suspendedUsers: number;
+  }> => request('/api/admin/stats'),
+  adminGetUsers: async (params?: { role?: string; suspended?: boolean; search?: string }): Promise<{
+    users: Array<{ id: string; name: string; email: string; role: string; is_super_admin: boolean; is_suspended: boolean; created_at: string }>;
+  }> => request(`/api/admin/users${params ? '?' + new URLSearchParams(
+    Object.fromEntries(Object.entries(params ?? {}).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]))
+  ) : ''}`),
   adminGetCampaigns: async (): Promise<{ campaigns: Array<{ id: string; title: string; status: string; brand_id: string; created_at: string }> }> =>
     request('/api/admin/campaigns'),
   adminUpdateCampaignStatus: async (id: string, status: string): Promise<{ message: string }> =>
     request(`/api/admin/campaigns/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
+  adminSuspendUser: async (id: string, suspend: boolean): Promise<{ message: string }> =>
+    request(`/api/admin/users/${id}/suspend`, { method: 'PUT', body: JSON.stringify({ suspend }) }),
+  adminVerifyCreator: async (id: string, verified: boolean): Promise<{ message: string }> =>
+    request(`/api/admin/users/${id}/verify`, { method: 'PUT', body: JSON.stringify({ verified }) }),
+  adminForcePresence: async (id: string, online: boolean): Promise<{ message: string }> =>
+    request(`/api/admin/users/${id}/presence`, { method: 'PUT', body: JSON.stringify({ online }) }),
+  adminDeleteUser: async (id: string): Promise<{ message: string }> =>
+    request(`/api/admin/users/${id}`, { method: 'DELETE' }),
+  adminPromoteSuperAdmin: async (id: string, promote: boolean): Promise<{ message: string }> =>
+    request(`/api/admin/users/${id}/promote`, { method: 'PUT', body: JSON.stringify({ promote }) }),
+  adminGetFeatureFlags: async (): Promise<{
+    flags: Array<{ key: string; enabled: boolean; description: string; updated_at: string }>;
+  }> => request('/api/admin/flags'),
+  adminUpdateFeatureFlag: async (key: string, enabled: boolean): Promise<{ message: string }> =>
+    request(`/api/admin/flags/${key}`, { method: 'PUT', body: JSON.stringify({ enabled }) }),
+  adminGetAuditLogs: async (): Promise<{
+    logs: Array<{ id: string; admin_id: string; action: string; target_type: string; target_id: string; details: object; created_at: string; profiles: { name: string; email: string } }>;
+  }> => request('/api/admin/audit-logs'),
 
   // Gamification
   getGamification: async (): Promise<{

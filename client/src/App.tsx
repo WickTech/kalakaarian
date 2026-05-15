@@ -73,62 +73,36 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function BrandRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (user.role !== "brand") {
-    return <Navigate to="/" replace />;
-  }
-
+  const { user, loading, isSuperAdmin, viewAs } = useAuth();
+  if (loading) return <div className="flex min-h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700" /></div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (isSuperAdmin && viewAs === "brand") return <>{children}</>;
+  if (user.role !== "brand") return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
 function InfluencerRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isSuperAdmin, viewAs } = useAuth();
+  if (loading) return <div className="flex min-h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700" /></div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (isSuperAdmin && viewAs === "creator") return <>{children}</>;
+  if (user.role !== "influencer") return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (user.role !== "influencer") {
-    return <Navigate to="/" replace />;
-  }
-
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading, isSuperAdmin } = useAuth();
+  if (loading) return <div className="flex min-h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700" /></div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!isSuperAdmin) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
 // Blocks logged-in creators from brand-facing public pages. Anonymous + brand users pass through.
 function BlockCreatorRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
-      </div>
-    );
-  }
-  if (user?.role === "influencer") {
-    return <Navigate to={`/influencer/${user.id}`} replace />;
-  }
+  const { user, loading, isSuperAdmin } = useAuth();
+  if (loading) return <div className="flex min-h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700" /></div>;
+  if (!isSuperAdmin && user?.role === "influencer") return <Navigate to={`/influencer/${user.id}`} replace />;
   return <>{children}</>;
 }
 
@@ -305,7 +279,7 @@ function AppContent() {
         />
         <Route path="/feed" element={<Feed />} />
         <Route path="/checkout" element={<BrandRoute><CheckoutPage /></BrandRoute>} />
-        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />
         <Route path="/proposals/shared/:id" element={<SharedWorkflowView />} />
         <Route path="/brand/campaigns/:id/track" element={<BrandRoute><CampaignTrackPage /></BrandRoute>} />

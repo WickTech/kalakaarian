@@ -145,13 +145,25 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const { data: profile } = await adminClient
       .from('profiles')
-      .select('id, email, username, name, role')
+      .select('id, email, username, name, role, is_super_admin')
       .eq('id', data.user.id)
       .single();
 
+    const isSuperAdmin = profile?.is_super_admin ?? false;
+    // Sync is_super_admin into user_metadata so JWT reflects it on subsequent requests
+    if (isSuperAdmin !== (data.user.user_metadata?.is_super_admin ?? false)) {
+      await adminClient.auth.admin.updateUserById(data.user.id, {
+        user_metadata: { ...data.user.user_metadata, is_super_admin: isSuperAdmin },
+      });
+    }
+
     res.json({
       message: 'Login successful',
-      user: { ...profile, isAdmin: data.user.user_metadata?.is_admin ?? false },
+      user: {
+        ...profile,
+        isAdmin: isSuperAdmin || (data.user.user_metadata?.is_admin ?? false),
+        isSuperAdmin,
+      },
       token: data.session.access_token,
     });
   } catch (error) {
@@ -214,13 +226,24 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
 
     const { data: profile } = await adminClient
       .from('profiles')
-      .select('id, email, name, role')
+      .select('id, email, name, role, is_super_admin')
       .eq('id', userId)
       .single();
 
+    const isSuperAdmin = profile?.is_super_admin ?? false;
+    if (isSuperAdmin !== (data.user.user_metadata?.is_super_admin ?? false)) {
+      await adminClient.auth.admin.updateUserById(userId, {
+        user_metadata: { ...data.user.user_metadata, is_super_admin: isSuperAdmin },
+      });
+    }
+
     res.json({
       message: 'Google login successful',
-      user: { ...profile, isAdmin: data.user.user_metadata?.is_admin ?? false },
+      user: {
+        ...profile,
+        isAdmin: isSuperAdmin || (data.user.user_metadata?.is_admin ?? false),
+        isSuperAdmin,
+      },
       token: data.session.access_token,
       isNewUser,
     });

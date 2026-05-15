@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { api, InfluencerProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { openRazorpayCheckout } from "@/lib/razorpay";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, LogOut } from "lucide-react";
 
 export { WalletTab } from "./WalletTab";
 
@@ -142,6 +143,8 @@ export function MembershipTab({ membershipStatus }: MembershipProps) {
 interface SettingsProps { profile: InfluencerProfile | null; }
 export function SettingsTab({ profile }: SettingsProps) {
   const { toast } = useToast();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
   return (
@@ -170,6 +173,14 @@ export function SettingsTab({ profile }: SettingsProps) {
           className="flex items-center gap-2 text-sm text-chalk-dim hover:text-chalk transition-colors">
           <ExternalLink className="w-4 h-4" /> View Public Profile
         </a>
+      </div>
+      <div className="border-t border-white/5 pt-4">
+        <button
+          onClick={() => { logout(); navigate("/"); }}
+          className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors"
+        >
+          <LogOut className="w-4 h-4" /> Logout
+        </button>
       </div>
     </div>
   );

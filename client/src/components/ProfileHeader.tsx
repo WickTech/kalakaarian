@@ -13,10 +13,27 @@ interface ProfileHeaderProps {
     city: string;
     socialHandles?: { instagram?: string; youtube?: string };
     isOnline?: boolean;
+    onlineSince?: string | null;
+    lastSeenAt?: string | null;
   };
   isOwnProfile: boolean;
   onImageUpload?: (file: File) => void;
   onStatusToggle?: (isOnline: boolean) => void;
+}
+
+function fmtRelative(iso?: string | null): string {
+  if (!iso) return '—';
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '—';
+  const diff = Math.max(0, Date.now() - then);
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString();
 }
 
 const tierStyles = {
@@ -43,10 +60,15 @@ const INFLUENCER_TIER_LABEL: Record<string, string> = {
 
 export function ProfileHeader({ profile, isOwnProfile, onImageUpload, onStatusToggle }: ProfileHeaderProps) {
   const [isOnline, setIsOnline] = useState(profile.isOnline || false);
+  const [onlineSince, setOnlineSince] = useState<string | null>(profile.onlineSince ?? null);
+  const [lastSeenAt, setLastSeenAt] = useState<string | null>(profile.lastSeenAt ?? null);
 
   const handleStatusToggle = () => {
     const newStatus = !isOnline;
+    const now = new Date().toISOString();
     setIsOnline(newStatus);
+    if (newStatus) { setOnlineSince(now); setLastSeenAt(null); }
+    else { setLastSeenAt(now); setOnlineSince(null); }
     onStatusToggle?.(newStatus);
   };
 
@@ -93,6 +115,11 @@ export function ProfileHeader({ profile, isOwnProfile, onImageUpload, onStatusTo
                 <WifiOff className="w-4 h-4 text-gray-400" />
               )}
             </button>
+          )}
+          {isOwnProfile && (
+            <p className={`mt-2 text-[11px] text-center ${isOnline ? 'text-green-400' : 'text-chalk-faint'}`}>
+              {isOnline ? `Active since ${fmtRelative(onlineSince)}` : `Offline since ${fmtRelative(lastSeenAt)}`}
+            </p>
           )}
         </div>
 

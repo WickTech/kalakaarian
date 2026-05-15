@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Loader2, Upload, BarChart2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, InfluencerProfile as InfluencerProfileData, VideoItem, SocialStats } from '@/lib/api';
@@ -15,6 +15,8 @@ import { CelebCallbackModal } from '@/components/CelebCallbackModal';
 import { SocialPlatformPanel } from '@/components/profile/SocialPlatformPanel';
 import { AnalyticsSection } from '@/components/profile/AnalyticsSection';
 import { MembershipSection } from '@/components/profile/MembershipSection';
+import { ProfileGallery } from '@/components/profile/ProfileGallery';
+import { UploadPlatformModal } from '@/components/profile/UploadPlatformModal';
 import { Influencer } from '@/lib/store';
 
 export default function InfluencerProfile() {
@@ -30,6 +32,8 @@ export default function InfluencerProfile() {
   const isOwnProfile = user?.id === id;
   const isBrand = user?.role === 'brand';
   const [showCelebModal, setShowCelebModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [gallery, setGallery] = useState<string[]>([]);
   const highlightSocial = hash === '#social';
 
   const { data: profile, isLoading } = useQuery<InfluencerProfileData>({
@@ -52,6 +56,10 @@ export default function InfluencerProfile() {
 
   const serverAnalytics =
     (socialStats as SocialStats & { analytics?: { engagementRate?: number; avgViews?: number; totalFollowers?: number; reachEstimate?: number; source?: string; authenticityScore?: number } })?.analytics ?? null;
+
+  useEffect(() => {
+    if (profile?.galleryImages) setGallery(profile.galleryImages);
+  }, [profile?.galleryImages]);
 
   useEffect(() => {
     if (highlightSocial && socialRef.current) {
@@ -98,6 +106,12 @@ export default function InfluencerProfile() {
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   }
+
+  // Creators can only view their own profile, not other creators'.
+  if (user?.role === 'influencer' && !isOwnProfile) {
+    return <Navigate to={`/influencer/${user.id}`} replace />;
+  }
+
   if (!profile) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
@@ -123,6 +137,8 @@ export default function InfluencerProfile() {
               city: profile.city || '',
               socialHandles: profile.socialHandles,
               isOnline: profile.isOnline,
+              onlineSince: profile.onlineSince,
+              lastSeenAt: profile.lastSeenAt,
             }}
             isOwnProfile={isOwnProfile}
             onStatusToggle={handleStatusToggle}
@@ -130,9 +146,9 @@ export default function InfluencerProfile() {
 
           {isOwnProfile && (
             <div className="flex gap-3">
-              <button onClick={() => navigate('/influencer/dashboard?tab=upload')}
+              <button onClick={() => setShowUploadModal(true)}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all">
-                <Upload className="w-4 h-4" /> Submit Content
+                <Upload className="w-4 h-4" /> Upload
               </button>
               <button onClick={() => navigate('/influencer/dashboard?tab=analytics')}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all">
@@ -140,6 +156,12 @@ export default function InfluencerProfile() {
               </button>
             </div>
           )}
+
+          <ProfileGallery
+            images={gallery}
+            isOwnProfile={isOwnProfile}
+            onChange={(next) => setGallery(next)}
+          />
 
           <div ref={socialRef} id="social" className="scroll-mt-20">
             <h2 className="text-lg font-semibold mb-4">Social Media</h2>
@@ -179,6 +201,12 @@ export default function InfluencerProfile() {
       {showCelebModal && profile && (
         <CelebCallbackModal influencerId={id!} influencerName={profile.name || 'this creator'} onClose={() => setShowCelebModal(false)} />
       )}
+
+      <UploadPlatformModal
+        open={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onUploaded={() => qc.invalidateQueries({ queryKey: ['my-videos'] })}
+      />
     </>
   );
 }

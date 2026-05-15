@@ -24,6 +24,8 @@ export const formatInfluencer = (row: any) => {
     verified: !!row.is_verified,
     isOnline: !!row.is_online,
     lastSeenAt: row.last_seen_at,
+    onlineSince: row.online_since ?? null,
+    galleryImages: row.gallery_images ?? [],
     profileImage: row.profiles?.avatar_url ?? row.avatar_url,
     followerCount: row.followers_count ?? 0,
     portfolio: row.portfolio ?? [],
@@ -83,6 +85,9 @@ const buildInfluencerQuery = (params: Record<string, any>) => {
   }
   if (params.name) q = q.ilike('profiles.name', `%${params.name}%`);
   if (params.q) q = q.textSearch('fts', params.q, { type: 'websearch' });
+
+  // Public listings hide offline creators.
+  q = q.eq('is_online', true);
 
   return q;
 };
@@ -148,7 +153,14 @@ export const getInfluencerById = async (req: Request, res: Response): Promise<vo
       .eq('id', req.params.id)
       .single();
     if (error || !data) { res.status(404).json({ message: 'Influencer not found' }); return; }
-    res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
+
+    // Offline creators are hidden from anyone except themselves.
+    const viewerId = (req as AuthRequest).user?.userId;
+    if (!data.is_online && viewerId !== data.id) {
+      res.status(404).json({ message: 'Influencer not found' }); return;
+    }
+
+    res.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=120');
     res.json({ influencer: formatInfluencer(data) });
   } catch (error) {
     console.error('Get influencer error:', error);
@@ -232,9 +244,11 @@ export const updatePresence = async (req: AuthRequest, res: Response): Promise<v
       res.status(403).json({ message: 'Only influencers can update presence' }); return;
     }
     const { isOnline } = req.body;
+    const now = new Date().toISOString();
     await adminClient.from('influencer_profiles').update({
       is_online: !!isOnline,
-      last_seen_at: isOnline ? null : new Date().toISOString(),
+      last_seen_at: isOnline ? null : now,
+      online_since: isOnline ? now : null,
     }).eq('id', req.user.userId);
     res.json({ message: 'Presence updated' });
   } catch (error) {
@@ -252,6 +266,28 @@ export const updateProfileImage = async (req: AuthRequest, res: Response): Promi
     res.json({ message: 'Profile image updated', imageUrl });
   } catch (error) {
     console.error('Update profile image error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateGallery = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'influencer') {
+      res.status(403).json({ message: 'Only influencers can update gallery' }); return;
+    }
+    const { imageUrls } = req.body as { imageUrls?: unknown };
+    if (!Array.isArray(imageUrls) || !imageUrls.every((u) => typeof u === 'string')) {
+      res.status(400).json({ message: 'imageUrls must be an array of strings' }); return;
+    }
+    if (imageUrls.length > 12) {
+      res.status(400).json({ message: 'Maximum 12 gallery images' }); return;
+    }
+    await adminClient.from('influencer_profiles')
+      .update({ gallery_images: imageUrls })
+      .eq('id', req.user.userId);
+    res.json({ message: 'Gallery updated', galleryImages: imageUrls });
+  } catch (error) {
+    console.error('Update gallery error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

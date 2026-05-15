@@ -116,6 +116,36 @@ function InfluencerRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Blocks logged-in creators from brand-facing public pages. Anonymous + brand users pass through.
+function BlockCreatorRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
+      </div>
+    );
+  }
+  if (user?.role === "influencer") {
+    return <Navigate to={`/influencer/${user.id}`} replace />;
+  }
+  return <>{children}</>;
+}
+
+function ProfileRouter() {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === "influencer") return <Navigate to={`/influencer/${user.id}`} replace />;
+  return <MyProfile />;
+}
+
 function SmartHome() {
   const { user, loading } = useAuth();
   if (loading) return (
@@ -164,10 +194,12 @@ function AppContent() {
         <Route
           path="/marketplace"
           element={
-            <Marketplace
-              isInCart={cart.isInCart}
-              addToCart={cart.addToCart}
-            />
+            <BlockCreatorRoute>
+              <Marketplace
+                isInCart={cart.isInCart}
+                addToCart={cart.addToCart}
+              />
+            </BlockCreatorRoute>
           }
         />
         <Route path="/login" element={<LoginPage />} />
@@ -256,11 +288,7 @@ function AppContent() {
         />
         <Route
           path="/profile"
-          element={
-            <ProtectedRoute>
-              <MyProfile />
-            </ProtectedRoute>
-          }
+          element={<ProfileRouter />}
         />
         <Route
           path="/profile/edit"
@@ -281,7 +309,7 @@ function AppContent() {
         <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />
         <Route path="/proposals/shared/:id" element={<SharedWorkflowView />} />
         <Route path="/brand/campaigns/:id/track" element={<BrandRoute><CampaignTrackPage /></BrandRoute>} />
-        <Route path="/brand/:id" element={<BrandPublicProfile />} />
+        <Route path="/brand/:id" element={<BlockCreatorRoute><BrandPublicProfile /></BlockCreatorRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
         <Route
           path="/contact"

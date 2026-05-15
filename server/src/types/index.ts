@@ -36,6 +36,8 @@ export interface IInfluencerProfile {
   is_online?: boolean;
   is_verified?: boolean;
   last_seen_at?: string | null;
+  online_since?: string | null;
+  gallery_images?: string[];
   followers_count?: number;
   engagement_rate?: number | null;
   portfolio?: string[];

@@ -123,7 +123,9 @@ export interface InfluencerProfile {
   profileImage?: string;
   verified?: boolean;
   isOnline?: boolean;
-  lastSeenAt?: string;
+  lastSeenAt?: string | null;
+  onlineSince?: string | null;
+  galleryImages?: string[];
   followerCount?: number;
   instagramPosts?: Array<{ url: string; thumbnail?: string; caption?: string }>;
   youtubeVideos?: Array<{ url: string; thumbnail?: string; title?: string }>;
@@ -720,6 +722,13 @@ export const api = {
     return request<void>('/api/influencers/presence', {
       method: 'PUT',
       body: JSON.stringify({ isOnline }),
+    });
+  },
+
+  updateGallery: async (imageUrls: string[]): Promise<{ galleryImages: string[] }> => {
+    return request<{ galleryImages: string[] }>('/api/influencers/gallery', {
+      method: 'PUT',
+      body: JSON.stringify({ imageUrls }),
     });
   },
 

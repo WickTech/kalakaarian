@@ -1,12 +1,13 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Loader2, Lock, Save, User } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, Lock, Save, Trash2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api } from "@/lib/api";
+import { DeleteAccountModal } from "@/components/DeleteAccountModal";
 
 const CATEGORIES = [
   "Fashion", "Technology", "Food & Beverage", "Health & Wellness",
@@ -30,6 +31,7 @@ export default function EditBrandProfile() {
   const [phone, setPhone] = useState("");
   const [industry, setIndustry] = useState("");
   const [pw, setPw] = useState<PwForm>({ current: "", next: "", confirm: "" });
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
     api.getBrandSettings().then(({ user, profile }) => {
@@ -193,6 +195,22 @@ export default function EditBrandProfile() {
           </Button>
         </form>
       </div>
+
+      <div className="rounded-xl border border-red-500/20 p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Trash2 className="w-4 h-4 text-red-400" />
+          <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wide">Danger Zone</h2>
+        </div>
+        <p className="text-xs text-chalk-dim">Permanently delete your account and all associated data. This cannot be undone.</p>
+        <button
+          onClick={() => setDeleteOpen(true)}
+          className="flex items-center gap-2 text-sm text-red-500 hover:text-red-400 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" /> Delete Account
+        </button>
+      </div>
+
+      <DeleteAccountModal open={deleteOpen} onClose={() => setDeleteOpen(false)} />
     </div>
   );
 }

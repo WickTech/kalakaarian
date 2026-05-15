@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
-import { Plus, Search, FileText, Users, LogOut, BarChart2 } from "lucide-react";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { Search, FileText, Users, BarChart2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { api, Campaign, Proposal } from "@/lib/api";
@@ -23,8 +23,7 @@ const STATUS_STYLE: Record<string, string> = {
 const VALID_TABS = new Set<Tab>(["overview", "campaigns", "analytics", "room", "history"]);
 
 export default function BrandDashboard() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const urlTab = searchParams.get("tab") as Tab | null;
@@ -53,6 +52,12 @@ export default function BrandDashboard() {
     enabled: !!viewingCampaignId,
   });
 
+  const { data: brandProfile } = useQuery({
+    queryKey: ["brand-profile"],
+    queryFn: () => api.getBrandProfile().catch(() => null),
+    staleTime: 5 * 60_000,
+  });
+
   const statCards = [
     { label: "Active Campaigns", value: campaigns.filter((c) => c.status === "open").length, icon: "🚀" },
     { label: "Total Spent", value: `₹${(analytics?.spend || 0).toLocaleString("en-IN")}`, icon: "💰" },
@@ -61,24 +66,26 @@ export default function BrandDashboard() {
   return (
     <main className="min-h-screen bg-obsidian px-4 py-8">
       <div className="mx-auto max-w-5xl space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-bold text-chalk">{user?.brandName || user?.name || "My Brand"}</h1>
-            <p className="text-chalk-dim text-sm mt-1">Welcome, {user?.name || "Team"}</p>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            {brandProfile?.logo ? (
+              <img src={brandProfile.logo} alt="logo" className="w-10 h-10 rounded-xl object-cover bg-charcoal shrink-0" />
+            ) : (
+              <Link to="/profile/edit" className="w-10 h-10 rounded-xl bg-charcoal border border-dashed border-white/20 flex items-center justify-center text-chalk-faint text-xs hover:border-gold/40 hover:text-gold transition-colors shrink-0" title="Add brand logo">
+                +
+              </Link>
+            )}
+            <div className="min-w-0">
+              <h1 className="font-display text-2xl font-bold text-chalk truncate">{user?.brandName || user?.name || "My Brand"}</h1>
+              <p className="text-chalk-dim text-xs mt-0.5">Welcome, {user?.name || "Team"}</p>
+            </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <Link to="/brand/create-campaign" className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk text-sm transition-colors">
-              <Plus className="w-4 h-4" /> New Campaign
-            </Link>
+          <div className="flex gap-2 flex-wrap shrink-0">
             <Link to="/marketplace" className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk text-sm transition-colors">
               <Search className="w-4 h-4" /> Find Creators
             </Link>
             <button onClick={() => setTab("campaigns")} className="purple-pill flex items-center gap-2 px-4 py-2 text-sm">
               <BarChart2 className="w-4 h-4" /> Campaigns
-            </button>
-            <button onClick={() => { logout(); navigate("/"); }}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 text-sm transition-colors">
-              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>

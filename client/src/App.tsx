@@ -217,9 +217,9 @@ function AppContent() {
         <Route
           path="/brand-campaign"
           element={
-            <ProtectedRoute>
+            <BrandRoute>
               <BrandCampaignPage />
-            </ProtectedRoute>
+            </BrandRoute>
           }
         />
         <Route
@@ -257,9 +257,9 @@ function AppContent() {
         <Route
           path="/influencer/dashboard"
           element={
-            <ProtectedRoute>
+            <InfluencerRoute>
               <InfluencerDashboard />
-            </ProtectedRoute>
+            </InfluencerRoute>
           }
         />
         <Route
@@ -304,7 +304,7 @@ function AppContent() {
           element={<InfluencerProfile />}
         />
         <Route path="/feed" element={<Feed />} />
-        <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+        <Route path="/checkout" element={<BrandRoute><CheckoutPage /></BrandRoute>} />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />
         <Route path="/proposals/shared/:id" element={<SharedWorkflowView />} />

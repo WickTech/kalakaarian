@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import { register, login, googleLogin } from '../controllers/authController';
 import { sendOTP, verifyOTP } from '../controllers/otpController';
 import { getProfile, updateProfile, changePassword } from '../controllers/profileController';
+import { deleteAccount } from '../controllers/accountController';
 import { auth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
@@ -88,6 +89,14 @@ router.put(
   ],
   validate,
   changePassword
+);
+
+router.delete(
+  '/account',
+  auth,
+  [body('password').notEmpty().withMessage('Password required')],
+  validate,
+  deleteAccount as unknown as import('express').RequestHandler
 );
 
 export default router;

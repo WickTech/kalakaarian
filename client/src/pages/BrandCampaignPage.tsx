@@ -1,7 +1,6 @@
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, FileText, Target, Users } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { ArrowLeft, FileText, Target, Users } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 const FEATURES = [
   { icon: FileText, title: "Campaign Brief", desc: "Upload briefs and contracts directly to your campaign." },
@@ -10,7 +9,6 @@ const FEATURES = [
 ];
 
 export default function BrandCampaignPage() {
-  const navigate = useNavigate();
   return (
     <main className="min-h-screen bg-gradient-to-b from-background to-muted/30 px-4 py-10">
       <div className="mx-auto max-w-2xl space-y-8">
@@ -35,17 +33,6 @@ export default function BrandCampaignPage() {
           ))}
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Ready to launch?</CardTitle>
-            <CardDescription>Create your first campaign and start receiving proposals from top creators.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/brand/create-campaign")} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90">
-              <Plus className="w-4 h-4 mr-2" /> Create Campaign
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </main>
   );

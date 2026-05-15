@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ImagePlus } from "lucide-react";
 import { api } from "@/lib/api";
 
 type TierKey = "nano" | "micro" | "macro" | "celeb";
@@ -29,10 +29,31 @@ export default function BrandWelcome() {
     staleTime: 5 * 60_000,
   });
 
+  const { data: brandProfile } = useQuery({
+    queryKey: ["brand-profile"],
+    queryFn: () => api.getBrandProfile().catch(() => null),
+    staleTime: 5 * 60_000,
+  });
+
   return (
     <div className="min-h-screen bg-obsidian flex flex-col items-center justify-center px-6 py-20 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(212,168,67,0.08),transparent_50%)] pointer-events-none" />
       <div className="w-full max-w-6xl relative">
+        {!brandProfile?.logo && (
+          <div className="mb-8 fade-up flex items-center justify-between gap-4 px-5 py-4 rounded-xl border border-dashed border-white/15 bg-white/[0.02]">
+            <div className="flex items-center gap-3">
+              <ImagePlus className="w-5 h-5 text-chalk-faint shrink-0" />
+              <p className="text-sm text-chalk-dim">Add your brand logo to stand out to creators.</p>
+            </div>
+            <button
+              onClick={() => navigate("/profile/edit")}
+              className="text-xs px-4 py-1.5 rounded-full border border-gold/40 text-gold hover:bg-gold/10 transition-all shrink-0"
+            >
+              Upload Logo
+            </button>
+          </div>
+        )}
+
         <div className="text-center mb-16 fade-up">
           <p className="text-chalk text-xl md:text-2xl font-bold max-w-xl mx-auto">
             Browse by tier to match your campaign goals and budget.

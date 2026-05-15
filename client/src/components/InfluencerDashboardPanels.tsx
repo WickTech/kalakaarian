@@ -5,7 +5,8 @@ import { api, InfluencerProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { openRazorpayCheckout } from "@/lib/razorpay";
-import { ExternalLink, LogOut } from "lucide-react";
+import { ExternalLink, LogOut, Trash2 } from "lucide-react";
+import { DeleteAccountModal } from "@/components/DeleteAccountModal";
 
 export { WalletTab } from "./WalletTab";
 
@@ -147,6 +148,7 @@ export function SettingsTab({ profile }: SettingsProps) {
   const navigate = useNavigate();
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
   return (
     <div className="bento-card p-6 space-y-5">
       <h2 className="font-display font-bold text-chalk">Account Settings</h2>
@@ -182,6 +184,15 @@ export function SettingsTab({ profile }: SettingsProps) {
           <LogOut className="w-4 h-4" /> Logout
         </button>
       </div>
+      <div className="border-t border-white/5 pt-4">
+        <button
+          onClick={() => setDeleteOpen(true)}
+          className="flex items-center gap-2 text-sm text-red-500 hover:text-red-400 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" /> Delete Account
+        </button>
+      </div>
+      <DeleteAccountModal open={deleteOpen} onClose={() => setDeleteOpen(false)} />
     </div>
   );
 }

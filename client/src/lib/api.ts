@@ -522,6 +522,13 @@ export const api = {
     });
   },
 
+  deleteAccount: async (password: string): Promise<void> => {
+    return request<void>("/api/auth/account", {
+      method: "DELETE",
+      body: JSON.stringify({ password }),
+    });
+  },
+
   googleLogin: async (googleToken: string, role?: string): Promise<LoginResponse> => {
     return request<LoginResponse>("/api/auth/google", {
       method: "POST",

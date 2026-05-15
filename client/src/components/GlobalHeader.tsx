@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Menu, ShoppingCart, LogOut, User, LayoutDashboard,
-  Bell, Settings, FileText, ChevronDown, Upload, BarChart2,
+  Menu, ShoppingCart, LogOut, User,
+  Bell, Settings, FileText, ChevronDown, BarChart2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCartContext } from "@/contexts/CartContext";
@@ -134,23 +134,11 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                     </Link>
                   </DropdownMenuItem>
                   {user.role === "brand" && (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link to="/marketplace" className="flex items-center gap-2 cursor-pointer">
-                          <LayoutDashboard className="w-4 h-4" /> Create Campaign
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/brand/dashboard?tab=campaigns" className="flex items-center gap-2 cursor-pointer">
-                          <BarChart2 className="w-4 h-4" /> Campaign Tracker
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/brand/create-campaign" className="flex items-center gap-2 cursor-pointer">
-                          <Upload className="w-4 h-4" /> Upload Brief
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
+                    <DropdownMenuItem asChild>
+                      <Link to="/brand/dashboard?tab=campaigns" className="flex items-center gap-2 cursor-pointer">
+                        <BarChart2 className="w-4 h-4" /> Campaign Tracker
+                      </Link>
+                    </DropdownMenuItem>
                   )}
                   {user.role === "influencer" && (
                     <DropdownMenuItem asChild>
@@ -236,14 +224,9 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                         <User className="w-4 h-4" /> Profile
                       </Link>
                       {user.role === "brand" && (
-                        <>
-                          <Link to="/marketplace" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
-                            <LayoutDashboard className="w-4 h-4" /> Create Campaign
-                          </Link>
-                          <Link to="/brand/dashboard?tab=campaigns" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
-                            <BarChart2 className="w-4 h-4" /> Campaign Tracker
-                          </Link>
-                        </>
+                        <Link to="/brand/dashboard?tab=campaigns" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
+                          <BarChart2 className="w-4 h-4" /> Campaign Tracker
+                        </Link>
                       )}
                       {user.role === "influencer" && (
                         <Link to="/campaigns" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">

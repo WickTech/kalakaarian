@@ -86,8 +86,9 @@ const buildInfluencerQuery = (params: Record<string, any>) => {
   if (params.name) q = q.ilike('profiles.name', `%${params.name}%`);
   if (params.q) q = q.textSearch('fts', params.q, { type: 'websearch' });
 
-  // Public listings hide offline creators.
-  q = q.eq('is_online', true);
+  // Hide creators who explicitly went offline (last_seen_at is set + is_online false).
+  // Creators who never toggled presence (last_seen_at IS NULL) still appear.
+  q = q.or('is_online.eq.true,last_seen_at.is.null');
 
   return q;
 };

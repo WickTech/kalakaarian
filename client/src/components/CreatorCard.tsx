@@ -28,13 +28,15 @@ interface Props {
   inCart: boolean;
   onToggleSelect: () => void;
   onAddToCart: () => void;
+  onRemoveFromCart: () => void;
   onGetInTouch: () => void;
 }
 
-export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart, onGetInTouch }: Props) {
+export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart, onRemoveFromCart, onGetInTouch }: Props) {
   const handleCartClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!inCart) onAddToCart();
+    if (inCart) onRemoveFromCart();
+    else onAddToCart();
   };
 
   return (

@@ -173,6 +173,7 @@ function AppContent() {
               <Marketplace
                 isInCart={cart.isInCart}
                 addToCart={cart.addToCart}
+                removeFromCart={cart.removeFromCart}
               />
             </BlockCreatorRoute>
           }

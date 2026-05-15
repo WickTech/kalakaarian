@@ -14,12 +14,13 @@ import { CreatorCardSkeleton } from "@/components/CreatorCardSkeleton";
 interface MarketplaceProps {
   isInCart: (id: string) => boolean;
   addToCart: (i: Influencer) => void;
+  removeFromCart: (id: string) => void;
 }
 
 const TIERS = ["nano", "micro", "macro", "celeb"] as const;
 type Tier = (typeof TIERS)[number];
 
-export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
+export default function Marketplace({ isInCart, addToCart, removeFromCart }: MarketplaceProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const tier: Tier | "all" = parseUrlTier(searchParams.get("tier"));
   const [platform, setPlatform] = useState<"all" | "instagram" | "youtube">("all");
@@ -144,6 +145,7 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
                 selected={selectedIds.has(inf.id)} inCart={isInCart(inf.id)}
                 onToggleSelect={() => toggleSelect(inf.id)}
                 onAddToCart={() => { if (!isInCart(inf.id)) addToCart(inf); }}
+                onRemoveFromCart={() => removeFromCart(inf.id)}
                 onGetInTouch={() => setCelebModal({ id: inf.id, name: inf.name })}
               />
             ))}

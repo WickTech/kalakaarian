@@ -1,398 +1,150 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Loader2, Edit, Instagram, Youtube, Twitter, Globe } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2, Settings, Building2, Mail, Phone, Globe, Tag, FileText, LayoutDashboard } from "lucide-react";
+import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
-import { api, InfluencerProfile, BrandProfile } from "@/lib/api";
 
-interface InfluencerProfileView extends InfluencerProfile {
-  tiktokHandle?: string;
-  twitterHandle?: string;
-  followers?: {
-    instagram?: number;
-    youtube?: number;
-    tiktok?: number;
-    twitter?: number;
-    total?: number;
-  };
-  engagementRate?: number;
-  posts?: Array<{
-    id: string;
-    imageUrl: string;
-    postUrl: string;
-    likes?: number;
-  }>;
-  videos?: Array<{
-    id: string;
-    thumbnailUrl: string;
-    title: string;
-    videoUrl: string;
-    views?: number;
-  }>;
+function InfoRow({ icon: Icon, label, value, href }: { icon: React.ElementType; label: string; value: string; href?: string }) {
+  return (
+    <div className="flex items-start gap-3 py-3 border-b border-white/5 last:border-0">
+      <div className="p-1.5 rounded-lg bg-white/[0.04] shrink-0 mt-0.5">
+        <Icon className="w-3.5 h-3.5 text-chalk-faint" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] tracking-[0.14em] uppercase text-chalk-faint mb-0.5">{label}</p>
+        {href ? (
+          <a href={href} target="_blank" rel="noreferrer" className="text-sm text-purple-400 hover:text-purple-300 truncate block transition-colors">{value}</a>
+        ) : (
+          <p className="text-sm text-chalk truncate">{value}</p>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function MyProfile() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [influencerProfile, setInfluencerProfile] = useState<InfluencerProfileView | null>(null);
-  const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<"instagram" | "youtube">("instagram");
 
-  const isInfluencer = user?.role === "influencer";
+  useEffect(() => { document.title = "My Profile — Kalakaarian"; }, []);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        if (isInfluencer) {
-          const profile = await api.getInfluencerProfile();
-          setInfluencerProfile(profile);
-        } else {
-          const profile = await api.getBrandProfile();
-          setBrandProfile(profile);
-        }
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to load profile data",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProfile();
-  }, [isInfluencer, toast]);
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ["brand-profile"],
+    queryFn: () => api.getBrandSettings(),
+    staleTime: 5 * 60_000,
+  });
 
-  const handleEdit = () => {
-    if (isInfluencer) {
-      navigate("/profile/edit");
-    } else {
-      navigate("/profile/edit");
-    }
-  };
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ["brand-campaigns"],
+    queryFn: () => api.getCampaigns(),
+    staleTime: 5 * 60_000,
+  });
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      <div className="flex min-h-screen items-center justify-center bg-obsidian">
+        <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
       </div>
     );
   }
 
-  if (isInfluencer && influencerProfile) {
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-purple-700 via-fuchsia-600 to-pink-500 px-4 py-8 sm:px-6 sm:py-10">
-        <div className="mx-auto w-full max-w-3xl space-y-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-white">My Profile</h1>
-            <Button onClick={handleEdit} className="bg-white text-purple-700 hover:bg-white/90">
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Profile
-            </Button>
-          </div>
+  const brandProfile = profile?.profile;
+  const authUser = profile?.user;
+  const displayName = brandProfile?.companyName || authUser?.name || user?.name || "Brand";
+  const email = brandProfile?.email || authUser?.email || user?.email || "";
+  const phone = brandProfile?.phone || authUser?.phone || "";
+  const logoUrl = (brandProfile as { logo_url?: string; logo?: string } | undefined)?.logo_url || brandProfile?.logo;
+  const openCampaigns = campaigns.filter(c => c.status === "open").length;
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-purple-700 dark:text-purple-300">{influencerProfile.name}</CardTitle>
-              <CardDescription>Influencer Profile</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h3 className="font-semibold">Bio</h3>
-                <p className="text-muted-foreground">{influencerProfile.bio || "No bio provided"}</p>
-              </div>
-
-              {influencerProfile.niches && influencerProfile.niches.length > 0 && (
-                <div>
-                  <h3 className="font-semibold">Niches</h3>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {influencerProfile.niches.map((niche) => (
-                      <span
-                        key={niche}
-                        className="rounded-full bg-purple-100 px-3 py-1 text-sm text-purple-700 dark:bg-purple-900 dark:text-purple-300"
-                      >
-                        {niche}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <h3 className="font-semibold">Social Media</h3>
-                <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                  {influencerProfile.instagramHandle && (
-                    <div className="flex items-center gap-2">
-                      <Instagram className="h-4 w-4 text-pink-600" />
-                      <span className="text-sm">{influencerProfile.instagramHandle}</span>
-                    </div>
-                  )}
-                  {influencerProfile.youtubeHandle && (
-                    <div className="flex items-center gap-2">
-                      <Youtube className="h-4 w-4 text-red-600" />
-                      <span className="text-sm">{influencerProfile.youtubeHandle}</span>
-                    </div>
-                  )}
-                  {influencerProfile.tiktokHandle && (
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-black" />
-                      <span className="text-sm">{influencerProfile.tiktokHandle}</span>
-                    </div>
-                  )}
-                  {influencerProfile.twitterHandle && (
-                    <div className="flex items-center gap-2">
-                      <Twitter className="h-4 w-4 text-blue-400" />
-                      <span className="text-sm">{influencerProfile.twitterHandle}</span>
-                    </div>
-                  )}
-                  {!influencerProfile.instagramHandle &&
-                    !influencerProfile.youtubeHandle &&
-                    !influencerProfile.tiktokHandle &&
-                    !influencerProfile.twitterHandle && (
-                      <p className="text-sm text-muted-foreground">No social handles provided</p>
-                    )}
-                </div>
-              </div>
-
-              {(influencerProfile.followers || influencerProfile.engagementRate) && (
-                <div>
-                  <h3 className="font-semibold">Stats</h3>
-                  <div className="mt-2 grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900">
-                    <div className="space-y-1">
-                      <span className="text-xs uppercase text-muted-foreground">Followers</span>
-                      <div className="flex items-center gap-2">
-                        <Instagram className="h-4 w-4 text-pink-600" />
-                        <span className="font-semibold">
-                          {influencerProfile.followers?.instagram
-                            ? `${(influencerProfile.followers.instagram / 1000).toFixed(1)}K`
-                            : "0"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Youtube className="h-4 w-4 text-red-600" />
-                        <span className="font-semibold">
-                          {influencerProfile.followers?.youtube
-                            ? `${(influencerProfile.followers.youtube / 1000).toFixed(1)}K`
-                            : "0"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-xs uppercase text-muted-foreground">Subscribers</span>
-                      <div className="flex items-center gap-2">
-                        <Youtube className="h-4 w-4 text-red-600" />
-                        <span className="font-semibold">
-                          {influencerProfile.followers?.youtube
-                            ? `${(influencerProfile.followers.youtube / 1000).toFixed(1)}K`
-                            : "0"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Engagement</span>
-                        <span className="font-semibold text-green-600">
-                          {influencerProfile.engagementRate?.toFixed(1) || "0"}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <h3 className="mb-3 font-semibold">Content</h3>
-                <div className="mb-3 flex gap-2">
-                  <button
-                    onClick={() => setActiveTab("instagram")}
-                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                      activeTab === "instagram"
-                        ? "brand-gradient text-primary-foreground"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
-                    }`}
-                  >
-                    <Instagram className="h-4 w-4" />
-                    Instagram ({influencerProfile.posts?.length || 0})
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("youtube")}
-                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                      activeTab === "youtube"
-                        ? "brand-gradient text-primary-foreground"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
-                    }`}
-                  >
-                    <Youtube className="h-4 w-4" />
-                    YouTube ({influencerProfile.videos?.length || 0})
-                  </button>
-                </div>
-
-                {activeTab === "instagram" && (
-                  <div className="min-h-[200px] rounded-lg border bg-gray-50 p-4 dark:bg-gray-900">
-                    {influencerProfile.posts && influencerProfile.posts.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-2">
-                        {influencerProfile.posts.map((post) => (
-                          <a
-                            key={post.id}
-                            href={post.postUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group relative aspect-square overflow-hidden rounded-lg bg-gray-200"
-                          >
-                            <img
-                              src={post.imageUrl}
-                              alt="Instagram post"
-                              className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                            />
-                          </a>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex h-[200px] items-center justify-center text-muted-foreground">
-                        <p>No Instagram posts yet</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {activeTab === "youtube" && (
-                  <div className="min-h-[200px] rounded-lg border bg-gray-50 p-4 dark:bg-gray-900">
-                    {influencerProfile.videos && influencerProfile.videos.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        {influencerProfile.videos.map((video) => (
-                          <a
-                            key={video.id}
-                            href={video.videoUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group relative overflow-hidden rounded-lg bg-gray-200"
-                          >
-                            <img
-                              src={video.thumbnailUrl}
-                              alt={video.title}
-                              className="aspect-video w-full object-cover"
-                            />
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                              <p className="line-clamp-2 text-sm font-medium text-white">{video.title}</p>
-                              {video.views && (
-                                <p className="text-xs text-gray-300">{video.views.toLocaleString()} views</p>
-                              )}
-                            </div>
-                          </a>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex h-[200px] items-center justify-center text-muted-foreground">
-                        <p>No YouTube videos yet</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    );
-  }
-
-  if (brandProfile) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-600 via-cyan-600 to-sky-500 px-4 py-10">
-        <div className="w-full max-w-xl space-y-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-white">My Profile</h1>
-            <Button onClick={handleEdit} className="bg-white text-blue-700 hover:bg-white/90">
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Profile
-            </Button>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{brandProfile.companyName}</CardTitle>
-              <CardDescription>Brand Profile</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {brandProfile.contactPerson && (
-                <div>
-                  <h3 className="font-semibold">Contact Person</h3>
-                  <p className="text-muted-foreground">{brandProfile.contactPerson}</p>
-                </div>
-              )}
-
-              {brandProfile.email && (
-                <div>
-                  <h3 className="font-semibold">Email</h3>
-                  <p className="text-muted-foreground">{brandProfile.email}</p>
-                </div>
-              )}
-
-              {brandProfile.phone && (
-                <div>
-                  <h3 className="font-semibold">Phone</h3>
-                  <p className="text-muted-foreground">{brandProfile.phone}</p>
-                </div>
-              )}
-
-              {brandProfile.industry && (
-                <div>
-                  <h3 className="font-semibold">Industry</h3>
-                  <p className="text-muted-foreground">{brandProfile.industry}</p>
-                </div>
-              )}
-
-              {brandProfile.website && (
-                <div>
-                  <h3 className="font-semibold">Website</h3>
-                  <a
-                    href={brandProfile.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    {brandProfile.website}
-                  </a>
-                </div>
-              )}
-
-              {brandProfile.description && (
-                <div>
-                  <h3 className="font-semibold">Company Bio</h3>
-                  <p className="text-muted-foreground">{brandProfile.description}</p>
-                </div>
-              )}
-
-              {!brandProfile.contactPerson &&
-                !brandProfile.email &&
-                !brandProfile.phone &&
-                !brandProfile.industry &&
-                !brandProfile.website &&
-                !brandProfile.description && (
-                  <p className="text-muted-foreground">No profile details available. Click Edit Profile to add details.</p>
-                )}
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    );
-  }
+  const initials = displayName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Profile Not Found</CardTitle>
-          <CardDescription>You haven't completed your profile yet.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={handleEdit} className="w-full">
-            Complete Your Profile
-          </Button>
-        </CardContent>
-      </Card>
-    </main>
+    <div className="min-h-screen bg-obsidian py-10 px-4">
+      <div className="mx-auto max-w-xl space-y-5">
+
+        {/* Hero card */}
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
+          <div className="flex items-start justify-between mb-5">
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-xl border border-white/15 bg-white/5 overflow-hidden flex items-center justify-center shrink-0">
+                {logoUrl
+                  ? <img src={logoUrl} alt="logo" className="h-full w-full object-cover" />
+                  : <span className="text-xl font-bold text-chalk-dim">{initials}</span>}
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-chalk leading-tight">{displayName}</h1>
+                {brandProfile?.industry && (
+                  <span className="inline-flex items-center gap-1 mt-1 text-[10px] px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-400 font-medium">
+                    <Tag className="w-2.5 h-2.5" />{brandProfile.industry}
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => navigate("/profile/edit")}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-white/10 text-chalk-dim hover:bg-white/5 hover:text-chalk transition-all"
+            >
+              <Settings className="w-3 h-3" /> Settings
+            </button>
+          </div>
+
+          {/* Stats row */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Campaigns", value: campaigns.length },
+              { label: "Open", value: openCampaigns },
+              { label: "Industry", value: brandProfile?.industry ? "✓" : "—" },
+            ].map(stat => (
+              <div key={stat.label} className="rounded-lg bg-white/[0.03] border border-white/5 p-3 text-center">
+                <p className="text-lg font-bold text-chalk">{stat.value}</p>
+                <p className="text-[10px] text-chalk-faint tracking-wide uppercase mt-0.5">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Contact info */}
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+          <p className="text-xs font-semibold text-chalk uppercase tracking-wide mb-1 flex items-center gap-1.5">
+            <Building2 className="w-3.5 h-3.5 text-purple-400" /> Contact Info
+          </p>
+          {email && <InfoRow icon={Mail} label="Email" value={email} />}
+          {phone && <InfoRow icon={Phone} label="Phone" value={phone} />}
+          {brandProfile?.website && <InfoRow icon={Globe} label="Website" value={brandProfile.website} href={brandProfile.website} />}
+          {brandProfile?.industry && <InfoRow icon={Tag} label="Industry" value={brandProfile.industry} />}
+          {!email && !phone && !brandProfile?.website && (
+            <p className="text-xs text-chalk-faint py-3">No contact info yet. <button onClick={() => navigate("/profile/edit")} className="text-purple-400 hover:underline">Add details →</button></p>
+          )}
+        </div>
+
+        {/* Description */}
+        {brandProfile?.description && (
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+            <p className="text-xs font-semibold text-chalk uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-purple-400" /> About
+            </p>
+            <p className="text-sm text-chalk-dim leading-relaxed">{brandProfile.description}</p>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <button
+            onClick={() => navigate("/brand/dashboard", { state: { tab: "campaigns" } })}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk hover:bg-white/5 transition-all"
+          >
+            <LayoutDashboard className="w-4 h-4" /> Dashboard
+          </button>
+          <button
+            onClick={() => navigate("/profile/edit")}
+            className="flex-1 purple-pill py-2.5 text-sm font-bold flex items-center justify-center gap-2"
+          >
+            <Settings className="w-4 h-4" /> Edit Profile
+          </button>
+        </div>
+
+      </div>
+    </div>
   );
 }

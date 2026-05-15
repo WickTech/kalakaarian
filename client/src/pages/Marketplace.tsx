@@ -7,7 +7,6 @@ import { Influencer } from "@/lib/store";
 import { parseUrlTier, toInfluencer } from "@/lib/influencerMappers";
 import { MarketplaceFilters } from "@/components/MarketplaceFilters";
 import { MarketplaceToolbar } from "@/components/marketplace/MarketplaceToolbar";
-import { MarketplacePagination } from "@/components/marketplace/MarketplacePagination";
 import { RisingStarsCarousel } from "@/components/RisingStarsCarousel";
 import { CelebCallbackModal } from "@/components/CelebCallbackModal";
 import { CreatorCard } from "@/components/CreatorCard";
@@ -20,7 +19,6 @@ interface MarketplaceProps {
 
 const TIERS = ["nano", "micro", "macro", "celeb"] as const;
 type Tier = (typeof TIERS)[number];
-const PER_PAGE = 12;
 
 const BANNERS = [
   { id: 1, label: "Advertise your brand here", cta: "Learn More", gradient: "from-purple-600/30 to-pink-600/30" },
@@ -35,7 +33,6 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [location, setLocation] = useState("");
-  const [page, setPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -47,7 +44,7 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => { setDebouncedSearch(search.trim()); setPage(1); }, 350);
+    debounceRef.current = setTimeout(() => { setDebouncedSearch(search.trim()); }, 350);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [search]);
 
@@ -82,28 +79,24 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
     return r;
   }, [influencers, search, debouncedSearch, platform, selectedGenres, location, priceMin, priceMax]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-
   const toggleGenre = (g: string) => setSelectedGenres((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
   const toggleSelect = (id: string) => setSelectedIds((prev) => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s; });
   const clearSelection = () => setSelectedIds(new Set());
-  const addSelectedToCart = () => { paged.filter((i) => selectedIds.has(i.id) && !isInCart(i.id)).forEach(addToCart); clearSelection(); };
+  const addSelectedToCart = () => { filtered.filter((i) => selectedIds.has(i.id) && !isInCart(i.id)).forEach(addToCart); clearSelection(); };
 
   const handleSelectCount = (val: string) => {
-    if (val === "all") setSelectedIds(new Set(paged.map((i) => i.id)));
-    else { const n = parseInt(val); if (!isNaN(n)) setSelectedIds(new Set(paged.slice(0, n).map((i) => i.id))); }
+    if (val === "all") setSelectedIds(new Set(filtered.map((i) => i.id)));
+    else { const n = parseInt(val); if (!isNaN(n)) setSelectedIds(new Set(filtered.slice(0, n).map((i) => i.id))); }
   };
 
   const setTier = (t: Tier | "all") => {
     const next = new URLSearchParams(searchParams);
     if (t === "all") next.delete("tier"); else next.set("tier", t);
     setSearchParams(next, { replace: true });
-    setPage(1);
   };
 
   const activeFilterCount = selectedGenres.length + (gender !== "all" ? 1 : 0) + (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (location ? 1 : 0);
-  const clearFilters = () => { setSelectedGenres([]); setGender("all"); setPriceMin(""); setPriceMax(""); setLocation(""); setPage(1); };
+  const clearFilters = () => { setSelectedGenres([]); setGender("all"); setPriceMin(""); setPriceMax(""); setLocation(""); };
 
   return (
     <div className="min-h-screen bg-obsidian flex flex-col">
@@ -125,18 +118,18 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
         open={drawerOpen} onClose={() => setDrawerOpen(false)}
         selectedGenres={selectedGenres} toggleGenre={toggleGenre}
         gender={gender} setGender={setGender}
-        priceMin={priceMin} setPriceMin={(v) => { setPriceMin(v); setPage(1); }}
-        priceMax={priceMax} setPriceMax={(v) => { setPriceMax(v); setPage(1); }}
-        location={location} setLocation={(v) => { setLocation(v); setPage(1); }}
+        priceMin={priceMin} setPriceMin={setPriceMin}
+        priceMax={priceMax} setPriceMax={setPriceMax}
+        location={location} setLocation={setLocation}
         onClear={clearFilters} activeCount={activeFilterCount}
       />
 
       <MarketplaceToolbar
-        platform={platform} setPlatform={(p) => { setPlatform(p); setPage(1); }}
-        search={search} setSearch={(v) => { setSearch(v); setPage(1); }}
+        platform={platform} setPlatform={setPlatform}
+        search={search} setSearch={setSearch}
         openDrawer={() => setDrawerOpen(true)} activeFilterCount={activeFilterCount}
         tier={tier} setTier={setTier}
-        selectedCount={selectedIds.size} pagedCount={paged.length} filteredCount={filtered.length}
+        selectedCount={selectedIds.size} pagedCount={filtered.length} filteredCount={filtered.length}
         onSelectCount={handleSelectCount} onClearSelection={clearSelection}
         onAddSelectedToCart={addSelectedToCart}
       />
@@ -148,7 +141,7 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
             {Array.from({ length: 8 }).map((_, i) => <CreatorCardSkeleton key={i} />)}
           </div>
-        ) : paged.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3 text-chalk-dim">
             <p>No creators found matching your filters.</p>
             {influencers.length === 0 && (
@@ -157,7 +150,7 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-            {paged.map((inf) => (
+            {filtered.map((inf) => (
               <CreatorCard
                 key={inf.id} inf={inf}
                 selected={selectedIds.has(inf.id)} inCart={isInCart(inf.id)}
@@ -168,8 +161,6 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
             ))}
           </div>
         )}
-
-        <MarketplacePagination page={page} totalPages={totalPages} setPage={setPage} goToPage={setPage} />
       </main>
 
       {celebModal && (

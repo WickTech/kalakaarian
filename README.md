@@ -108,9 +108,19 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Campaign details + proposal submission (bid amount, message, deliverables)
 - Online presence toggle shows "active since HH:MM" timestamp when live
 
-### Admin Dashboard (`/admin`, admin-only)
-- Users tab — paginated user list with role, tier, join date
-- Campaigns tab — all campaigns; dropdown to update status (active / paused / completed)
+### Super Admin System (`/admin`, founder-only)
+- **Founder badge** — gold "Founder" chip displayed on GlobalHeader dropdown and Admin Dashboard for super admin accounts
+- **View Switcher** — Admin/Brand/Creator toggle in header dropdown; super admin can impersonate any role to QA brand or creator flows without logging out; persisted to `localStorage` under `kalakariaan_view_as`
+- **Admin Dashboard** — 5 tabs: Overview (6 live stat tiles), Users, Campaigns, Feature Flags, Audit Log
+- **Overview tab** — Total Users, Creators, Brands, Campaigns, Verified Creators, Suspended counts (parallel DB queries)
+- **Users tab** — search by name/email, filter by role (All/Brands/Creators), per-user actions: force presence online/offline, verify creator, suspend/unsuspend, delete user; Founder badge + Suspended badge inline; super admins show ShieldCheck icon with no destructive actions available
+- **Campaigns tab** — all campaigns with status dropdown (open/closed/archived), live status update
+- **Feature Flags tab** — toggle 5 platform flags: `maintenance_mode`, `new_registrations`, `marketplace_visible`, `campaign_creation`, `creator_registrations`; changes take effect immediately
+- **Audit Log tab** — immutable log of every admin action: actor, action, target type + ID, timestamp
+- **Defense-in-depth**: `requireSuperAdmin` middleware does a live DB lookup (not JWT) on every admin request to prevent privilege escalation via token manipulation; `is_super_admin` also synced to Supabase `user_metadata` at login for fast reads
+- **Suspension system** — suspended users receive HTTP 403 on all authenticated routes via auth middleware DB check; super admins bypass suspension check
+- **Seeded founders** — `masteranhad@gmail.com` + `rishabhverma707@gmail.com` are seeded as super admins via migration 025
+- **DB schema** (migration 025): `is_super_admin` + `is_suspended` on `profiles`; `is_verified` on `influencer_profiles`; `admin_audit_logs` table; `feature_flags` table with 5 default rows
 
 ### Profile System
 - Public influencer profile (`/influencer/:id`) — bio, followers, ER, social handles, pricing
@@ -165,6 +175,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Cart orders table (migration 016)
 - Creator ratings (migration 017)
 - Withdrawal requests table (migration 018) — `pending | processing | paid | failed` statuses
+- Super admin RBAC (migration 025) — `is_super_admin`, `is_suspended`, `is_verified` columns; `admin_audit_logs` + `feature_flags` tables; 5 default flags seeded
 - 5% platform margin applied server-side on all brand-facing reads (`applyPlatformMargin()`)
 - Rate limits: auth 20/15 min, OTP 5/hr by phone, campaign create 10/hr, contact POST 5/hr by IP
 - CORS allowlist (hardcoded production + `CORS_ORIGINS` env var + Vercel preview pattern)
@@ -223,7 +234,8 @@ kalakaarian/
 │   ├── public/              # static assets, PWA manifest, icons, offline.html
 │   └── src/
 │       ├── api/             # axios instance (auto-attach JWT, 401 redirect)
-│       ├── components/      # 22 custom components + shadcn/ui primitives
+│       ├── components/      # 25+ custom components + shadcn/ui primitives
+│       │   ├── admin/       # AdminUsersPanel, AdminFlagsPanel (super admin UI)
 │       │   └── ui/          # shadcn/ui — DO NOT hand-edit; use CLI to regenerate
 │       ├── contexts/        # CartContext (shared cart state across pages)
 │       ├── hooks/           # useAuth, useCart, useTheme
@@ -233,7 +245,7 @@ kalakaarian/
 ├── server/
 │   └── src/                 # ✅ ONLY this folder is deployed to Vercel
 │       ├── config/          # Supabase adminClient (service role, bypasses RLS)
-│       ├── controllers/     # 8 controller files, ≤200 lines each
+│       ├── controllers/     # 11 controller files, ≤200 lines each (adminController, adminUsersController, adminPlatformController split for file-size compliance)
 │       ├── middleware/       # auth.ts, requireAdmin.ts, validate.ts
 │       ├── routes/          # 18 route files
 │       ├── services/        # Instagram, YouTube, Razorpay, Resend, social media
@@ -331,6 +343,7 @@ supabase/migrations/019_app_ratings.sql
 supabase/migrations/020_instagram_oauth.sql          # superseded by 021 — apply only if rolling back
 supabase/migrations/021_creator_platforms.sql        # unified platform schema (IG + YT)
 supabase/migrations/023_pgcron_sync_platforms.sql    # daily analytics sync (edit <SERVER_URL> + <CRON_SECRET> first)
+supabase/migrations/025_super_admin.sql              # is_super_admin/is_suspended on profiles, feature_flags, admin_audit_logs
 ```
 
 > Migration 022 (drop legacy IG columns) is intentionally skipped — run it manually after `021` has been on prod for ~1 week and code no longer references the old `influencer_profiles.instagram_*` columns.
@@ -407,6 +420,16 @@ See [docs/API.md](./docs/API.md) for the full endpoint list.
 - **OAuth state CSRF** — both IG + YT use HMAC-SHA256 signed state (`buildOAuthState` / `verifyOAuthState`) with 15-min expiry and `crypto.timingSafeEqual` comparison
 - **Cron endpoint** — `POST /api/internal/cron/sync-platforms` returns 404 (not 401) on missing/wrong `X-Cron-Secret` to avoid signaling endpoint existence to unauthenticated probes
 - **Token refresh** — YouTube `syncYouTube()` auto-refreshes access token via stored refresh_token when <5min remaining; Instagram (page tokens never expire) flagged with `last_sync_status='token_expired'` when 60-day reconnect is needed, UI shows Reconnect CTA
+- **Admin API** — all `/api/admin/*` routes require `auth` + `requireSuperAdmin` (DB-verified middleware, not JWT-only); key endpoints:
+  - `GET /api/admin/stats` — 6 aggregate counts
+  - `GET /api/admin/users` — paginated user list (params: `role`, `suspended`, `search`)
+  - `PUT /api/admin/users/:id/suspend` — toggle suspension; 403 on self or other super admins
+  - `PUT /api/admin/users/:id/verify` — mark creator verified
+  - `PUT /api/admin/users/:id/presence` — force online/offline
+  - `DELETE /api/admin/users/:id` — hard delete (cannot delete super admins)
+  - `GET /api/admin/flags`, `PUT /api/admin/flags/:key` — feature flag read + toggle
+  - `GET /api/admin/audit-logs` — full audit trail
+- **Audit logging** — `logAdminAction(adminId, action, targetType, targetId, details, ip)` writes to `admin_audit_logs` on every admin mutation; includes admin email join via `profiles`
 
 ---
 

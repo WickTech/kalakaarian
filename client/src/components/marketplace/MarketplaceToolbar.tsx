@@ -6,6 +6,8 @@ const TIER_LABEL: Record<string, string> = {
   all: "All", nano: "Nano", micro: "Micro", macro: "Macro", celeb: "Celebrity",
 };
 
+export type SortBy = "relevance" | "followers_desc" | "er_desc" | "price_asc" | "price_desc" | "rating_desc";
+
 interface Props {
   platform: "all" | "instagram" | "youtube";
   setPlatform: (p: "all" | "instagram" | "youtube") => void;
@@ -21,6 +23,8 @@ interface Props {
   onSelectCount: (val: string) => void;
   onClearSelection: () => void;
   onAddSelectedToCart: () => void;
+  sortBy: SortBy;
+  setSortBy: (s: SortBy) => void;
 }
 
 export function MarketplaceToolbar(p: Props) {
@@ -84,6 +88,19 @@ export function MarketplaceToolbar(p: Props) {
           ))}
         </div>
 
+        <select
+          value={p.sortBy}
+          onChange={(e) => p.setSortBy(e.target.value as SortBy)}
+          className="bg-charcoal/50 border border-white/10 rounded-full px-2 py-1.5 text-xs text-chalk-dim focus:outline-none focus:border-gold/50 shrink-0"
+        >
+          <option value="relevance">Relevance</option>
+          <option value="followers_desc">Followers ↓</option>
+          <option value="er_desc">ER% ↓</option>
+          <option value="price_asc">Price ↑</option>
+          <option value="price_desc">Price ↓</option>
+          <option value="rating_desc">Rating ↓</option>
+        </select>
+
         <div className="flex items-center gap-1">
           <select
             value=""
@@ -106,11 +123,11 @@ export function MarketplaceToolbar(p: Props) {
 
         {p.selectedCount > 0 && (
           <button onClick={p.onAddSelectedToCart} className="purple-pill px-4 py-1.5 text-xs font-bold">
-            Add {p.selectedCount} to Cart
+            Select {p.selectedCount}
           </button>
         )}
 
-        <span className="text-xs text-chalk-dim">{p.filteredCount} creators</span>
+        <span className="text-xs text-chalk-dim ml-auto shrink-0">{p.filteredCount} creators</span>
       </div>
     </div>
   );

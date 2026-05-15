@@ -187,7 +187,7 @@ function AppContent() {
   return (
     <>
       <GlobalHeader onCartOpen={() => setCartOpen(true)} />
-      <main className="pt-16">
+      <main>
       <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<SmartHome />} />

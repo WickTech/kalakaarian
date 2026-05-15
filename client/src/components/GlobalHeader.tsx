@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Menu, ShoppingCart, LogOut, User, LayoutDashboard,
@@ -30,22 +30,11 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
   const cart = useCartContext();
   const location = useLocation();
   const navigate = useNavigate();
-  const [visible, setVisible] = useState(true);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const lastScrollY = useRef(0);
 
   useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY;
-      setScrolled(y > 20);
-      if (y < 60 || y < lastScrollY.current) {
-        setVisible(true);
-      } else if (y > lastScrollY.current + 5) {
-        setVisible(false);
-      }
-      lastScrollY.current = y;
-    };
+    const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -72,9 +61,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        visible ? "translate-y-0" : "-translate-y-full"
-      } ${
+      className={`sticky top-0 z-50 w-full transition-colors duration-300 ${
         scrolled
           ? "bg-obsidian/95 backdrop-blur-md border-b border-white/10 shadow-lg shadow-black/30"
           : "bg-obsidian/70 backdrop-blur-sm border-b border-white/5"

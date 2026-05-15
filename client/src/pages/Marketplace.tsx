@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import { Influencer } from "@/lib/store";
 import { parseUrlTier, toInfluencer } from "@/lib/influencerMappers";
 import { MarketplaceFilters } from "@/components/MarketplaceFilters";
-import { MarketplaceToolbar } from "@/components/marketplace/MarketplaceToolbar";
+import { MarketplaceToolbar, SortBy } from "@/components/marketplace/MarketplaceToolbar";
 import { RisingStarsCarousel } from "@/components/RisingStarsCarousel";
 import { CelebCallbackModal } from "@/components/CelebCallbackModal";
 import { CreatorCard } from "@/components/CreatorCard";
@@ -36,6 +36,7 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortBy>("relevance");
   const [celebModal, setCelebModal] = useState<{ id: string; name: string } | null>(null);
 
   const genreKey = selectedGenres.join(',');
@@ -76,8 +77,13 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
     if (location) r = r.filter((i) => i.city?.toLowerCase().includes(location.toLowerCase()));
     if (priceMin) r = r.filter((i) => i.price != null && i.price >= parseInt(priceMin));
     if (priceMax) r = r.filter((i) => i.price != null && i.price <= parseInt(priceMax));
+    if (sortBy === "followers_desc") r = [...r].sort((a, b) => (b.followers ?? 0) - (a.followers ?? 0));
+    else if (sortBy === "er_desc") r = [...r].sort((a, b) => (b.engagementRate ?? 0) - (a.engagementRate ?? 0));
+    else if (sortBy === "price_asc") r = [...r].sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+    else if (sortBy === "price_desc") r = [...r].sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+    else if (sortBy === "rating_desc") r = [...r].sort((a, b) => (b.avgRating ?? 0) - (a.avgRating ?? 0));
     return r;
-  }, [influencers, search, debouncedSearch, platform, selectedGenres, location, priceMin, priceMax]);
+  }, [influencers, search, debouncedSearch, platform, selectedGenres, location, priceMin, priceMax, sortBy]);
 
   const toggleGenre = (g: string) => setSelectedGenres((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
   const toggleSelect = (id: string) => setSelectedIds((prev) => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s; });
@@ -132,6 +138,7 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
         selectedCount={selectedIds.size} pagedCount={filtered.length} filteredCount={filtered.length}
         onSelectCount={handleSelectCount} onClearSelection={clearSelection}
         onAddSelectedToCart={addSelectedToCart}
+        sortBy={sortBy} setSortBy={setSortBy}
       />
 
       <main className="flex-1 p-4 space-y-4">

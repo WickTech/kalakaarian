@@ -14,11 +14,11 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["Oswald", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
         oswald: ["Oswald", "sans-serif"],
-        display: ["Bricolage Grotesque", "sans-serif"],
-        body: ["DM Sans", "sans-serif"],
+        display: ["Oswald", "sans-serif"],
+        body: ["Oswald", "sans-serif"],
       },
       colors: {
         obsidian: "#0B0B0F",

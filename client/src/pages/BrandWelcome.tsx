@@ -34,11 +34,7 @@ export default function BrandWelcome() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(212,168,67,0.08),transparent_50%)] pointer-events-none" />
       <div className="w-full max-w-6xl relative">
         <div className="text-center mb-16 fade-up">
-          <p className="section-eyebrow mb-5">Influence.Market</p>
-          <h1 className="section-title text-5xl md:text-6xl mb-5">
-            Find Your Perfect Creators
-          </h1>
-          <p className="text-chalk-dim text-base md:text-lg font-light max-w-xl mx-auto">
+          <p className="text-chalk text-xl md:text-2xl font-bold max-w-xl mx-auto">
             Browse by tier to match your campaign goals and budget.
           </p>
         </div>
@@ -53,17 +49,11 @@ export default function BrandWelcome() {
                 style={{ animationDelay: `${idx * 60}ms` }}
                 className="group premium-card text-left p-7 flex flex-col gap-6 fade-up"
               >
-                <div className="flex items-baseline justify-between">
-                  <h2 className="section-title text-3xl">{tier.label}</h2>
-                  <span className="text-[10px] tracking-[0.25em] uppercase text-chalk-faint">
-                    {inventory} {inventory === 1 ? "creator" : "creators"}
-                  </span>
-                </div>
+                <h2 className="section-title text-5xl text-center w-full">{tier.label}</h2>
 
                 <div className="space-y-4 flex-1">
-                  <Stat label="Reach Range" value={tier.range} />
+                  {tier.key !== "celeb" && <Stat label="Followers" value={tier.range} />}
                   <Stat label="Avg CPM" value={tier.cpm} />
-                  <Stat label="Inventory" value={`${inventory.toLocaleString("en-IN")} live`} />
                 </div>
 
                 <div className="flex items-center gap-2 pt-4 border-t border-white/5 text-sm text-gold transition-all group-hover:gap-3">

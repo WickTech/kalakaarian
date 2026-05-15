@@ -196,7 +196,7 @@ export default function EditBrandProfile() {
         </form>
       </div>
 
-      <div className="rounded-xl border border-red-500/20 p-5 space-y-3">
+      <div className="rounded-xl border border-red-500/20 bg-white/[0.03] p-6 space-y-4">
         <div className="flex items-center gap-2">
           <Trash2 className="w-4 h-4 text-red-400" />
           <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wide">Danger Zone</h2>

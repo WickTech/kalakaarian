@@ -1,21 +1,16 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ImagePlus } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 
 type TierKey = "nano" | "micro" | "macro" | "celeb";
 
-const TIERS: Array<{
-  key: TierKey;
-  label: string;
-  range: string;
-  cpm: string;
-}> = [
-  { key: "nano", label: "Nano", range: "1K – 10K", cpm: "₹500 – ₹2K" },
-  { key: "micro", label: "Micro", range: "10K – 100K", cpm: "₹2K – ₹15K" },
-  { key: "macro", label: "Macro", range: "100K – 1M", cpm: "₹15K – ₹1L" },
-  { key: "celeb", label: "Celebrity", range: "1M+", cpm: "₹1L+" },
+const TIERS: Array<{ key: TierKey; label: string; range: string }> = [
+  { key: "nano", label: "Nano", range: "1K – 10K" },
+  { key: "micro", label: "Micro", range: "10K – 100K" },
+  { key: "macro", label: "Macro", range: "100K – 1M" },
+  { key: "celeb", label: "Celebrity", range: "1M+" },
 ];
 
 export default function BrandWelcome() {
@@ -29,31 +24,10 @@ export default function BrandWelcome() {
     staleTime: 5 * 60_000,
   });
 
-  const { data: brandProfile } = useQuery({
-    queryKey: ["brand-profile"],
-    queryFn: () => api.getBrandProfile().catch(() => null),
-    staleTime: 5 * 60_000,
-  });
-
   return (
     <div className="min-h-screen bg-obsidian flex flex-col items-center justify-center px-6 py-20 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(212,168,67,0.08),transparent_50%)] pointer-events-none" />
       <div className="w-full max-w-6xl relative">
-        {!brandProfile?.logo && (
-          <div className="mb-8 fade-up flex items-center justify-between gap-4 px-5 py-4 rounded-xl border border-dashed border-white/15 bg-white/[0.02]">
-            <div className="flex items-center gap-3">
-              <ImagePlus className="w-5 h-5 text-chalk-faint shrink-0" />
-              <p className="text-sm text-chalk-dim">Add your brand logo to stand out to creators.</p>
-            </div>
-            <button
-              onClick={() => navigate("/profile/edit")}
-              className="text-xs px-4 py-1.5 rounded-full border border-gold/40 text-gold hover:bg-gold/10 transition-all shrink-0"
-            >
-              Upload Logo
-            </button>
-          </div>
-        )}
-
         <div className="text-center mb-16 fade-up">
           <p className="text-chalk text-xl md:text-2xl font-bold max-w-xl mx-auto">
             Browse by tier to match your campaign goals and budget.
@@ -72,9 +46,15 @@ export default function BrandWelcome() {
               >
                 <h2 className="section-title text-5xl text-center w-full">{tier.label}</h2>
 
-                <div className="space-y-4 flex-1">
-                  {tier.key !== "celeb" && <Stat label="Followers" value={tier.range} />}
-                  <Stat label="Avg CPM" value={tier.cpm} />
+                <div className="flex-1 flex flex-col items-center justify-center gap-5">
+                  <div className="text-center">
+                    <p className="text-xs tracking-[0.18em] uppercase text-chalk-faint mb-1.5">Followers</p>
+                    <p className="text-2xl font-bold text-chalk">{tier.range}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs tracking-[0.18em] uppercase text-chalk-faint mb-1.5">Creators</p>
+                    <p className="text-2xl font-bold text-chalk">{inventory > 0 ? inventory : "—"}</p>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 pt-4 border-t border-white/5 text-sm text-gold transition-all group-hover:gap-3">
@@ -92,15 +72,6 @@ export default function BrandWelcome() {
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3">
-      <span className="text-[11px] tracking-[0.18em] uppercase text-chalk-faint">{label}</span>
-      <span className="text-sm font-medium text-chalk">{value}</span>
     </div>
   );
 }

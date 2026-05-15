@@ -41,6 +41,7 @@ const BrandPublicProfile = lazy(() => import("./pages/BrandPublicProfile"));
 const CampaignTrackPage = lazy(() => import("./pages/campaign/TrackPage"));
 const NotificationsPage = lazy(() => import("./pages/Notifications"));
 const BrandWelcome = lazy(() => import("./pages/BrandWelcome"));
+const CartPage = lazy(() => import("./pages/CartPage"));
 
 function PageLoader() {
   return (
@@ -278,6 +279,7 @@ function AppContent() {
           element={<InfluencerProfile />}
         />
         <Route path="/feed" element={<Feed />} />
+        <Route path="/cart" element={<BrandRoute><CartPage /></BrandRoute>} />
         <Route path="/checkout" element={<BrandRoute><CheckoutPage /></BrandRoute>} />
         <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />

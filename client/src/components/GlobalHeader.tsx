@@ -102,7 +102,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
               <NotificationBell className="hidden sm:flex" />
 
               <button
-                onClick={onCartOpen}
+                onClick={() => user?.role === "brand" ? navigate("/cart") : onCartOpen()}
                 aria-label="Open cart"
                 className="relative p-2 rounded-md border border-white/10 hover:bg-white/5 transition-colors"
               >

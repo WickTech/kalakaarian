@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { CheckSquare, Star, Check } from "lucide-react";
 import { Influencer } from "@/lib/store";
 
@@ -27,12 +27,9 @@ interface Props {
 export function CreatorCard({
   inf, selected, inCart, onToggleSelect, onAddToCart, onGetInTouch,
 }: Props) {
-  const navigate = useNavigate();
-
   const handleCartClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!inCart) onAddToCart();
-    navigate(`/influencer/${inf.id}#social`);
   };
 
   return (

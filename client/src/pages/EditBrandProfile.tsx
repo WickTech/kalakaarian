@@ -1,6 +1,6 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, Loader2, Lock, Save, Trash2, User } from "lucide-react";
+import { ArrowLeft, Camera, ImagePlus, Loader2, Lock, Save, Trash2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,17 +111,18 @@ export default function EditBrandProfile() {
           <p className="text-sm text-chalk-dim mt-1">Manage your brand profile and security</p>
         </div>
 
-        {/* Profile image */}
+        {/* Brand Logo */}
         <div className={card}>
           <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-purple-400" />
-            <h2 className="text-sm font-semibold text-chalk uppercase tracking-wide">Profile Image</h2>
+            <ImagePlus className="h-4 w-4 text-purple-400" />
+            <h2 className="text-sm font-semibold text-chalk uppercase tracking-wide">Brand Logo</h2>
           </div>
+          <p className="text-xs text-chalk-dim -mt-1">Shown to creators on your campaigns and public profile.</p>
           <div className="flex items-center gap-5">
             <div className="relative">
-              <div className="h-20 w-20 rounded-full border border-white/15 bg-white/5 overflow-hidden flex items-center justify-center">
+              <div className="h-20 w-20 rounded-xl border border-white/15 bg-white/5 overflow-hidden flex items-center justify-center">
                 {avatarPreview
-                  ? <img src={avatarPreview} alt="avatar" className="h-full w-full object-cover" />
+                  ? <img src={avatarPreview} alt="logo" className="h-full w-full object-cover" />
                   : <User className="h-8 w-8 text-chalk-dim" />}
               </div>
               <button
@@ -133,9 +134,9 @@ export default function EditBrandProfile() {
               </button>
             </div>
             <div>
-              <p className="text-sm font-medium text-chalk">{name || "Your Name"}</p>
+              <p className="text-sm font-medium text-chalk">{name || "Your Brand"}</p>
               <button type="button" onClick={() => fileRef.current?.click()} className="text-xs text-purple-400 hover:text-purple-300 mt-0.5">
-                Change photo
+                {avatarPreview ? "Change logo" : "Upload logo"}
               </button>
             </div>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />

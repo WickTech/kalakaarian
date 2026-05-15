@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { CheckSquare, Star, ShoppingCart, Check } from "lucide-react";
+import { CheckSquare, Star, Check } from "lucide-react";
 import { Influencer } from "@/lib/store";
 
 const TIER_CLASS: Record<string, string> = {
@@ -113,24 +113,9 @@ export function CreatorCard({
         </div>
         <div className="bento-card-dark p-2 rounded-lg flex flex-col items-center justify-center gap-1">
           <p className="text-[10px] text-chalk-faint leading-none">Cost</p>
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-bold text-chalk leading-none">
-              {inf.price ? `₹${inf.price.toLocaleString("en-IN")}` : "—"}
-            </p>
-            {inf.tier !== "celeb" && (
-              <button
-                onClick={handleCartClick}
-                aria-label={inCart ? "In cart" : "Add to cart"}
-                className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all ${
-                  inCart
-                    ? "bg-green-500/20 text-green-400 cursor-default"
-                    : "bg-gold/15 text-gold hover:bg-gold/25 active:scale-95"
-                }`}
-              >
-                {inCart ? <Check className="w-3 h-3" /> : <ShoppingCart className="w-3 h-3" />}
-              </button>
-            )}
-          </div>
+          <p className="text-sm font-bold text-chalk leading-none">
+            {inf.price ? `₹${inf.price.toLocaleString("en-IN")}` : "—"}
+          </p>
         </div>
       </div>
 
@@ -151,8 +136,8 @@ export function CreatorCard({
           }`}
         >
           {inCart
-            ? <><Check className="w-3 h-3" /> In Cart — Configure</>
-            : <><ShoppingCart className="w-3 h-3" /> Add to Cart</>}
+            ? <><Check className="w-3 h-3" /> Selected</>
+            : <>Select</>}
         </button>
       )}
     </div>

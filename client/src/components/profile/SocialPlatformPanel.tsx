@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Instagram, Youtube, Check, ShoppingCart, Loader2 } from "lucide-react";
+import { Instagram, Youtube, Check, Loader2 } from "lucide-react";
 import { SocialStats } from "@/lib/api";
 
 type Platform = "instagram" | "youtube";
@@ -112,8 +112,8 @@ export function SocialPlatformPanel({
             className="purple-pill px-6 py-3 text-xs font-bold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-glow-purple"
           >
             {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
-              inCart ? <Check className="w-3.5 h-3.5" /> : <ShoppingCart className="w-3.5 h-3.5" />}
-            {inCart ? "Update Cart" : "Add to Cart"}
+              inCart ? <Check className="w-3.5 h-3.5" /> : null}
+            {inCart ? "Selected" : "Select"}
           </button>
         </div>
       )}

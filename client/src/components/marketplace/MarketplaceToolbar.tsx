@@ -29,7 +29,7 @@ interface Props {
 
 export function MarketplaceToolbar(p: Props) {
   return (
-    <div className="sticky top-16 z-30 bg-obsidian border-b border-white/5 px-4 py-2 space-y-2">
+    <div className="sticky top-14 z-30 bg-obsidian border-b border-white/5 px-4 py-2 space-y-2">
       <div className="flex w-full rounded-full border border-white/10 overflow-hidden">
         <button
           onClick={() => p.setPlatform(p.platform === "instagram" ? "all" : "instagram")}

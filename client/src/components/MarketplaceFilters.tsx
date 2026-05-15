@@ -21,6 +21,9 @@ interface Props {
   activeCount: number;
 }
 
+const inputCls = "w-full bg-white/5 border border-white/15 rounded-lg px-3 py-2.5 text-sm text-chalk placeholder:text-chalk-dim focus:outline-none focus:border-gold/50 transition-colors";
+const sectionLabel = "text-xs font-semibold text-chalk uppercase tracking-wider mb-3";
+
 export function MarketplaceFilters({
   open, onClose, selectedGenres, toggleGenre, gender, setGender,
   priceMin, setPriceMin, priceMax, setPriceMax, location, setLocation,
@@ -28,42 +31,37 @@ export function MarketplaceFilters({
 }: Props) {
   return (
     <>
-      {/* Backdrop */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-          onClick={onClose}
-        />
-      )}
+      {open && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />}
 
-      {/* Drawer */}
-      <div
-        className={`fixed top-0 left-0 z-50 h-full w-72 bg-obsidian border-r border-white/10 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* Drawer header */}
+      <div className={`fixed top-0 left-0 z-50 h-full w-80 bg-obsidian border-r border-white/10 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${open ? "translate-x-0" : "-translate-x-full"}`}>
+        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
-          <span className="font-display font-bold text-chalk text-sm">
-            Filters {activeCount > 0 && (
-              <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-gold/20 text-gold text-xs">{activeCount}</span>
+          <div className="flex items-center gap-2.5">
+            <span className="font-semibold text-chalk text-base">Filters</span>
+            {activeCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-gold/20 text-gold text-xs font-bold">{activeCount} active</span>
             )}
-          </span>
-          <button onClick={onClose} className="p-1 text-chalk-dim hover:text-chalk transition-colors">
+          </div>
+          <button onClick={onClose} className="p-1.5 text-chalk-dim hover:text-chalk transition-colors rounded-lg hover:bg-white/5">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-7">
+          {/* Genre */}
           <div>
-            <p className="text-xs text-chalk uppercase tracking-widest mb-3">Genre</p>
+            <p className={sectionLabel}>Genre</p>
             <div className="flex flex-wrap gap-2">
               {GENRES.map((g) => (
                 <button
                   key={g}
                   onClick={() => toggleGenre(g)}
-                  className={`goal-chip px-3 py-1 text-xs ${selectedGenres.includes(g) ? "selected" : ""}`}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                    selectedGenres.includes(g)
+                      ? "bg-gold/15 border-gold text-gold"
+                      : "border-white/15 text-chalk-dim hover:text-chalk hover:border-white/30"
+                  }`}
                 >
                   {g}
                 </button>
@@ -71,59 +69,49 @@ export function MarketplaceFilters({
             </div>
           </div>
 
+          {/* Gender */}
           <div>
-            <p className="text-xs text-chalk uppercase tracking-widest mb-3">Gender</p>
+            <p className={sectionLabel}>Creator Gender</p>
             <div className="flex gap-2">
               {GENDERS.map((g) => (
                 <button
                   key={g}
                   onClick={() => setGender(g)}
-                  className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
-                    gender === g ? "border-gold text-gold bg-gold/10" : "border-white/10 text-chalk-dim"
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-all ${
+                    gender === g
+                      ? "border-gold text-gold bg-gold/10"
+                      : "border-white/15 text-chalk-dim hover:text-chalk hover:border-white/30"
                   }`}
                 >
-                  {g.charAt(0).toUpperCase() + g.slice(1)}
+                  {g === "all" ? "All" : g.charAt(0).toUpperCase() + g.slice(1)}
                 </button>
               ))}
             </div>
           </div>
 
+          {/* Price */}
           <div>
-            <p className="text-xs text-chalk-faint uppercase tracking-widest mb-3">Price Range (₹)</p>
-            <div className="flex gap-2">
-              <input
-                value={priceMin}
-                onChange={(e) => setPriceMin(e.target.value)}
-                className="dark-input w-full px-3 py-2 text-xs"
-                placeholder="Min ₹"
-              />
-              <input
-                value={priceMax}
-                onChange={(e) => setPriceMax(e.target.value)}
-                className="dark-input w-full px-3 py-2 text-xs"
-                placeholder="Max ₹"
-              />
+            <p className={sectionLabel}>Budget Range (₹)</p>
+            <div className="flex gap-2.5">
+              <input value={priceMin} onChange={(e) => setPriceMin(e.target.value)} className={inputCls} placeholder="Min ₹" type="number" />
+              <input value={priceMax} onChange={(e) => setPriceMax(e.target.value)} className={inputCls} placeholder="Max ₹" type="number" />
             </div>
           </div>
 
+          {/* Location */}
           <div>
-            <p className="text-xs text-chalk-faint uppercase tracking-widest mb-3">Location</p>
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="dark-input w-full px-3 py-2 text-xs"
-              placeholder="Mumbai, Delhi…"
-            />
+            <p className={sectionLabel}>City / Location</p>
+            <input value={location} onChange={(e) => setLocation(e.target.value)} className={inputCls} placeholder="Mumbai, Delhi, Bengaluru…" />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-white/10 shrink-0">
-          <button
-            onClick={onClear}
-            className="w-full py-2 rounded-full text-xs text-chalk-dim border border-white/10 hover:text-chalk hover:border-white/20 transition-all"
-          >
+        <div className="px-5 py-4 border-t border-white/10 shrink-0 space-y-2">
+          <button onClick={onClear} className="w-full py-2.5 rounded-lg text-sm text-chalk-dim border border-white/10 hover:text-chalk hover:border-white/25 transition-all">
             Clear all filters
+          </button>
+          <button onClick={onClose} className="w-full py-2.5 rounded-lg text-sm font-semibold purple-pill">
+            Apply Filters
           </button>
         </div>
       </div>

@@ -1,7 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router-dom";
-import { Megaphone } from "lucide-react";
 import { api } from "@/lib/api";
 import { Influencer } from "@/lib/store";
 import { parseUrlTier, toInfluencer } from "@/lib/influencerMappers";
@@ -19,10 +18,6 @@ interface MarketplaceProps {
 
 const TIERS = ["nano", "micro", "macro", "celeb"] as const;
 type Tier = (typeof TIERS)[number];
-
-const BANNERS = [
-  { id: 1, label: "Advertise your brand here", cta: "Learn More", gradient: "from-purple-600/30 to-pink-600/30" },
-];
 
 export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -106,20 +101,6 @@ export default function Marketplace({ isInCart, addToCart }: MarketplaceProps) {
 
   return (
     <div className="min-h-screen bg-obsidian flex flex-col">
-      <div className="px-4 pt-4">
-        {BANNERS.map((b) => (
-          <div key={b.id} className={`w-full rounded-xl bg-gradient-to-r ${b.gradient} border border-white/10 px-5 py-3 flex items-center justify-between`}>
-            <div className="flex items-center gap-3">
-              <Megaphone className="w-4 h-4 text-purple-300 shrink-0" />
-              <span className="text-sm text-chalk/80">{b.label}</span>
-            </div>
-            <button className="text-xs px-3 py-1 rounded-full border border-purple-400/40 text-purple-300 hover:bg-purple-500/20 transition-all shrink-0">
-              {b.cta}
-            </button>
-          </div>
-        ))}
-      </div>
-
       <MarketplaceFilters
         open={drawerOpen} onClose={() => setDrawerOpen(false)}
         selectedGenres={selectedGenres} toggleGenre={toggleGenre}

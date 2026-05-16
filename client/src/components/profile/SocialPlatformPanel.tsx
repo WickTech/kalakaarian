@@ -94,26 +94,22 @@ export function SocialPlatformPanel({
       </div>
 
       {!isCelebTier && connected.length > 0 && (
-        <div className="premium-card p-5 flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <p className="section-eyebrow text-[10px]">Combined Total</p>
-            <p className="stat-numeral text-3xl mt-1.5">
-              {total > 0 ? fmtPrice(total) : "—"}
-            </p>
-            <p className="text-[11px] text-chalk-dim mt-1.5">
-              {selected.size === 0
-                ? "Select at least one platform"
-                : Array.from(selected).map((p) => (p === "instagram" ? "Instagram" : "YouTube")).join(" + ")}
-            </p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-sm text-chalk-dim">
+            {total > 0 ? (
+              <span className="font-bold text-chalk">{fmtPrice(total)}</span>
+            ) : (
+              <span className="text-chalk-faint text-xs">Select a platform above</span>
+            )}
           </div>
           <button
             onClick={handleConfirm}
             disabled={selected.size === 0 || total <= 0 || submitting}
-            className="purple-pill px-6 py-3 text-xs font-bold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-glow-purple"
+            className="purple-pill px-6 py-2.5 text-xs font-bold flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-glow-purple"
           >
             {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
               inCart ? <Check className="w-3.5 h-3.5" /> : null}
-            {inCart ? "Selected" : "Select"}
+            {inCart ? "Selected" : "Select Kalakaar"}
           </button>
         </div>
       )}

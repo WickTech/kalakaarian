@@ -133,9 +133,9 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3 text-chalk-dim">
-            <p>No creators found matching your filters.</p>
+            <p>No Kalakaars found matching your filters.</p>
             {influencers.length === 0 && (
-              <Link to="/influencer-register" className="purple-pill px-5 py-2 text-sm">Be the first creator →</Link>
+              <Link to="/influencer-register" className="purple-pill px-5 py-2 text-sm">Be the first Kalakaar →</Link>
             )}
           </div>
         ) : (

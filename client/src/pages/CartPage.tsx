@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Upload, FileText, ShoppingCart, Plus, Loader2, Check } from "lucide-react";
 import { useCartContext } from "@/contexts/CartContext";
-import { api, Campaign, CampaignFile } from "@/lib/api";
+import { api, CampaignFile } from "@/lib/api";
 
 function fmt(n: number) {
   return `₹${n.toLocaleString("en-IN")}`;
@@ -12,18 +12,11 @@ export default function CartPage() {
   const navigate = useNavigate();
   const { items, removeFromCart, total, campaignId, campaignName, campaignDescription, setCampaign, setCampaignDescription } = useCartContext();
 
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [mode, setMode] = useState<"select" | "create">("select");
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [creating, setCreating] = useState(false);
   const [files, setFiles] = useState<CampaignFile[]>([]);
   const [uploading, setUploading] = useState(false);
-
-  useEffect(() => {
-    api.getCampaigns().then(setCampaigns).catch(() => {});
-  }, []);
-
   useEffect(() => {
     if (campaignId) api.getCampaignFiles(campaignId).then(setFiles).catch(() => {});
     else setFiles([]);
@@ -36,7 +29,6 @@ export default function CartPage() {
       const camp = await api.createCampaign({ title: newTitle, description: newDesc });
       setCampaign(camp.title, camp.id);
       setCampaignDescription(newDesc);
-      setCampaigns(prev => [camp, ...prev]);
     } finally {
       setCreating(false);
     }
@@ -75,7 +67,7 @@ export default function CartPage() {
           <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto" />
           <p className="text-muted-foreground text-sm">Your cart is empty</p>
           <button onClick={() => navigate("/marketplace")} className="purple-pill px-6 py-2 text-sm font-bold">
-            Browse Creators
+            Browse Kalakaars
           </button>
         </div>
       </div>
@@ -110,21 +102,9 @@ export default function CartPage() {
 
         {/* Campaign */}
         <div className="border border-border rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium flex items-center gap-1.5">
-              <FileText className="w-4 h-4" /> Campaign
-            </p>
-            {!campaignId && (
-              <div className="flex gap-1 bg-muted rounded-lg p-0.5">
-                {(["select", "create"] as const).map(m => (
-                  <button key={m} onClick={() => setMode(m)}
-                    className={`text-xs px-3 py-1 rounded-md capitalize transition-all ${mode === m ? "bg-background shadow text-foreground font-medium" : "text-muted-foreground"}`}>
-                    {m === "select" ? "Existing" : "New"}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <p className="text-sm font-medium flex items-center gap-1.5">
+            <FileText className="w-4 h-4" /> Campaign
+          </p>
 
           {campaignId ? (
             <div className="flex items-center justify-between bg-primary/5 border border-primary/20 px-3 py-2.5 rounded-lg">
@@ -136,24 +116,13 @@ export default function CartPage() {
                 Change
               </button>
             </div>
-          ) : mode === "select" ? (
-            <select
-              onChange={e => {
-                const camp = campaigns.find(c => c.id === e.target.value);
-                if (camp) { setCampaign(camp.title, camp.id); setCampaignDescription(camp.description || ""); }
-              }}
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card focus:outline-none focus:border-primary"
-            >
-              <option value="">Select a campaign...</option>
-              {campaigns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-            </select>
           ) : (
             <div className="space-y-2">
               <input value={newTitle} onChange={e => setNewTitle(e.target.value)}
                 placeholder="Campaign name *"
                 className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card focus:outline-none focus:border-primary" />
               <textarea value={newDesc} onChange={e => setNewDesc(e.target.value)}
-                placeholder="Brief description (optional)" rows={2}
+                placeholder="Campaign instructions or brief (optional)" rows={3}
                 className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card focus:outline-none focus:border-primary resize-none" />
               <button onClick={handleCreateCampaign} disabled={!newTitle.trim() || creating}
                 className="purple-pill px-4 py-1.5 text-xs font-bold disabled:opacity-40 flex items-center gap-1.5">
@@ -164,22 +133,21 @@ export default function CartPage() {
           )}
         </div>
 
-        {/* Files — only shown once campaign is linked */}
+        {/* Campaign Brief Upload — shown once campaign is linked */}
         {campaignId && (
           <div className="border border-border rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium flex items-center gap-1.5">
-                <Upload className="w-4 h-4" /> Campaign Files
+                <Upload className="w-4 h-4" /> Campaign Brief
               </p>
               <label className={`text-xs px-3 py-1.5 rounded-full border border-border cursor-pointer hover:bg-muted transition-colors flex items-center gap-1.5 ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
                 {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                Upload
-                <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.zip" onChange={handleFileUpload} className="hidden" />
+                Upload Files
+                <input type="file" multiple accept="image/*,.pdf,.doc,.docx" onChange={handleFileUpload} className="hidden" />
               </label>
             </div>
-            {files.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Upload briefs, brand guidelines, or creative assets.</p>
-            ) : (
+            <p className="text-xs text-muted-foreground">Share your brand guidelines, mood board, or creative direction. (PDF, DOC, Images)</p>
+            {files.length > 0 && (
               <div className="space-y-2">
                 {files.map(f => (
                   <div key={f._id} className="flex items-center gap-2">
@@ -197,7 +165,7 @@ export default function CartPage() {
 
         {/* Summary */}
         <div className="border border-border rounded-xl p-4 space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-muted-foreground">Creator Subtotal</span><span>{fmt(total)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Kalakaar Subtotal</span><span>{fmt(total)}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Platform Fee (8%)</span><span>{fmt(platformFee)}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">GST (18%)</span><span>{fmt(gst)}</span></div>
           <div className="h-px bg-border" />
@@ -209,7 +177,7 @@ export default function CartPage() {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border">
         <div className="max-w-2xl mx-auto flex gap-3">
           <button onClick={() => navigate("/marketplace")} className="btn-outline flex-1 py-2.5 text-sm">
-            + Add Creators
+            + Add Kalakaars
           </button>
           <button onClick={() => navigate("/checkout")} disabled={items.length === 0}
             className="purple-pill py-2.5 text-sm font-bold px-8 disabled:opacity-40">

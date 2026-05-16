@@ -42,9 +42,9 @@ export default function BrandWelcome() {
                 key={tier.key}
                 onClick={() => navigate(`/marketplace?tier=${tier.key}`)}
                 style={{ animationDelay: `${idx * 60}ms` }}
-                className="group premium-card text-left p-7 flex flex-col gap-6 fade-up"
+                className="group premium-card text-left p-8 flex flex-col gap-6 fade-up w-full"
               >
-                <h2 className="section-title text-5xl text-center w-full">{tier.label}</h2>
+                <h2 className="text-5xl font-bold text-chalk text-center w-full">{tier.label}</h2>
 
                 <div className="flex-1 flex flex-col items-center justify-center gap-5">
                   <div className="text-center">
@@ -52,14 +52,14 @@ export default function BrandWelcome() {
                     <p className="text-2xl font-bold text-chalk">{tier.range}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs tracking-[0.18em] uppercase text-chalk-faint mb-1.5">Creators</p>
+                    <p className="text-xs tracking-[0.18em] uppercase text-chalk-faint mb-1.5">Kalakaars</p>
                     <p className="text-2xl font-bold text-chalk">{inventory > 0 ? inventory : "—"}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 pt-4 border-t border-white/5 text-sm text-gold transition-all group-hover:gap-3">
-                  <span className="font-light tracking-wide">Explore {tier.label}</span>
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                  <span className="font-light tracking-wide text-chalk">Explore {tier.label}</span>
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 text-gold" />
                 </div>
               </button>
             );
@@ -68,7 +68,7 @@ export default function BrandWelcome() {
 
         <div className="flex justify-center">
           <button onClick={() => navigate("/marketplace")} className="btn-outline px-10 py-3.5 text-sm">
-            View All Creators
+            View All Kalakaars
           </button>
         </div>
       </div>

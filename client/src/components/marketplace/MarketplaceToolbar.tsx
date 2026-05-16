@@ -1,11 +1,5 @@
 import { ArrowUpDown, Instagram, Youtube, Search, SlidersHorizontal, ShoppingCart, X, Users } from "lucide-react";
 
-const TIERS = ["nano", "micro", "macro", "celeb"] as const;
-type Tier = (typeof TIERS)[number];
-const TIER_LABEL: Record<string, string> = {
-  all: "All", nano: "Nano", micro: "Micro", macro: "Macro", celeb: "Celeb",
-};
-
 export type SortBy = "relevance" | "followers_desc" | "er_desc" | "price_asc" | "price_desc" | "rating_desc";
 const SORT_OPTIONS: { value: SortBy; label: string; short: string }[] = [
   { value: "relevance",      label: "Relevance",        short: "Relevant" },
@@ -23,8 +17,6 @@ interface Props {
   setSearch: (v: string) => void;
   openDrawer: () => void;
   activeFilterCount: number;
-  tier: Tier | "all";
-  setTier: (t: Tier | "all") => void;
   selectedCount: number;
   pagedCount: number;
   filteredCount: number;
@@ -96,16 +88,6 @@ export function MarketplaceToolbar(p: Props) {
           )}
         </button>
 
-        <div className="w-px h-4 bg-white/15 shrink-0" />
-
-        {(["all", ...TIERS] as const).map((t) => (
-          <button key={t} onClick={() => p.setTier(t)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all shrink-0 ${
-              p.tier === t ? "border-gold text-gold bg-gold/10" : "border-white/15 text-chalk-dim hover:text-chalk hover:border-white/30"
-            }`}>
-            {TIER_LABEL[t] ?? t}
-          </button>
-        ))}
       </div>
 
       {/* Row 3 — sort + bulk select + count, ALL ON ONE LINE */}

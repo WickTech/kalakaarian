@@ -4,6 +4,12 @@ const GENRES = ["Fashion", "Tech", "Food", "Fitness", "Travel", "Beauty", "Gamin
 const GENDERS = ["all", "male", "female"] as const;
 type GenderFilter = (typeof GENDERS)[number];
 
+const TIERS = ["all", "nano", "micro", "macro", "celeb"] as const;
+type TierFilter = (typeof TIERS)[number];
+const TIER_LABEL: Record<TierFilter, string> = {
+  all: "All", nano: "Nano", micro: "Micro", macro: "Macro", celeb: "Celebrity",
+};
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -11,6 +17,8 @@ interface Props {
   toggleGenre: (g: string) => void;
   gender: GenderFilter;
   setGender: (g: GenderFilter) => void;
+  tier: TierFilter;
+  setTier: (t: TierFilter) => void;
   priceMin: string;
   setPriceMin: (v: string) => void;
   priceMax: string;
@@ -26,6 +34,7 @@ const sectionLabel = "text-xs font-semibold text-chalk uppercase tracking-wider 
 
 export function MarketplaceFilters({
   open, onClose, selectedGenres, toggleGenre, gender, setGender,
+  tier, setTier,
   priceMin, setPriceMin, priceMax, setPriceMax, location, setLocation,
   onClear, activeCount,
 }: Props) {
@@ -49,6 +58,26 @@ export function MarketplaceFilters({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-7">
+          {/* Tier */}
+          <div>
+            <p className={sectionLabel}>Creator Tier</p>
+            <div className="grid grid-cols-3 gap-2">
+              {TIERS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTier(t)}
+                  className={`py-2 rounded-lg text-sm font-medium border transition-all ${
+                    tier === t
+                      ? "border-gold text-gold bg-gold/10"
+                      : "border-white/15 text-chalk-dim hover:text-chalk hover:border-white/30"
+                  }`}
+                >
+                  {TIER_LABEL[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Genre */}
           <div>
             <p className={sectionLabel}>Genre</p>

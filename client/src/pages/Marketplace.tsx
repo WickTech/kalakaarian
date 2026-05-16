@@ -97,8 +97,8 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
     setSearchParams(next, { replace: true });
   };
 
-  const activeFilterCount = selectedGenres.length + (gender !== "all" ? 1 : 0) + (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (location ? 1 : 0);
-  const clearFilters = () => { setSelectedGenres([]); setGender("all"); setPriceMin(""); setPriceMax(""); setLocation(""); };
+  const activeFilterCount = selectedGenres.length + (gender !== "all" ? 1 : 0) + (tier !== "all" ? 1 : 0) + (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (location ? 1 : 0);
+  const clearFilters = () => { setSelectedGenres([]); setGender("all"); setTier("all"); setPriceMin(""); setPriceMax(""); setLocation(""); };
 
   return (
     <div className="min-h-screen bg-obsidian flex flex-col">
@@ -106,6 +106,7 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
         open={drawerOpen} onClose={() => setDrawerOpen(false)}
         selectedGenres={selectedGenres} toggleGenre={toggleGenre}
         gender={gender} setGender={setGender}
+        tier={tier} setTier={setTier}
         priceMin={priceMin} setPriceMin={setPriceMin}
         priceMax={priceMax} setPriceMax={setPriceMax}
         location={location} setLocation={setLocation}
@@ -116,7 +117,6 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
         platform={platform} setPlatform={setPlatform}
         search={search} setSearch={setSearch}
         openDrawer={() => setDrawerOpen(true)} activeFilterCount={activeFilterCount}
-        tier={tier} setTier={setTier}
         selectedCount={selectedIds.size} pagedCount={filtered.length} filteredCount={filtered.length}
         onSelectCount={handleSelectCount} onClearSelection={clearSelection}
         onAddSelectedToCart={addSelectedToCart}

@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { Search, FileText, Users, BarChart2 } from "lucide-react";
+import { Search, FileText, Users, BarChart2, Wallet } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { api, Campaign, Proposal } from "@/lib/api";
@@ -9,10 +9,12 @@ import { CampaignInfluencersPanel } from "@/components/CampaignInfluencersPanel"
 import { RecommendedCreators } from "@/components/RecommendedCreators";
 import { BrandAnalyticsPanel } from "@/components/BrandAnalyticsPanel";
 import { BrandRoomPanel } from "@/components/BrandRoomPanel";
-import { BrandCampaignHistoryPanel } from "@/components/BrandCampaignHistoryPanel";
+import { BrandTransactionsPanel } from "@/components/BrandTransactionsPanel";
+import { PreviousCampaignsPanel } from "@/components/PreviousCampaignsPanel";
+import { CurrentCampaignPopover } from "@/components/CurrentCampaignPopover";
 import { RunningCampaignTracker } from "@/components/RunningCampaignTracker";
 
-type Tab = "overview" | "campaigns" | "analytics" | "room" | "history";
+type Tab = "overview" | "campaigns" | "analytics" | "room" | "transactions";
 
 const STATUS_STYLE: Record<string, string> = {
   open: "text-green-400 border-green-400/30",
@@ -20,16 +22,23 @@ const STATUS_STYLE: Record<string, string> = {
   archived: "text-chalk-dim border-white/20",
 };
 
-const VALID_TABS = new Set<Tab>(["overview", "campaigns", "analytics", "room", "history"]);
+const VALID_TABS = new Set<Tab>(["overview", "campaigns", "analytics", "room", "transactions"]);
+
+function normalizeTab(raw: string | null): Tab {
+  if (raw === "history") return "transactions";
+  if (raw && VALID_TABS.has(raw as Tab)) return raw as Tab;
+  return "overview";
+}
 
 export default function BrandDashboard() {
   const { user } = useAuth();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const urlTab = searchParams.get("tab") as Tab | null;
-  const [tab, setTab] = useState<Tab>(urlTab && VALID_TABS.has(urlTab) ? urlTab : "overview");
+  const [tab, setTab] = useState<Tab>(normalizeTab(searchParams.get("tab")));
   const [viewingCampaignId, setViewingCampaignId] = useState<string | null>(null);
   const [viewingInfluencersCampaign, setViewingInfluencersCampaign] = useState<Campaign | null>(null);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const popoverAnchor = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const stateTab = (location.state as { tab?: Tab } | null)?.tab;
@@ -80,21 +89,32 @@ export default function BrandDashboard() {
               <p className="text-chalk-dim text-xs mt-0.5">Welcome, {user?.name || "Team"}</p>
             </div>
           </div>
-          <div className="flex gap-2 flex-wrap shrink-0">
+          <div className="relative flex gap-2 flex-wrap shrink-0">
             <Link to="/marketplace" className="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk text-sm transition-colors">
               <Search className="w-4 h-4" /> Find Creators
             </Link>
-            <button onClick={() => setTab("campaigns")} className="purple-pill flex items-center gap-2 px-4 py-2 text-sm">
+            <button
+              ref={popoverAnchor}
+              onClick={() => setPopoverOpen((o) => !o)}
+              className="purple-pill flex items-center gap-2 px-4 py-2 text-sm"
+            >
               <BarChart2 className="w-4 h-4" /> Campaigns
             </button>
+            <CurrentCampaignPopover
+              open={popoverOpen}
+              onClose={() => setPopoverOpen(false)}
+              anchorRef={popoverAnchor}
+            />
           </div>
         </div>
 
-        <div className="flex gap-2 mb-6">
-          {(["overview", "campaigns", "analytics", "room", "history"] as Tab[]).map((t) => (
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {(["overview", "campaigns", "analytics", "room", "transactions"] as Tab[]).map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${tab === t ? "bg-purple-600 text-white" : "border border-white/10 text-chalk-dim hover:text-chalk"}`}>
-              {t === "room" ? "🏠 Your Room" : t.charAt(0).toUpperCase() + t.slice(1)}
+              {t === "room" ? "🏠 Your Room" :
+               t === "transactions" ? "Transactions" :
+               t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
         </div>
@@ -123,61 +143,80 @@ export default function BrandDashboard() {
             )}
 
             {tab === "campaigns" && (
-              <div className="bento-card overflow-hidden">
-                <div className="p-5 border-b border-white/5">
-                  <h2 className="font-display font-bold text-chalk">My Campaigns</h2>
-                </div>
+              <div className="space-y-6">
                 {campaigns.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center p-12 text-chalk-dim">
+                  <div className="bento-card flex flex-col items-center justify-center p-12 text-chalk-dim">
                     <FileText className="w-10 h-10 mb-3 opacity-30" />
                     <p>No campaigns yet.</p>
-                    <Link to="/brand/create-campaign" className="purple-pill mt-4 px-5 py-2 text-sm">Upload Campaign Brief</Link>
+                    <Link to="/marketplace" className="purple-pill mt-4 px-5 py-2 text-sm">Find Creators</Link>
+                    <Link to="/brand/create-campaign" className="mt-3 text-xs text-chalk-dim hover:text-chalk underline">
+                      Or post an open brief
+                    </Link>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead><tr className="border-b border-white/5">
-                        {["Campaign", "Status", "Actions"].map((h) => (
-                          <th key={h} className="px-5 py-3 text-left text-xs text-chalk-faint font-medium">{h}</th>
-                        ))}
-                      </tr></thead>
-                      <tbody>
-                        {campaigns.map((c) => (
-                          <tr key={c.id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
-                            <td className="px-5 py-3 font-medium text-chalk">{c.title}</td>
-                            <td className="px-5 py-3">
-                              <span className={`text-xs px-2 py-0.5 rounded-full border ${STATUS_STYLE[c.status] || "text-chalk-dim border-white/10"}`}>
-                                {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
-                              </span>
-                            </td>
-                            <td className="px-5 py-3">
-                              <div className="flex items-center gap-3">
-                                <button onClick={() => setViewingInfluencersCampaign(c)}
-                                  className="text-xs text-purple-400 hover:underline flex items-center gap-1">
-                                  <Users className="w-3 h-3" /> Creators
-                                </button>
-                                <button onClick={() => setViewingCampaignId(c.id)}
-                                  className="text-xs text-gold hover:underline flex items-center gap-1">
-                                  <FileText className="w-3 h-3" /> Proposals
-                                </button>
-                                <Link to={`/brand/campaigns/${c.id}/track`}
-                                  className="text-xs text-chalk-dim hover:text-chalk flex items-center gap-1">
-                                  <BarChart2 className="w-3 h-3" /> Track
-                                </Link>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <>
+                    <RunningCampaignTracker campaigns={campaigns.filter((c) => c.status === "open")} />
+
+                    <div className="bento-card overflow-hidden">
+                      <div className="p-5 border-b border-white/5">
+                        <h2 className="font-display font-bold text-chalk">All Campaigns</h2>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead><tr className="border-b border-white/5">
+                            {["Campaign", "Status", "Actions"].map((h) => (
+                              <th key={h} className="px-5 py-3 text-left text-xs text-chalk-faint font-medium">{h}</th>
+                            ))}
+                          </tr></thead>
+                          <tbody>
+                            {campaigns.map((c) => (
+                              <tr key={c.id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
+                                <td className="px-5 py-3 font-medium text-chalk">{c.title}</td>
+                                <td className="px-5 py-3">
+                                  <span className={`text-xs px-2 py-0.5 rounded-full border ${STATUS_STYLE[c.status] || "text-chalk-dim border-white/10"}`}>
+                                    {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-3">
+                                  <div className="flex items-center gap-3">
+                                    <button onClick={() => setViewingInfluencersCampaign(c)}
+                                      className="text-xs text-purple-400 hover:underline flex items-center gap-1">
+                                      <Users className="w-3 h-3" /> Creators
+                                    </button>
+                                    <button onClick={() => setViewingCampaignId(c.id)}
+                                      className="text-xs text-gold hover:underline flex items-center gap-1">
+                                      <FileText className="w-3 h-3" /> Proposals
+                                    </button>
+                                    <Link to={`/brand/campaigns/${c.id}/track`}
+                                      className="text-xs text-chalk-dim hover:text-chalk flex items-center gap-1">
+                                      <BarChart2 className="w-3 h-3" /> Track
+                                    </Link>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <PreviousCampaignsPanel />
+                  </>
                 )}
               </div>
             )}
 
             {tab === "analytics" && <BrandAnalyticsPanel />}
             {tab === "room" && <BrandRoomPanel />}
-            {tab === "history" && <BrandCampaignHistoryPanel />}
+            {tab === "transactions" && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Wallet className="w-4 h-4 text-purple-400" />
+                  <h2 className="font-display font-bold text-chalk">Transactions</h2>
+                </div>
+                <BrandTransactionsPanel />
+              </div>
+            )}
           </>
         )}
       </div>

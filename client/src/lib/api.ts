@@ -242,6 +242,19 @@ export interface BrandAnalytics {
   proposals: { total: number; accepted: number; pending: number; rejected: number };
   spend: number;
 }
+export interface BrandTransaction {
+  id: string;
+  amount: number;
+  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  invoiceNumber: string | null;
+  createdAt: string;
+  paymentMethod: string | null;
+  transactionId: string | null;
+  campaignId: string;
+  campaignTitle: string | null;
+  influencerId: string;
+  influencerName: string | null;
+}
 export interface InfluencerAnalytics {
   totalProposals: number;
   acceptedProposals: number;
@@ -916,6 +929,56 @@ export const api = {
 
   getTransactionHistory: async (): Promise<{ transactions: Array<{ id: string; amount: number; type: string; status: string; createdAt: string; campaignTitle: string | null }> }> =>
     request('/api/wallet/transactions'),
+
+  getBrandTransactions: async (filters?: {
+    creatorId?: string; campaignId?: string; from?: string; to?: string; status?: string; limit?: number;
+  }): Promise<{ transactions: BrandTransaction[] }> => {
+    const q = new URLSearchParams();
+    if (filters?.creatorId)  q.set('creatorId', filters.creatorId);
+    if (filters?.campaignId) q.set('campaignId', filters.campaignId);
+    if (filters?.from)       q.set('from', filters.from);
+    if (filters?.to)         q.set('to', filters.to);
+    if (filters?.status)     q.set('status', filters.status);
+    if (filters?.limit)      q.set('limit', String(filters.limit));
+    const qs = q.toString();
+    return request(`/api/wallet/brand/transactions${qs ? '?' + qs : ''}`);
+  },
+
+  getBrandTransactionFilters: async (): Promise<{
+    campaigns: Array<{ id: string; title: string }>;
+    creators:  Array<{ id: string; name: string }>;
+  }> => request('/api/wallet/brand/transactions/filters'),
+
+  getInvoiceBlobUrl: (transactionId: string): string => {
+    const token = localStorage.getItem('kalakariaan_token') || '';
+    return `${API_BASE_URL}/api/invoices/${transactionId}.pdf?_t=${encodeURIComponent(token)}`;
+  },
+
+  downloadInvoice: async (transactionId: string, invoiceNumber?: string | null): Promise<void> => {
+    const token = localStorage.getItem('kalakariaan_token') || '';
+    const r = await fetch(`${API_BASE_URL}/api/invoices/${transactionId}.pdf`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!r.ok) throw new ApiError(r.status, 'Failed to download invoice');
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `${invoiceNumber || transactionId}.pdf`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  },
+
+  setVideoLiveUrl: async (videoId: string, liveUrl: string, platform: 'instagram' | 'youtube'): Promise<void> =>
+    request(`/api/videos/${videoId}/live-url`, {
+      method: 'PUT',
+      body: JSON.stringify({ liveUrl, platform }),
+    }),
+
+  getCampaignVideosAdmin: async (campaignId: string): Promise<Array<{
+    id: string; influencer_id: string; video_url: string; platform: string; status: string;
+    live_post_url: string | null; live_post_platform: string | null;
+    uploaded_at: string; profiles: { name: string } | null;
+  }>> => request(`/api/videos/campaign/${campaignId}/all`),
 
   requestWithdrawal: async (amount: number, upiId: string): Promise<{ message: string }> =>
     request('/api/wallet/withdraw', { method: 'POST', body: JSON.stringify({ amount, upiId }) }),

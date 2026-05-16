@@ -184,7 +184,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                   {user.role === "brand" && (
                     <DropdownMenuItem asChild>
                       <Link to="/brand/dashboard?tab=campaigns" className="flex items-center gap-2 cursor-pointer">
-                        <BarChart2 className="w-4 h-4" /> Campaign Tracker
+                        <BarChart2 className="w-4 h-4" /> Current Campaign
                       </Link>
                     </DropdownMenuItem>
                   )}

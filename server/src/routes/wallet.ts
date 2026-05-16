@@ -2,8 +2,12 @@ import { Router, RequestHandler } from 'express';
 import { auth, AuthRequest } from '../middleware/auth';
 import { adminClient } from '../config/supabase';
 import { sendWithdrawalRequestEmail } from '../services/emailService';
+import { getBrandTransactions, getBrandTransactionFilters } from '../controllers/brandTransactionsController';
 
 const router = Router();
+
+router.get('/brand/transactions',  auth as unknown as RequestHandler, ((req, res) => getBrandTransactions(req as AuthRequest, res)) as RequestHandler);
+router.get('/brand/transactions/filters', auth as unknown as RequestHandler, ((req, res) => getBrandTransactionFilters(req as AuthRequest, res)) as RequestHandler);
 
 router.get('/transactions', auth as unknown as RequestHandler, (async (req, res) => {
   if ((req as AuthRequest).user!.role !== 'influencer') return res.status(403).json({ error: 'Forbidden' });

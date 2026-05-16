@@ -36,6 +36,44 @@ router.get('/my', auth, async (req: AuthRequest, res: Response) => {
   } catch { res.status(500).json({ message: 'Error fetching videos' }); }
 });
 
+router.put('/:id/live-url', auth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { liveUrl, platform } = req.body as { liveUrl?: string; platform?: string };
+    if (!liveUrl || typeof liveUrl !== 'string') { res.status(400).json({ message: 'liveUrl required' }); return; }
+    if (!platform || !['instagram', 'youtube'].includes(platform)) {
+      res.status(400).json({ message: 'platform must be instagram or youtube' }); return;
+    }
+    try { new URL(liveUrl); } catch { res.status(400).json({ message: 'Invalid URL' }); return; }
+
+    const { data: video } = await adminClient
+      .from('campaign_videos')
+      .select('id, influencer_id, status')
+      .eq('id', req.params.id).single();
+    if (!video) { res.status(404).json({ message: 'Video not found' }); return; }
+    if (video.influencer_id !== req.user!.userId) { res.status(403).json({ message: 'Not authorized' }); return; }
+    if (video.status !== 'approved') { res.status(400).json({ message: 'Video must be approved before adding live URL' }); return; }
+
+    const { data, error } = await adminClient.from('campaign_videos')
+      .update({ live_post_url: liveUrl, live_post_platform: platform })
+      .eq('id', req.params.id).select().single();
+    if (error || !data) { res.status(500).json({ message: 'Error saving live URL' }); return; }
+    res.json(data);
+  } catch { res.status(500).json({ message: 'Error saving live URL' }); }
+});
+
+router.get('/campaign/:campaignId/all', auth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { data: campaign } = await adminClient.from('campaigns').select('brand_id').eq('id', req.params.campaignId).single();
+    if (!campaign) { res.status(404).json({ message: 'Campaign not found' }); return; }
+    if (campaign.brand_id !== req.user!.userId) { res.status(403).json({ message: 'Not authorized' }); return; }
+    const { data } = await adminClient.from('campaign_videos')
+      .select('*, profiles:influencer_id(name)')
+      .eq('campaign_id', req.params.campaignId)
+      .order('created_at', { ascending: false });
+    res.json(data ?? []);
+  } catch { res.status(500).json({ message: 'Error fetching videos' }); }
+});
+
 router.put('/:id/review', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { status, feedback } = req.body;

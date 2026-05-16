@@ -30,6 +30,7 @@ import brandRoutes from './routes/brands';
 import analyticsCampaignHistoryRoutes from './routes/analyticsCampaignHistory';
 import feedbackRoutes from './routes/feedback';
 import platformRoutes from './routes/platforms';
+import invoiceRoutes from './routes/invoices';
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -121,6 +122,7 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/analytics', analyticsCampaignHistoryRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/invoices', invoiceRoutes);
 
 if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);

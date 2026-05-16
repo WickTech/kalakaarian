@@ -27,11 +27,13 @@
     "express-rate-limit": "^8.3.2",
     "express-validator": "^7.0.1",
     "helmet": "^8.1.0",
+    "pdfkit": "^0.18.0",
     "razorpay": "^2.9.6",
     "resend": "^6.12.0",
     "serverless-http": "^4.0.0"
   },
   "devDependencies": {
+    "@types/pdfkit": "^0.17.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }

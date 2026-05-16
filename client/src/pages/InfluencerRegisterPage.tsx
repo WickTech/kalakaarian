@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, Instagram, Youtube } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/hooks/useAuth";
 import { INDIA_STATES } from "@/lib/constants";
 import { TermsModal } from "@/components/TermsModal";
@@ -15,6 +16,21 @@ const GENDER_AVATARS: Record<string, string> = {
   prefer_not_to_say: "https://api.dicebear.com/7.x/avataaars/svg?seed=default",
 };
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const showGoogle = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "your-google-client-id.apps.googleusercontent.com";
+
+function parseIgHandle(raw: string): string {
+  const m = raw.match(/instagram\.com\/([^/?#\s]+)/i);
+  if (m) return m[1].replace(/^@/, "");
+  return raw.replace(/^@/, "").trim();
+}
+
+function parseYtHandle(raw: string): string {
+  const m = raw.match(/youtube\.com\/@([^/?#\s]+)/i) || raw.match(/youtube\.com\/c\/([^/?#\s]+)/i) || raw.match(/youtube\.com\/user\/([^/?#\s]+)/i);
+  if (m) return m[1];
+  return raw.replace(/^@/, "").trim();
+}
+
 interface InfluencerForm {
   name: string; email: string; phone: string; password: string; confirmPassword: string;
   gender: string; genres: string[]; instagram: string; youtube: string;
@@ -24,7 +40,7 @@ interface InfluencerForm {
 
 export default function InfluencerRegisterPage() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,6 +58,9 @@ export default function InfluencerRegisterPage() {
 
   const toggleGenre = (g: string) =>
     setForm((p) => ({ ...p, genres: p.genres.includes(g) ? p.genres.filter((x) => x !== g) : [...p.genres, g] }));
+
+  const normalizeIg = () => setForm(p => ({ ...p, instagram: parseIgHandle(p.instagram) }));
+  const normalizeYt = () => setForm(p => ({ ...p, youtube: parseYtHandle(p.youtube) }));
 
   const validate = (): boolean => {
     if (step === 0) {
@@ -72,8 +91,7 @@ export default function InfluencerRegisterPage() {
         platform: [...(form.instagram ? ["instagram"] : []), ...(form.youtube ? ["youtube"] : [])],
         tier: "micro", bio: form.bio,
         socialHandles: { instagram: form.instagram || undefined, youtube: form.youtube || undefined },
-        profileImage,
-        city: form.city,
+        profileImage, city: form.city,
         pricing: {
           reelRate: Number(form.reelRate) || 0,
           storyRate: Number(form.storyRate) || 0,
@@ -90,6 +108,19 @@ export default function InfluencerRegisterPage() {
     }
   };
 
+  const handleGoogleSuccess = async (cr: { credential?: string }) => {
+    if (!cr.credential) return;
+    setLoading(true);
+    try {
+      await loginWithGoogle(cr.credential, "influencer");
+      navigate("/influencer/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google sign-in failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="relative min-h-screen bg-obsidian overflow-hidden px-4 py-10">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-fuchsia-600/5 to-pink-600/10 pointer-events-none" />
@@ -101,6 +132,7 @@ export default function InfluencerRegisterPage() {
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
 
+        {/* Step indicators */}
         <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
           {STEPS.map((label, i) => (
             <div key={label} className="flex items-center gap-2 flex-shrink-0">
@@ -114,9 +146,25 @@ export default function InfluencerRegisterPage() {
         </div>
 
         <div className="bento-card p-6">
+          {/* Step 0: Basic Info */}
           {step === 0 && (
             <div className="space-y-4">
               <h2 className="font-display text-xl font-bold text-chalk">Basic Information</h2>
+
+              {showGoogle && (
+                <>
+                  <div className="flex justify-center">
+                    <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError("Google sign-in failed")}
+                      text="signup_with" shape="pill" theme="filled_black" size="large" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-white/10" />
+                    <span className="text-xs text-chalk-faint">or fill in your details</span>
+                    <div className="flex-1 h-px bg-white/10" />
+                  </div>
+                </>
+              )}
+
               {([
                 { key: "name", label: "Full Name", type: "text", ph: "Priya Sharma" },
                 { key: "email", label: "Email", type: "email", ph: "priya@example.com" },
@@ -142,10 +190,11 @@ export default function InfluencerRegisterPage() {
             </div>
           )}
 
+          {/* Step 1: Genre */}
           {step === 1 && (
             <div className="space-y-4">
-              <h2 className="font-display text-xl font-bold text-chalk">Your Genre</h2>
-              <p className="text-sm text-chalk-dim">Select all that apply</p>
+              <h2 className="font-display text-xl font-bold text-chalk">Your Content Genre</h2>
+              <p className="text-sm text-chalk-dim">Select all that apply — brands filter by this</p>
               <div className="flex flex-wrap gap-2">
                 {GENRES.map((g) => (
                   <button key={g} type="button" onClick={() => toggleGenre(g)}
@@ -157,82 +206,103 @@ export default function InfluencerRegisterPage() {
             </div>
           )}
 
+          {/* Step 2: Platforms */}
           {step === 2 && (
-            <div className="space-y-4">
-              <h2 className="font-display text-xl font-bold text-chalk">Connect Platforms</h2>
-              <p className="text-sm text-chalk-dim">At least one handle required</p>
+            <div className="space-y-5">
               <div>
-                <label className="block text-sm text-chalk-dim mb-1.5">📸 Instagram Handle</label>
-                <div className="flex gap-2">
-                  <input value={form.instagram} onChange={set("instagram")} className="dark-input flex-1 px-4 py-3 text-sm" placeholder="@priyasharma" />
-                  {form.instagram && (
-                    <a
-                      href={`https://instagram.com/${form.instagram.replace(/^@/, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-3 py-2 text-xs border border-white/10 rounded-lg text-chalk-dim hover:text-chalk hover:border-white/30 transition-colors whitespace-nowrap"
-                    >
-                      <ExternalLink className="w-3 h-3" /> Verify
-                    </a>
-                  )}
-                </div>
+                <h2 className="font-display text-xl font-bold text-chalk">Connect Your Platforms</h2>
+                <p className="text-sm text-chalk-dim mt-1">At least one required. Paste a profile URL or enter your handle.</p>
               </div>
-              <div>
-                <label className="block text-sm text-chalk-dim mb-1.5">▶️ YouTube Channel URL</label>
-                <div className="flex gap-2">
-                  <input value={form.youtube} onChange={set("youtube")} className="dark-input flex-1 px-4 py-3 text-sm" placeholder="youtube.com/@priyasharma" />
-                  {form.youtube && (
-                    <a
-                      href={form.youtube.startsWith("http") ? form.youtube : `https://${form.youtube}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-3 py-2 text-xs border border-white/10 rounded-lg text-chalk-dim hover:text-chalk hover:border-white/30 transition-colors whitespace-nowrap"
-                    >
-                      <ExternalLink className="w-3 h-3" /> Verify
-                    </a>
-                  )}
+
+              {/* Instagram */}
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center">
+                    <Instagram className="w-4 h-4 text-pink-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-chalk">Instagram</p>
+                    <p className="text-[11px] text-chalk-faint">Paste URL or @handle</p>
+                  </div>
                 </div>
+                <input
+                  value={form.instagram}
+                  onChange={set("instagram")}
+                  onBlur={normalizeIg}
+                  className="dark-input w-full px-4 py-3 text-sm"
+                  placeholder="instagram.com/yourhandle or @yourhandle"
+                />
+                {form.instagram && (
+                  <p className="text-xs text-green-400">
+                    Handle: <span className="font-medium">@{form.instagram.replace(/^@/, "")}</span>
+                    {" · "}
+                    <a href={`https://instagram.com/${form.instagram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" className="text-purple-400 hover:underline">View profile ↗</a>
+                  </p>
+                )}
               </div>
-              <p className="text-xs text-chalk-faint">Connecting platforms enables auto-pulling of real analytics.</p>
+
+              {/* YouTube */}
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                    <Youtube className="w-4 h-4 text-red-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-chalk">YouTube</p>
+                    <p className="text-[11px] text-chalk-faint">Paste URL or @handle</p>
+                  </div>
+                </div>
+                <input
+                  value={form.youtube}
+                  onChange={set("youtube")}
+                  onBlur={normalizeYt}
+                  className="dark-input w-full px-4 py-3 text-sm"
+                  placeholder="youtube.com/@yourhandle or @yourhandle"
+                />
+                {form.youtube && (
+                  <p className="text-xs text-green-400">
+                    Handle: <span className="font-medium">@{form.youtube.replace(/^@/, "")}</span>
+                    {" · "}
+                    <a href={`https://youtube.com/@${form.youtube.replace(/^@/, "")}`} target="_blank" rel="noreferrer" className="text-red-400 hover:underline">View channel ↗</a>
+                  </p>
+                )}
+              </div>
+
+              <p className="text-xs text-chalk-faint bg-white/[0.03] rounded-lg px-3 py-2.5 border border-white/5">
+                🔗 After signup you can connect via Instagram OAuth and Google OAuth from your dashboard to enable live analytics sync.
+              </p>
             </div>
           )}
 
+          {/* Step 3: Rates */}
           {step === 3 && (
             <div className="space-y-4">
               <h2 className="font-display text-xl font-bold text-chalk">Set Your Rates</h2>
-              <p className="text-xs text-chalk-faint">Rates shown are base rates. A 5% creator commercial fee applies on branded content.</p>
+              <p className="text-xs text-chalk-faint">Base rates. A 5% creator commercial fee applies on branded content.</p>
               {form.instagram && (
                 <div>
-                  <p className="text-xs text-chalk-dim uppercase tracking-widest mb-2">📸 Instagram</p>
+                  <p className="text-xs text-chalk-dim uppercase tracking-widest mb-2 flex items-center gap-1.5"><Instagram className="w-3 h-3 text-pink-400" /> Instagram</p>
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-chalk-dim mb-1.5">Reel (₹)</label>
-                      <input type="number" value={form.reelRate} onChange={set("reelRate")} className="dark-input w-full px-3 py-2.5 text-sm" placeholder="15000" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-chalk-dim mb-1.5">Story (₹)</label>
-                      <input type="number" value={form.storyRate} onChange={set("storyRate")} className="dark-input w-full px-3 py-2.5 text-sm" placeholder="5000" />
-                    </div>
+                    <div><label className="block text-xs text-chalk-dim mb-1.5">Reel (₹)</label>
+                      <input type="number" value={form.reelRate} onChange={set("reelRate")} className="dark-input w-full px-3 py-2.5 text-sm" placeholder="15000" /></div>
+                    <div><label className="block text-xs text-chalk-dim mb-1.5">Story (₹)</label>
+                      <input type="number" value={form.storyRate} onChange={set("storyRate")} className="dark-input w-full px-3 py-2.5 text-sm" placeholder="5000" /></div>
                   </div>
                 </div>
               )}
               {form.youtube && (
                 <div>
-                  <p className="text-xs text-chalk-dim uppercase tracking-widest mb-2">▶️ YouTube</p>
+                  <p className="text-xs text-chalk-dim uppercase tracking-widest mb-2 flex items-center gap-1.5"><Youtube className="w-3 h-3 text-red-400" /> YouTube</p>
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-chalk-dim mb-1.5">Long Video (₹)</label>
-                      <input type="number" value={form.longVideoRate} onChange={set("longVideoRate")} className="dark-input w-full px-3 py-2.5 text-sm" placeholder="25000" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-chalk-dim mb-1.5">Shorts (₹)</label>
-                      <input type="number" value={form.shortsRate} onChange={set("shortsRate")} className="dark-input w-full px-3 py-2.5 text-sm" placeholder="8000" />
-                    </div>
+                    <div><label className="block text-xs text-chalk-dim mb-1.5">Long Video (₹)</label>
+                      <input type="number" value={form.longVideoRate} onChange={set("longVideoRate")} className="dark-input w-full px-3 py-2.5 text-sm" placeholder="25000" /></div>
+                    <div><label className="block text-xs text-chalk-dim mb-1.5">Shorts (₹)</label>
+                      <input type="number" value={form.shortsRate} onChange={set("shortsRate")} className="dark-input w-full px-3 py-2.5 text-sm" placeholder="8000" /></div>
                   </div>
                 </div>
               )}
               {!form.instagram && !form.youtube && (
-                <p className="text-sm text-amber-400">Go back to Step 3 and add at least one platform handle to set rates.</p>
+                <p className="text-sm text-amber-400">Go back and add at least one platform handle to set rates.</p>
               )}
               <div>
                 <label className="block text-sm text-chalk-dim mb-1.5">Bio (optional)</label>
@@ -242,6 +312,7 @@ export default function InfluencerRegisterPage() {
             </div>
           )}
 
+          {/* Step 4: Location */}
           {step === 4 && (
             <div className="space-y-4">
               <h2 className="font-display text-xl font-bold text-chalk">Your Location</h2>
@@ -278,6 +349,7 @@ export default function InfluencerRegisterPage() {
           </div>
         </div>
       </div>
+
       {showTerms && (
         <TermsModal
           onAccept={() => { setShowTerms(false); handleSubmit(); }}

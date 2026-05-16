@@ -5,9 +5,7 @@ import { useCartContext } from "@/contexts/CartContext";
 import { api, Campaign, CampaignFile } from "@/lib/api";
 
 function fmt(n: number) {
-  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}K`;
-  return `₹${n}`;
+  return `₹${n.toLocaleString("en-IN")}`;
 }
 
 export default function CartPage() {

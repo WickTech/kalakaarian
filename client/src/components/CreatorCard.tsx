@@ -17,9 +17,7 @@ function fmt(n: number): string {
 }
 
 function fmtPrice(n: number): string {
-  if (n >= 100_000) return `₹${(n / 100_000).toFixed(1)}L`;
-  if (n >= 1_000) return `₹${(n / 1_000).toFixed(0)}K`;
-  return `₹${n}`;
+  return `₹${n.toLocaleString("en-IN")}`;
 }
 
 interface Props {

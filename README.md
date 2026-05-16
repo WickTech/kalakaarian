@@ -39,10 +39,13 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Sticky glassmorphism header across every page — scroll hide/show
 - Logo, nav links (Home / Marketplace / Campaigns / Contact)
 - Auth-aware: notification bell + cart icon + avatar dropdown for logged-in users; Login / Get Started for guests
+- **Role-aware nav** — brands: Home / Marketplace / Campaigns / Contact; Kalakaars: Home / Dashboard / Campaigns / Contact
+- **Role-aware header icon** — Kalakaars see gold Wallet icon (→ earnings); brands see Shopping Cart (→ `/cart`)
 - Role-aware dashboard link (brand → `/brand/dashboard`, influencer → `/influencer/dashboard`)
-- **Role-aware "Campaigns" nav link** — brands go to `/brand/dashboard?tab=campaigns` (campaign tracker); influencers/guests go to `/campaigns` (browse open campaigns)
+- **Role-aware "Campaigns" nav link** — brands go to `/brand/dashboard?tab=campaigns`; Kalakaars go to `/campaigns`
 - Mobile hamburger Sheet menu
 - Dark obsidian theme — `bg-obsidian/95 backdrop-blur` with white/10 borders
+- Right-side icons (Bell, Cart/Wallet, Avatar) spaced with `gap-3` for clean alignment
 
 ### Authentication & Onboarding
 - Email + password login with role detection (brand / creator)
@@ -65,36 +68,42 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Dark obsidian theme throughout — charcoal tier cards, chalk text, obsidian footer
 
 ### Marketplace
-- 4-column influencer grid (responsive: 2 → 3 → 4 columns)
-- Rising Stars carousel — top creators by follower count
-- Search bar (name/handle filter, live)
-- Filter drawer: tier, genre, gender, platform, price range, city
-- Influencer cards: avatar, tier badge, online status dot / last-seen, follower count, cost, add-to-cart
-- Celebrity tier shows "Get In Touch" button instead of Add to Cart → navigates to `/contact`
+- 4-column Kalakaar grid (responsive: 2 → 3 → 4 columns)
+- Rising Stars carousel — top Kalakaars by follower count
+- Search bar ("Search Kalakaars…"), debounced 350 ms
+- Filter drawer: Kalakaar Tier, Genre, Kalakaar Gender, platform, price range, city
+- Tier pills in toolbar (All / Nano / Micro / Macro / Celeb) — synced with filter drawer
+- **Kalakaar cards:** avatar, tier badge, rating pill (gold star), Active/Inactive status, followers, cost, Select/Selected CTA
+- Celebrity tier shows "Get In Touch" button → `CelebCallbackModal`
 - Default avatar fallback (DiceBear)
-- Select all / deselect all with bulk cart add
-- Cart drawer: shows selected creators, remove button, 8% platform fee, grand total
-- Similar Profiles strip on influencer profile page — horizontal scroll, same-tier creators
+- **Bulk select:** "Select top…" dropdown (Top 5 / 10 / 20 / All) → add selected to cart in one click
+- Kalakaar count display ("X Kalakaars")
+- **Creator profile 404 fix** — Kalakaars who never toggled presence (new accounts) are now accessible from marketplace cards
+- **Genre filter fix** — multi-niche Kalakaars correctly appear when filtering by any of their niches (not just the first)
 
 ### Cart & Checkout
 - Cart context shared across app (single state instance)
-- Campaign selector inside cart (existing campaigns dropdown or create new name inline)
-- Campaign description textarea
-- Dedicated `/checkout` page — campaign details, creator list, price breakdown
+- Dedicated `/cart` page (brand-only) — Kalakaar list, campaign create + instructions textarea, **Campaign Brief upload** (PDF/DOC/Images)
+- Campaign Brief upload section appears after campaign is created; accepts PDF, DOC, DOCX, Images
+- Dedicated `/checkout` page — campaign details, creator list, price breakdown (Kalakaar Subtotal / Platform Fee 8% / GST 18% / Grand Total)
 - Razorpay checkout (two-step: create order → verify payment signature, server-side)
 - 8% platform fee enforced server-side at order creation — not client-only
-- Post-payment success screen with "Explore More Creators" and "Your Campaigns" CTAs
+- Post-payment success screen with "Browse Kalakaars" and "Your Campaigns" CTAs
 
 ### Brand Dashboard
 - Campaign list with status badges (no budget/deadline — budget auto-calculated from creator cartPrices)
 - **Campaign Influencers panel** — view all creators added to a campaign, filter by payment status (all/paid/pending), search by name, sort by price or followers; computed total budget; remove pending creators
 - Proposals table per campaign (accept / reject)
 - **Campaign Progress Tracker** — premium 7-stage horizontal timeline per creator (Campaign Created → Creators Notified → Scripts Reviewed → Content Created → Brand Review → Content Delivered → Payment Released); purple glow on active stage, animated track fill, revision badge, relative timestamps; 15s live refresh; accessible at `/brand/campaigns/:id/track`
-- **Running Campaigns panel** — collapsible campaign cards each with compact tracker + per-creator status list; shows leading creator's stage on aggregate tracker
+- **4-Phase Visual Tracker (`CampaignPhaseTracker`)** — condensed brand-facing view mapping 7 internal stages to 4 phases: Creator Selection / Shooting Started / Video Uploaded / Payment Done; used in popover and Previous Campaigns panel
+- **Running Campaigns panel** — collapsible campaign cards each with compact 4-phase tracker + per-creator status list; shows leading creator's stage
+- **Current Campaign Popover** — compact popup triggered from top-right "Campaigns" button; shows live campaign title, creator count, 4-phase tracker, "Full Tracker" link + "View All" → campaigns tab; 20s auto-refresh
+- **Transactions tab** (renamed from History) — full brand-side payment history with filters: by creator, campaign, date range, status; total paid summary card; one-click invoice PDF download per transaction
+- **Previous Campaigns panel** — expandable rows per past campaign showing: creator list, deliverable video links, live Instagram/YouTube post URLs (set by creator after going live), per-creator payment rows with invoice download
+- **PDF Invoice download** — `GET /api/invoices/:transactionId.pdf` streams a pdfkit-generated A4 invoice with invoice number, brand + creator details, campaign name, amount, Razorpay reference; ownership-checked (brand or creator only)
 - Video review grid — approve / request revision
 - Campaign file management (brief uploads, contract documents)
 - Campaign creation form (title, description, platform, niche, file attachments; brief tooltip with disclaimer)
-- Campaign history analytics — past campaigns table + spend bar chart
 - Brand Room: saved creators list, campaign start date picker with countdown, active status toggle
 - Brand public profile page (`/brand/:id`) — logo, industry, description, open campaign count (no auth required)
 
@@ -122,12 +131,29 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - **Seeded founders** — `masteranhad@gmail.com` + `rishabhverma707@gmail.com` are seeded as super admins via migration 025
 - **DB schema** (migration 025): `is_super_admin` + `is_suspended` on `profiles`; `is_verified` on `influencer_profiles`; `admin_audit_logs` table; `feature_flags` table with 5 default rows
 
-### Profile System
-- Public influencer profile (`/influencer/:id`) — bio, followers, ER, social handles, pricing
-- Edit influencer profile — genres, platforms, pricing by format, location, bio, profile image
-- **Brand account settings** (`/profile/edit`) — premium obsidian-themed settings page with profile image upload (presigned → Supabase Storage), name, work email, phone (WhatsApp), brand category; separate secure **password change** section (verifies current password server-side before updating)
-- My profile page — conditional render (brand view / influencer view)
+### Profile System — Kalakaar
+- Public Kalakaar profile (`/influencer/:id`) — full-page with:
+  - **Profile header** — pencil (→ `/profile/edit`) + settings icons visible on own profile; orange rating box; `city, state`; social handles as `@username`
+  - **Kalakaar Portfolio** — snap-scroll carousel, multi-file upload (max 12), prev/next arrows, dot indicators, image count overlay
+  - **Social Media section** — per-platform IG/YT cards (followers, ER%, price); compact "Select Kalakaar" CTA row
+  - **"Select Kalakaar — Choose Platforms"** CTA for brand view (non-celeb only) — scrolls to Social Media section
+  - **Analytics section** — engagement rate, avg views, reach estimate, authenticity score
+  - **Creator Campaigns** (own profile only) — running vs previous proposals with status badges + invoice placeholder
+  - **Wallet modal** (own profile only) — current balance, total earnings, link to transactions
+- Edit Kalakaar profile (`/profile/edit`) — dark obsidian theme; days-as-Kalakaar counter badge (🔥); email display (read-only); city + state grid; @-handle UI with @ prefix label; 25 niche options; **Commercials** section (IG reel/story + YT video/shorts with ₹ prefix)
+- **Commercials pricing** — `pricing` object with keys `reel | story | video | post | shorts`; 5% platform margin applied on brand-facing reads
+- **DB migration 026** — `state TEXT` column on `influencer_profiles`
+- **Brand account settings** (`/profile/edit`) — premium obsidian-themed settings page with profile image upload, name, work email, phone, brand category; separate secure password change section
+- My profile page — conditional render (brand view / Kalakaar view)
 - Profile image upload (pre-signed URL → Supabase Storage)
+
+### Brand → Kalakaar Profile View
+- Brands can browse Kalakaar profiles from marketplace cards (`/influencer/:id`)
+- Portfolio gallery (carousel) visible to brands
+- Social platform panel: IG/YT cards with individual pricing per format
+- "Select Kalakaar — Choose Platforms" CTA scrolls to platform selection
+- Celeb tier shows "Get In Touch" — no pricing/select shown
+- `isCelebTier` guard: select CTA hidden for own-profile, celeb tier, non-brands
 
 ### Messaging
 - DM conversations between brands and influencers
@@ -163,6 +189,8 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 ### Videos
 - Influencer video uploads linked to campaigns
 - Brand review flow — approve or request revision with feedback
+- **Live post URL** — creator can set the published Instagram/YouTube post URL (`PUT /api/videos/:id/live-url`) after brand approval; visible to brand in Previous Campaigns panel with platform-specific link icons
+- Brand view all deliverables per campaign — `GET /api/videos/campaign/:id/all` (brand ownership-checked)
 
 ### Feed
 - Public influencer feed — recent posts with like functionality
@@ -176,6 +204,8 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Creator ratings (migration 017)
 - Withdrawal requests table (migration 018) — `pending | processing | paid | failed` statuses
 - Super admin RBAC (migration 025) — `is_super_admin`, `is_suspended`, `is_verified` columns; `admin_audit_logs` + `feature_flags` tables; 5 default flags seeded
+- Creator state field (migration 026) — `state TEXT` column on `influencer_profiles`
+- Invoice numbering + live post URLs (migration 027) — `transactions.invoice_number` (`INV-YYYY-NNNNN` sequence trigger, backfilled); `campaign_videos.live_post_url` + `live_post_platform`; brand-date index on transactions
 - 5% platform margin applied server-side on all brand-facing reads (`applyPlatformMargin()`)
 - Rate limits: auth 20/15 min, OTP 5/hr by phone, campaign create 10/hr, contact POST 5/hr by IP
 - CORS allowlist (hardcoded production + `CORS_ORIGINS` env var + Vercel preview pattern)
@@ -196,6 +226,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 | **Real-time messaging** | Poll-based | Messages page polls the API. Supabase Realtime / WebSocket not yet wired. |
 | **Influencer withdrawal payouts** | Admin-notified only | `POST /api/wallet/withdraw` inserts a `withdrawal_requests` row and emails admin. Actual Razorpay Payouts API not wired — requires manual admin action. |
 | **Similar influencers endpoint** | Server wired, needs verification | `GET /api/influencers/:id/similar` exists; confirm Supabase query returns correct tier-matched results in production. |
+| **Platform `platforms` column sync** | Partial | Client `connectedPlatforms` is built from `social_handles` (reliable). Server platform filter uses `platforms` array column — can diverge if a creator set handles without setting the column. Client-side fallback filter compensates. |
 
 ---
 
@@ -214,7 +245,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - [ ] Advanced filters: engagement rate range, fake-follower % threshold
 - [ ] Campaign match score — show fit % per creator for a given brief
 - [ ] Escrow / milestone payment hold — release on brand approval
-- [ ] Automated invoice generation (PDF) on successful payment
+- [x] Automated invoice generation (PDF) on successful payment — `GET /api/invoices/:id.pdf` via pdfkit, linked to transactions + downloadable from brand Transactions tab
 - [ ] E-signature for campaign contracts (DocuSign / Leegality API)
 
 ### Scale
@@ -245,9 +276,9 @@ kalakaarian/
 ├── server/
 │   └── src/                 # ✅ ONLY this folder is deployed to Vercel
 │       ├── config/          # Supabase adminClient (service role, bypasses RLS)
-│       ├── controllers/     # 11 controller files, ≤200 lines each (adminController, adminUsersController, adminPlatformController split for file-size compliance)
+│       ├── controllers/     # 13 controller files, ≤200 lines each (brandTransactionsController, invoiceController added)
 │       ├── middleware/       # auth.ts, requireAdmin.ts, validate.ts
-│       ├── routes/          # 18 route files
+│       ├── routes/          # 19 route files (invoices.ts added)
 │       ├── services/        # Instagram, YouTube, Razorpay, Resend, social media
 │       ├── types/           # TypeScript interfaces (AuthRequest, etc.)
 │       ├── utils/           # pricing.ts (PLATFORM_MARGIN_RATE, PLATFORM_FEE_RATE)
@@ -344,6 +375,8 @@ supabase/migrations/020_instagram_oauth.sql          # superseded by 021 — app
 supabase/migrations/021_creator_platforms.sql        # unified platform schema (IG + YT)
 supabase/migrations/023_pgcron_sync_platforms.sql    # daily analytics sync (edit <SERVER_URL> + <CRON_SECRET> first)
 supabase/migrations/025_super_admin.sql              # is_super_admin/is_suspended on profiles, feature_flags, admin_audit_logs
+supabase/migrations/026_creator_state.sql            # state TEXT column on influencer_profiles
+supabase/migrations/027_invoices_and_post_urls.sql   # invoice_number on transactions (sequence trigger) + live_post_url on campaign_videos
 ```
 
 > Migration 022 (drop legacy IG columns) is intentionally skipped — run it manually after `021` has been on prod for ~1 week and code no longer references the old `influencer_profiles.instagram_*` columns.

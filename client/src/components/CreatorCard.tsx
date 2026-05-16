@@ -65,7 +65,7 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
             <Link
               to={`/influencer/${inf.id}`}
               onClick={(e) => e.stopPropagation()}
-              className="font-semibold text-chalk text-xs sm:text-sm hover:text-gold transition-colors truncate block leading-tight"
+              className="font-semibold text-chalk text-sm hover:text-gold transition-colors truncate block leading-tight"
             >
               {inf.name}
             </Link>
@@ -76,7 +76,7 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
               </span>
             )}
           </div>
-          <p className="text-[11px] text-chalk-dim truncate leading-tight">
+          <p className="text-xs text-chalk-dim truncate leading-tight">
             {inf.handle ? `@${inf.handle.replace("@", "")}` : (inf.city || "—")}
           </p>
         </div>
@@ -98,22 +98,22 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
       </div>
 
       {/* Stats: 3 cells */}
-      <div className="grid grid-cols-3 gap-1.5">
-        <div className="bento-card-dark rounded-lg p-2 text-center">
-          <p className="text-[10px] text-chalk-faint leading-none mb-1">Followers</p>
-          <p className="text-xs font-bold text-chalk leading-none">
+      <div className="grid grid-cols-3 gap-1">
+        <div className="bento-card-dark rounded-lg p-1.5 sm:p-2 text-center">
+          <p className="text-[9px] sm:text-[10px] text-chalk-faint leading-none mb-0.5 sm:mb-1">Followers</p>
+          <p className="text-[11px] sm:text-xs font-bold text-chalk leading-none">
             {inf.followers ? fmt(inf.followers) : "—"}
           </p>
         </div>
-        <div className="bento-card-dark rounded-lg p-2 text-center">
-          <p className="text-[10px] text-chalk-faint leading-none mb-1">ER%</p>
-          <p className="text-xs font-bold text-chalk leading-none">
+        <div className="bento-card-dark rounded-lg p-1.5 sm:p-2 text-center">
+          <p className="text-[9px] sm:text-[10px] text-chalk-faint leading-none mb-0.5 sm:mb-1">ER%</p>
+          <p className="text-[11px] sm:text-xs font-bold text-chalk leading-none">
             {inf.engagementRate != null ? `${inf.engagementRate}%` : "—"}
           </p>
         </div>
-        <div className="bento-card-dark rounded-lg p-2 text-center">
-          <p className="text-[10px] text-chalk-faint leading-none mb-1">Cost</p>
-          <p className="text-xs font-bold text-chalk leading-none">
+        <div className="bento-card-dark rounded-lg p-1.5 sm:p-2 text-center">
+          <p className="text-[9px] sm:text-[10px] text-chalk-faint leading-none mb-0.5 sm:mb-1">Cost</p>
+          <p className="text-[11px] sm:text-xs font-bold text-chalk leading-none">
             {inf.price ? fmtPrice(inf.price) : "—"}
           </p>
         </div>

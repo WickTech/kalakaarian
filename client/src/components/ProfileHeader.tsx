@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Camera, MapPin, Instagram, Youtube, Wifi, WifiOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { MapPin, Wifi, WifiOff, Pencil, Settings } from 'lucide-react';
 
 interface ProfileHeaderProps {
   profile: {
@@ -11,13 +12,13 @@ interface ProfileHeaderProps {
     avgRating?: number | null;
     ratingCount?: number;
     city: string;
+    state?: string;
     socialHandles?: { instagram?: string; youtube?: string };
     isOnline?: boolean;
     onlineSince?: string | null;
     lastSeenAt?: string | null;
   };
   isOwnProfile: boolean;
-  onImageUpload?: (file: File) => void;
   onStatusToggle?: (isOnline: boolean) => void;
 }
 
@@ -44,7 +45,7 @@ const tierStyles = {
 
 const getRatingLabel = (r: number | null | undefined) => {
   if (!r) return 'No Ratings';
-  if (r < 2) return 'Below Average';
+  if (r < 2) return 'Below Avg';
   if (r < 3) return 'Average';
   if (r < 4) return 'Good';
   if (r < 4.5) return 'Very Good';
@@ -58,7 +59,7 @@ const INFLUENCER_TIER_LABEL: Record<string, string> = {
   nano: 'Nano', micro: 'Micro', macro: 'Macro', celeb: 'Celebrity',
 };
 
-export function ProfileHeader({ profile, isOwnProfile, onImageUpload, onStatusToggle }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, isOwnProfile, onStatusToggle }: ProfileHeaderProps) {
   const [isOnline, setIsOnline] = useState(profile.isOnline || false);
   const [onlineSince, setOnlineSince] = useState<string | null>(profile.onlineSince ?? null);
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(profile.lastSeenAt ?? null);
@@ -72,132 +73,103 @@ export function ProfileHeader({ profile, isOwnProfile, onImageUpload, onStatusTo
     onStatusToggle?.(newStatus);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onImageUpload?.(file);
-    }
-  };
+  const location = [profile.city, profile.state].filter(Boolean).join(', ');
+  const igHandle = profile.socialHandles?.instagram
+    ? `@${profile.socialHandles.instagram.replace(/^@/, '')}`
+    : null;
+  const ytHandle = profile.socialHandles?.youtube
+    ? `@${profile.socialHandles.youtube.replace(/^@/, '')}`
+    : null;
 
   return (
     <div className="premium-card p-6 sm:p-8">
       <div className="flex flex-col sm:flex-row gap-6">
         {/* Profile Image */}
-        <div className="relative">
-          <div className="w-32 h-32 rounded-full overflow-hidden ring-2 ring-white/10 shadow-premium">
-            <img
-              src={profile.profileImage}
-              alt={profile.name}
-              className="w-full h-full object-cover"
-            />
+        <div className="relative shrink-0">
+          <div className="w-28 h-28 rounded-full overflow-hidden ring-2 ring-white/10 shadow-premium">
+            <img src={profile.profileImage} alt={profile.name} className="w-full h-full object-cover" />
           </div>
-          {isOwnProfile && (
-            <label className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors">
-              <Camera className="w-4 h-4 text-primary-foreground" />
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageChange}
-              />
-            </label>
-          )}
-          {/* Online Indicator */}
+          {/* Online toggle */}
           {isOwnProfile && (
             <button
               onClick={handleStatusToggle}
-              className="absolute top-0 right-0 p-2 rounded-full bg-card border-2 border-border hover:border-primary transition-colors"
-              title={isOnline ? 'Online' : 'Offline'}
+              className="absolute top-0 right-0 p-1.5 rounded-full bg-card border-2 border-border hover:border-primary transition-colors"
+              title={isOnline ? 'Go offline' : 'Go online'}
             >
-              {isOnline ? (
-                <Wifi className="w-4 h-4 text-green-500" />
-              ) : (
-                <WifiOff className="w-4 h-4 text-gray-400" />
-              )}
+              {isOnline
+                ? <Wifi className="w-3.5 h-3.5 text-green-500" />
+                : <WifiOff className="w-3.5 h-3.5 text-gray-400" />}
             </button>
           )}
           {isOwnProfile && (
-            <p className={`mt-2 text-[11px] text-center ${isOnline ? 'text-green-400' : 'text-chalk-faint'}`}>
-              {isOnline ? `Active since ${fmtRelative(onlineSince)}` : `Offline since ${fmtRelative(lastSeenAt)}`}
+            <p className={`mt-1.5 text-[10px] text-center ${isOnline ? 'text-green-400' : 'text-chalk-faint'}`}>
+              {isOnline ? `Online ${fmtRelative(onlineSince)}` : `Offline ${fmtRelative(lastSeenAt)}`}
             </p>
           )}
         </div>
 
         {/* Profile Info */}
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap mb-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
             <h1 className="text-2xl font-bold">{profile.name}</h1>
             {profile.influencerTier && INFLUENCER_TIER_CLASS[profile.influencerTier] && (
-              <span className={`px-3 py-1 rounded-full text-xs font-bold ${INFLUENCER_TIER_CLASS[profile.influencerTier]}`}>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${INFLUENCER_TIER_CLASS[profile.influencerTier]}`}>
                 {INFLUENCER_TIER_LABEL[profile.influencerTier] ?? profile.influencerTier}
               </span>
             )}
             {profile.tier !== 'regular' && (
-              <span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${tierStyles[profile.tier]}`}>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${tierStyles[profile.tier]}`}>
                 {profile.tier === 'gold' ? '★ Gold' : '◇ Silver'}
               </span>
             )}
+            {isOwnProfile && (
+              <>
+                <Link
+                  to="/profile/edit"
+                  className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+                  title="Edit profile"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-chalk-dim" />
+                </Link>
+                <Link
+                  to="/influencer/dashboard?tab=settings"
+                  className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+                  title="Settings"
+                >
+                  <Settings className="w-3.5 h-3.5 text-chalk-dim" />
+                </Link>
+              </>
+            )}
           </div>
-          <p className="text-muted-foreground mb-3">{profile.handle}</p>
 
-          <div className="flex flex-wrap gap-4 text-sm">
-            {profile.city && (
-              <span className="flex items-center gap-1 text-muted-foreground">
-                <MapPin className="w-4 h-4" />
-                {profile.city}
+          <div className="flex flex-wrap gap-3 text-sm text-chalk-dim mt-2">
+            {location && (
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5" />
+                {location}
               </span>
             )}
-            {profile.socialHandles?.instagram && (
-              <a
-                href={`https://instagram.com/${profile.socialHandles.instagram.replace('@', '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-accent hover:underline"
-              >
-                <Instagram className="w-4 h-4" />
-                {profile.socialHandles.instagram}
-              </a>
-            )}
-            {profile.socialHandles?.youtube && (
-              <a
-                href={`https://youtube.com/@${profile.socialHandles.youtube}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-destructive hover:underline"
-              >
-                <Youtube className="w-4 h-4" />
-                {profile.socialHandles.youtube}
-              </a>
-            )}
+            {igHandle && <span className="text-pink-400">{igHandle}</span>}
+            {ytHandle && <span className="text-red-400">{ytHandle}</span>}
           </div>
         </div>
 
-        {/* Rating Box */}
-        <div className="glass-card flex overflow-hidden shrink-0 self-start min-w-[180px] rounded-2xl">
-          <div className="flex flex-col items-center justify-center gap-1.5 px-4 py-3.5">
+        {/* Rating Box — orange + white, compact */}
+        <div className="flex overflow-hidden shrink-0 self-start rounded-xl min-w-[130px]">
+          <div className="flex flex-col items-center justify-center gap-1 px-3 py-2.5 bg-orange-500">
             <div className="flex gap-0.5">
               {[1, 2, 3, 4, 5].map((s) => (
-                <span key={s} className={`text-lg ${s <= Math.round(profile.avgRating ?? 0) ? 'text-gold' : 'text-white/15'}`}>★</span>
+                <span key={s} className={`text-sm ${s <= Math.round(profile.avgRating ?? 0) ? 'text-white' : 'text-white/30'}`}>★</span>
               ))}
             </div>
-            <p className="text-[11px] text-chalk-dim">
+            <p className="text-[10px] text-white/80">
               {profile.avgRating ? profile.avgRating.toFixed(1) : '—'} ({profile.ratingCount ?? 0})
             </p>
           </div>
-          <div className="w-px bg-white/5" />
-          <div className="flex items-center justify-center px-4 py-3.5">
-            <p className="text-sm font-medium text-chalk text-center">{getRatingLabel(profile.avgRating)}</p>
+          <div className="flex items-center justify-center px-3 py-2.5 bg-white/5">
+            <p className="text-xs font-medium text-chalk text-center leading-tight">{getRatingLabel(profile.avgRating)}</p>
           </div>
         </div>
-
-        {/* Edit Button */}
-        {isOwnProfile && (
-          <div className="flex items-start">
-            <a href="/profile/edit" className="btn-outline px-4 py-2 text-sm">
-              Edit Profile
-            </a>
-          </div>
-        )}
       </div>
     </div>
   );

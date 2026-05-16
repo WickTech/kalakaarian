@@ -17,6 +17,7 @@ export const formatInfluencer = (row: any) => {
     name: row.profiles?.name ?? 'Unknown',
     bio: row.bio ?? '',
     city: row.city ?? '',
+    state: row.state ?? '',
     gender: row.gender,
     niches: row.niches ?? [],
     platform: row.platforms ?? [],
@@ -36,6 +37,7 @@ export const formatInfluencer = (row: any) => {
     pricing: applyPlatformMargin(pricingObj),
     avgRating: row.avg_rating != null ? Number(row.avg_rating) : null,
     ratingCount: row.rating_count ?? 0,
+    createdAt: row.created_at ?? null,
   };
 };
 
@@ -192,12 +194,13 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
     if (!req.user || req.user.role !== 'influencer') {
       res.status(403).json({ message: 'Only influencers can update their profile' }); return;
     }
-    const { bio, city, gender, niches, platform, tier, pricing, portfolio, instagramPosts, youtubeVideos, socialHandles } = req.body;
+    const { bio, city, state, gender, niches, platform, tier, pricing, portfolio, instagramPosts, youtubeVideos, socialHandles } = req.body;
     const instagramHandle = req.body.instagramHandle ?? socialHandles?.instagram;
     const youtubeHandle = req.body.youtubeHandle ?? socialHandles?.youtube;
     const update: Record<string, unknown> = {};
     if (bio !== undefined) update.bio = bio;
     if (city) update.city = city;
+    if (state !== undefined) update.state = state;
     if (typeof gender === 'string' && (ALLOWED_GENDERS as readonly string[]).includes(gender)) update.gender = gender;
     if (niches) update.niches = niches;
     if (platform) update.platforms = platform;
@@ -218,7 +221,7 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
     }
 
     if (pricing) {
-      const rows = ['reel', 'story', 'video', 'post']
+      const rows = ['reel', 'story', 'video', 'post', 'shorts']
         .filter(t => pricing[t] != null)
         .map(t => ({ influencer_id: req.user!.userId, platform: 'general', content_type: t, price: pricing[t] }));
       if (rows.length > 0) {

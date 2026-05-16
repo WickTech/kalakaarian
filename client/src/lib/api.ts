@@ -114,6 +114,7 @@ export interface InfluencerProfile {
   bio?: string;
   niches?: string[];
   city?: string;
+  state?: string;
   tier?: 'nano' | 'micro' | 'macro' | 'celeb';
   gender?: 'male' | 'female' | 'non_binary' | 'prefer_not_to_say';
   platform?: string[];
@@ -133,12 +134,14 @@ export interface InfluencerProfile {
   avgRating?: number | null;
   ratingCount?: number;
   pricing?: Record<string, number>;
+  createdAt?: string | null;
 }
 
 export interface UpdateInfluencerProfileData {
   name?: string;
   bio?: string;
   city?: string;
+  state?: string;
   niches?: string[];
   platform?: string[];
   tier?: string;
@@ -149,6 +152,7 @@ export interface UpdateInfluencerProfileData {
   engagementRate?: number;
   instagramPosts?: Array<{ url: string; thumbnail?: string; caption?: string }>;
   youtubeVideos?: Array<{ url: string; thumbnail?: string; title?: string }>;
+  pricing?: Record<string, number>;
 }
 
 export interface UpdateBrandProfileData {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Loader2, Upload, BarChart2 } from 'lucide-react';
+import { Loader2, BarChart2, Wallet } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, InfluencerProfile as InfluencerProfileData, VideoItem, SocialStats } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,13 +10,13 @@ import { ProfileHeader } from '@/components/ProfileHeader';
 import { VideoGrid } from '@/components/VideoGrid';
 import { InfluencerTrustSection } from '@/components/InfluencerTrustSection';
 import { BadgeStrip } from '@/components/BadgeStrip';
-import { SimilarProfiles } from '@/components/SimilarProfiles';
 import { CelebCallbackModal } from '@/components/CelebCallbackModal';
 import { SocialPlatformPanel } from '@/components/profile/SocialPlatformPanel';
 import { AnalyticsSection } from '@/components/profile/AnalyticsSection';
 import { MembershipSection } from '@/components/profile/MembershipSection';
 import { ProfileGallery } from '@/components/profile/ProfileGallery';
-import { UploadPlatformModal } from '@/components/profile/UploadPlatformModal';
+import { CreatorCampaignsSection } from '@/components/profile/CreatorCampaignsSection';
+import { WalletModal } from '@/components/WalletModal';
 import { Influencer } from '@/lib/store';
 
 export default function InfluencerProfile() {
@@ -28,11 +28,12 @@ export default function InfluencerProfile() {
   const navigate = useNavigate();
   const { addToCart, isInCart } = useCartContext();
   const socialRef = useRef<HTMLDivElement>(null);
+  const analyticsRef = useRef<HTMLDivElement>(null);
 
   const isOwnProfile = user?.id === id;
   const isBrand = user?.role === 'brand';
   const [showCelebModal, setShowCelebModal] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showWallet, setShowWallet] = useState(false);
   const [gallery, setGallery] = useState<string[]>([]);
   const highlightSocial = hash === '#social';
 
@@ -68,17 +69,16 @@ export default function InfluencerProfile() {
     }
   }, [highlightSocial, profile?.id]);
 
+  useEffect(() => {
+    if (hash === '#analytics' && analyticsRef.current) {
+      const t = setTimeout(() => analyticsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+      return () => clearTimeout(t);
+    }
+  }, [hash, profile?.id]);
+
   const handleStatusToggle = async (isOnline: boolean) => {
     try { await api.updatePresence(isOnline); }
     catch { toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' }); }
-  };
-
-  const handleVideoUpload = async (videoUrl: string, platform: string) => {
-    try {
-      await api.uploadVideo(videoUrl, platform);
-      qc.invalidateQueries({ queryKey: ['my-videos'] });
-      toast({ title: 'Success', description: 'Video uploaded successfully' });
-    } catch { toast({ title: 'Error', description: 'Failed to upload video', variant: 'destructive' }); }
   };
 
   const handlePlatformAddToCart = async (totalPrice: number, platforms: Array<'instagram' | 'youtube'>) => {
@@ -89,7 +89,7 @@ export default function InfluencerProfile() {
       return;
     }
     const inf: Influencer = {
-      id, name: profile.name || 'Creator',
+      id, name: profile.name || 'Kalakaar',
       handle: profile.socialHandles?.instagram || profile.socialHandles?.youtube || '',
       photo: profile.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`,
       platform: platforms[0] ?? 'instagram',
@@ -107,7 +107,6 @@ export default function InfluencerProfile() {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   }
 
-  // Creators can only view their own profile, not other creators'.
   if (user?.role === 'influencer' && !isOwnProfile) {
     return <Navigate to={`/influencer/${user.id}`} replace />;
   }
@@ -115,7 +114,7 @@ export default function InfluencerProfile() {
   if (!profile) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p>Influencer not found</p>
+        <p>Kalakaar not found</p>
         <Link to="/marketplace" className="text-primary hover:underline">Back to Marketplace</Link>
       </div>
     );
@@ -129,12 +128,13 @@ export default function InfluencerProfile() {
             profile={{
               name: profile.name || 'Unknown',
               handle: `@${profile.socialHandles?.instagram || 'user'}`,
-              profileImage: profile.profileImage || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default',
+              profileImage: profile.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=default`,
               tier: 'regular',
               influencerTier: profile.tier,
               avgRating: profile.avgRating,
               ratingCount: profile.ratingCount,
               city: profile.city || '',
+              state: profile.state || '',
               socialHandles: profile.socialHandles,
               isOnline: profile.isOnline,
               onlineSince: profile.onlineSince,
@@ -146,13 +146,17 @@ export default function InfluencerProfile() {
 
           {isOwnProfile && (
             <div className="flex gap-3">
-              <button onClick={() => setShowUploadModal(true)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all">
-                <Upload className="w-4 h-4" /> Upload
-              </button>
-              <button onClick={() => navigate('/influencer/dashboard?tab=analytics')}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all">
+              <button
+                onClick={() => navigate(`/influencer/${id}#analytics`)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all"
+              >
                 <BarChart2 className="w-4 h-4" /> My Analytics
+              </button>
+              <button
+                onClick={() => setShowWallet(true)}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all"
+              >
+                <Wallet className="w-4 h-4 text-gold" /> Wallet
               </button>
             </div>
           )}
@@ -177,14 +181,25 @@ export default function InfluencerProfile() {
             />
           </div>
 
-          <AnalyticsSection socialStats={socialStats} serverAnalytics={serverAnalytics} socialHandles={profile.socialHandles || {}} />
+          <div ref={analyticsRef} id="analytics" className="scroll-mt-20">
+            <AnalyticsSection socialStats={socialStats} serverAnalytics={serverAnalytics} socialHandles={profile.socialHandles || {}} />
+          </div>
+
           <InfluencerTrustSection influencerId={id!} avgRating={profile.avgRating} ratingCount={profile.ratingCount} />
           <BadgeStrip influencerId={id!} />
+
+          {isOwnProfile && <CreatorCampaignsSection />}
 
           {isOwnProfile && <MembershipSection />}
 
           {(isOwnProfile || videos.length > 0) && (
-            <VideoGrid videos={videos} isOwnProfile={isOwnProfile} onUpload={handleVideoUpload} />
+            <VideoGrid videos={videos} isOwnProfile={isOwnProfile} onUpload={async (url, platform) => {
+              try {
+                await api.uploadVideo(url, platform);
+                qc.invalidateQueries({ queryKey: ['my-videos'] });
+                toast({ title: 'Success', description: 'Video uploaded successfully' });
+              } catch { toast({ title: 'Error', description: 'Failed to upload video', variant: 'destructive' }); }
+            }} />
           )}
 
           {profile.tier === 'celeb' && !isOwnProfile && (
@@ -193,20 +208,14 @@ export default function InfluencerProfile() {
               <button onClick={() => setShowCelebModal(true)} className="gold-pill px-8 py-2.5 text-sm">Get In Touch</button>
             </div>
           )}
-
-          <SimilarProfiles currentId={id!} />
         </div>
       </div>
 
       {showCelebModal && profile && (
-        <CelebCallbackModal influencerId={id!} influencerName={profile.name || 'this creator'} onClose={() => setShowCelebModal(false)} />
+        <CelebCallbackModal influencerId={id!} influencerName={profile.name || 'this Kalakaar'} onClose={() => setShowCelebModal(false)} />
       )}
 
-      <UploadPlatformModal
-        open={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        onUploaded={() => qc.invalidateQueries({ queryKey: ['my-videos'] })}
-      />
+      <WalletModal open={showWallet} onClose={() => setShowWallet(false)} />
     </>
   );
 }

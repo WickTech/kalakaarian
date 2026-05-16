@@ -7,6 +7,7 @@ export interface Influencer {
   platform: "instagram" | "youtube";
   tier: "nano" | "micro" | "macro" | "celeb";
   genre: string;
+  niches?: string[];
   city: string;
   followers: number;
   activeFollowers: number;

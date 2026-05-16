@@ -27,6 +27,7 @@ export const toInfluencer = (inf: InfluencerProfile): Influencer => {
     connectedPlatforms: connected,
     tier: (inf.tier as Tier) || "nano",
     genre: inf.niches?.[0] || "",
+    niches: inf.niches || [],
     city: inf.city || "",
     followers: inf.followerCount || 0, activeFollowers: 0, fakeFollowers: 0,
     avgViews: 0, avgLikes: 0,

@@ -60,7 +60,7 @@ export function MarketplaceFilters({
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-7">
           {/* Tier */}
           <div>
-            <p className={sectionLabel}>Creator Tier</p>
+            <p className={sectionLabel}>Kalakaar Tier</p>
             <div className="grid grid-cols-3 gap-2">
               {TIERS.map((t) => (
                 <button
@@ -100,7 +100,7 @@ export function MarketplaceFilters({
 
           {/* Gender */}
           <div>
-            <p className={sectionLabel}>Creator Gender</p>
+            <p className={sectionLabel}>Kalakaar Gender</p>
             <div className="flex gap-2">
               {GENDERS.map((g) => (
                 <button

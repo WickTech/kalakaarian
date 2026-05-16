@@ -105,7 +105,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
         </nav>
 
         {/* Right section */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-3">
           {loading ? (
             <Skeleton className="h-8 w-20 rounded-full" />
           ) : user ? (
@@ -342,7 +342,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                         Become a Brand
                       </Link>
                       <Link to="/influencer-register" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors">
-                        Become a Creator
+                        Become a Kalakaar
                       </Link>
                     </>
                   )}

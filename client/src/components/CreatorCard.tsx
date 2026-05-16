@@ -88,7 +88,7 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
           )}
           <span className={`flex items-center gap-1 text-[10px] font-semibold ${inf.isOnline ? "text-green-400" : "text-chalk-faint"}`}>
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${inf.isOnline ? "bg-green-400 shadow-[0_0_4px_#4ade80]" : "bg-white/20"}`} />
-            {inf.isOnline ? "Online" : "Offline"}
+            {inf.isOnline ? "Active" : "Inactive"}
           </span>
         </div>
       </div>

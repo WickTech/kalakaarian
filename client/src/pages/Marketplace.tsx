@@ -69,7 +69,9 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
       r = r.filter((i) => i.name.toLowerCase().includes(q) || i.handle?.toLowerCase().includes(q) || i.genre?.toLowerCase().includes(q));
     }
     if (platform !== "all") r = r.filter((i) => i.connectedPlatforms?.includes(platform));
-    if (selectedGenres.length) r = r.filter((i) => selectedGenres.includes(i.genre));
+    if (selectedGenres.length) r = r.filter((i) =>
+      i.niches?.some(n => selectedGenres.includes(n)) || selectedGenres.includes(i.genre)
+    );
     if (location) r = r.filter((i) => i.city?.toLowerCase().includes(location.toLowerCase()));
     if (priceMin) r = r.filter((i) => i.price != null && i.price >= parseInt(priceMin));
     if (priceMax) r = r.filter((i) => i.price != null && i.price <= parseInt(priceMax));

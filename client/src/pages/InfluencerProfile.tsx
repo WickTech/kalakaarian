@@ -144,6 +144,15 @@ export default function InfluencerProfile() {
             onStatusToggle={handleStatusToggle}
           />
 
+          {isBrand && !isOwnProfile && profile.tier !== 'celeb' && (
+            <button
+              onClick={() => socialRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              className="w-full py-3 rounded-xl purple-pill font-semibold text-sm"
+            >
+              Select Kalakaar — Choose Platforms
+            </button>
+          )}
+
           {isOwnProfile && (
             <div className="flex gap-3">
               <button

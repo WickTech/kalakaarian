@@ -79,7 +79,7 @@ export function MarketplaceToolbar(p: Props) {
             type="text"
             value={p.search}
             onChange={(e) => p.setSearch(e.target.value)}
-            placeholder="Search creators…"
+            placeholder="Search Kalakaars…"
             className="w-full bg-charcoal/60 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 text-sm text-chalk placeholder:text-chalk-faint focus:outline-none focus:border-gold/50 transition-colors"
           />
         </div>
@@ -129,7 +129,7 @@ export function MarketplaceToolbar(p: Props) {
         <div className="flex items-center gap-1.5 shrink-0">
           <Users className="w-3.5 h-3.5 text-chalk-faint" />
           <select value="" onChange={(e) => { if (e.target.value) p.onSelectCount(e.target.value); }} className={selCls}>
-            <option value="" disabled>Bulk select…</option>
+            <option value="" disabled>Select top…</option>
             {[5, 10, 20].map((n) => (
               <option key={n} value={n} disabled={p.pagedCount < n}>Top {n}</option>
             ))}
@@ -151,7 +151,7 @@ export function MarketplaceToolbar(p: Props) {
         )}
 
         {/* Creator count — pushed to end of last line */}
-        <span className="text-xs text-chalk-faint whitespace-nowrap ml-auto">{p.filteredCount} creators</span>
+        <span className="text-xs text-chalk-faint whitespace-nowrap ml-auto">{p.filteredCount} Kalakaars</span>
       </div>
     </div>
   );

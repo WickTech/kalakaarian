@@ -158,8 +158,9 @@ export const getInfluencerById = async (req: Request, res: Response): Promise<vo
     if (error || !data) { res.status(404).json({ message: 'Influencer not found' }); return; }
 
     // Offline creators are hidden from anyone except themselves.
+    // Creators who never toggled presence (last_seen_at IS NULL) remain visible — same rule as search.
     const viewerId = (req as AuthRequest).user?.userId;
-    if (!data.is_online && viewerId !== data.id) {
+    if (!data.is_online && data.last_seen_at !== null && viewerId !== data.id) {
       res.status(404).json({ message: 'Influencer not found' }); return;
     }
 

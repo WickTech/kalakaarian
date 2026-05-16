@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Menu, ShoppingCart, LogOut, User,
-  Bell, Settings, FileText, ChevronDown, BarChart2, ShieldCheck,
+  Menu, ShoppingCart, Wallet, LogOut, User,
+  Bell, Settings, FileText, ChevronDown, BarChart2, ShieldCheck, LayoutDashboard,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCartContext } from "@/contexts/CartContext";
@@ -18,7 +18,19 @@ interface GlobalHeaderProps {
   onCartOpen: () => void;
 }
 
-const BASE_NAV_LINKS = [
+const BRAND_NAV = [
+  { to: "/", label: "Home", exact: true },
+  { to: "/marketplace", label: "Marketplace", exact: false },
+  { to: "/brand/dashboard?tab=campaigns", label: "Campaigns", exact: false },
+  { to: "/contact", label: "Contact", exact: false },
+];
+const CREATOR_NAV = [
+  { to: "/", label: "Home", exact: true },
+  { to: "/influencer/dashboard", label: "Dashboard", exact: false },
+  { to: "/campaigns", label: "Campaigns", exact: false },
+  { to: "/contact", label: "Contact", exact: false },
+];
+const DEFAULT_NAV = [
   { to: "/", label: "Home", exact: true },
   { to: "/marketplace", label: "Marketplace", exact: false },
   { to: "/campaigns", label: "Campaigns", exact: false },
@@ -53,11 +65,10 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
 
   const handleLogout = () => { logout(); navigate("/"); };
 
-  const NAV_LINKS = BASE_NAV_LINKS.map((link) =>
-    link.to === "/campaigns" && user?.role === "brand"
-      ? { ...link, to: "/brand/dashboard?tab=campaigns", exact: false }
-      : link
-  );
+  const NAV_LINKS =
+    user?.role === "brand" ? BRAND_NAV :
+    user?.role === "influencer" ? CREATOR_NAV :
+    DEFAULT_NAV;
 
   return (
     <header
@@ -101,18 +112,29 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
             <>
               <NotificationBell className="hidden sm:flex" />
 
-              <button
-                onClick={() => user?.role === "brand" ? navigate("/cart") : onCartOpen()}
-                aria-label="Open cart"
-                className="relative p-2 rounded-md border border-white/10 hover:bg-white/5 transition-colors"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                {cart.count > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[1rem] h-4 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[9px] font-bold flex items-center justify-center px-1">
-                    {cart.count > 9 ? "9+" : cart.count}
-                  </span>
-                )}
-              </button>
+              {user?.role === "influencer" ? (
+                <button
+                  onClick={() => navigate("/influencer/dashboard")}
+                  aria-label="Earnings & transactions"
+                  className="p-2 rounded-md border border-white/10 hover:bg-white/5 transition-colors"
+                  title="Earnings & Transactions"
+                >
+                  <Wallet className="w-4 h-4 text-gold" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => user?.role === "brand" ? navigate("/cart") : onCartOpen()}
+                  aria-label="Open cart"
+                  className="relative p-2 rounded-md border border-white/10 hover:bg-white/5 transition-colors"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  {cart.count > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[1rem] h-4 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[9px] font-bold flex items-center justify-center px-1">
+                      {cart.count > 9 ? "9+" : cart.count}
+                    </span>
+                  )}
+                </button>
+              )}
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -167,11 +189,23 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                     </DropdownMenuItem>
                   )}
                   {user.role === "influencer" && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/campaigns" className="flex items-center gap-2 cursor-pointer">
-                        <FileText className="w-4 h-4" /> Browse Campaigns
-                      </Link>
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/influencer/dashboard" className="flex items-center gap-2 cursor-pointer">
+                          <LayoutDashboard className="w-4 h-4" /> My Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/campaigns" className="flex items-center gap-2 cursor-pointer">
+                          <FileText className="w-4 h-4" /> Browse Campaigns
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/influencer/dashboard" className="flex items-center gap-2 cursor-pointer">
+                          <Wallet className="w-4 h-4 text-gold" /> Earnings
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
                   )}
                   <DropdownMenuItem asChild>
                     <Link to="/notifications" className="flex items-center gap-2 cursor-pointer">
@@ -274,9 +308,17 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                         </Link>
                       )}
                       {user.role === "influencer" && (
-                        <Link to="/campaigns" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
-                          <FileText className="w-4 h-4" /> Browse Campaigns
-                        </Link>
+                        <>
+                          <Link to="/influencer/dashboard" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
+                            <LayoutDashboard className="w-4 h-4" /> My Dashboard
+                          </Link>
+                          <Link to="/campaigns" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
+                            <FileText className="w-4 h-4" /> Browse Campaigns
+                          </Link>
+                          <Link to="/influencer/dashboard" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-gold hover:bg-gold/10 transition-colors flex items-center gap-2">
+                            <Wallet className="w-4 h-4" /> Earnings
+                          </Link>
+                        </>
                       )}
                       <Link to="/notifications" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
                         <Bell className="w-4 h-4" /> Notifications

@@ -44,8 +44,10 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
         selected ? "ring-2 ring-gold ring-offset-1 ring-offset-obsidian" : ""
       }`}
     >
-      {/* Header: photo + name + rating */}
+      {/* Header: photo | name+handle | rating+status */}
       <div className="flex items-start gap-2.5">
+
+        {/* Avatar */}
         <div className="relative shrink-0">
           <img
             src={inf.photo}
@@ -60,6 +62,7 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
           )}
         </div>
 
+        {/* Name + handle */}
         <div className="min-w-0 flex-1">
           <Link
             to={`/influencer/${inf.id}`}
@@ -71,17 +74,26 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
           <p className="text-xs text-chalk-dim truncate leading-tight mt-0.5">
             {inf.handle ? `@${inf.handle.replace("@", "")}` : (inf.city || "—")}
           </p>
-          {/* Rating — below handle, prominent */}
-          {inf.avgRating != null && inf.avgRating > 0 && (
-            <span className="inline-flex items-center gap-1 mt-1 bg-gold/15 border border-gold/25 px-1.5 py-0.5 rounded-full">
-              <Star className="w-3 h-3 fill-gold stroke-none shrink-0" />
+        </div>
+
+        {/* Right column: rating (top) + online/offline (below) */}
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          {inf.avgRating != null && inf.avgRating > 0 ? (
+            <span className="inline-flex items-center gap-0.5 bg-gold/15 border border-gold/30 px-1.5 py-0.5 rounded-full">
+              <Star className="w-3 h-3 fill-gold stroke-none" />
               <span className="text-xs font-bold text-gold leading-none">{Number(inf.avgRating).toFixed(1)}</span>
             </span>
+          ) : (
+            <span className="h-5" /> /* placeholder to keep layout stable */
           )}
+          <span className={`flex items-center gap-1 text-[10px] font-semibold ${inf.isOnline ? "text-green-400" : "text-chalk-faint"}`}>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${inf.isOnline ? "bg-green-400 shadow-[0_0_4px_#4ade80]" : "bg-white/20"}`} />
+            {inf.isOnline ? "Online" : "Offline"}
+          </span>
         </div>
       </div>
 
-      {/* Tier + genre + online */}
+      {/* Tier + genre */}
       <div className="flex items-center gap-1.5">
         <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${TIER_CLASS[inf.tier] || ""}`}>
           {(TIER_LABEL[inf.tier] ?? inf.tier).toUpperCase()}
@@ -90,9 +102,6 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
           <span className="text-xs text-chalk-faint border border-white/10 px-1.5 py-0.5 rounded-full truncate">
             {inf.genre}
           </span>
-        )}
-        {inf.isOnline && (
-          <span className="ml-auto w-2 h-2 rounded-full bg-green-400 shrink-0" title="Online" />
         )}
       </div>
 
@@ -127,9 +136,7 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
               : "purple-pill"
           }`}
         >
-          {inCart
-            ? <><Check className="w-4 h-4" /> Selected</>
-            : <>Select</>}
+          {inCart ? <><Check className="w-4 h-4" /> Selected</> : <>Select</>}
         </button>
       )}
     </div>

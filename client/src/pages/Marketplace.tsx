@@ -117,6 +117,7 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
         platform={platform} setPlatform={setPlatform}
         search={search} setSearch={setSearch}
         openDrawer={() => setDrawerOpen(true)} activeFilterCount={activeFilterCount}
+        tier={tier} setTier={setTier}
         selectedCount={selectedIds.size} pagedCount={filtered.length} filteredCount={filtered.length}
         onSelectCount={handleSelectCount} onClearSelection={clearSelection}
         onAddSelectedToCart={addSelectedToCart}

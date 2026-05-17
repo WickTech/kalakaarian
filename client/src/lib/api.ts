@@ -540,10 +540,10 @@ export const api = {
     });
   },
 
-  deleteAccount: async (password: string): Promise<void> => {
+  deleteAccount: async (): Promise<void> => {
     return request<void>("/api/auth/account", {
       method: "DELETE",
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ confirmation: "DELETE" }),
     });
   },
 

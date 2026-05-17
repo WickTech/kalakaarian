@@ -4,6 +4,7 @@ import { Edit, Settings as SettingsIcon, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { api, Proposal, InfluencerProfile } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import { WalletTab, UploadTab, MembershipTab, SettingsTab } from "@/components/InfluencerDashboardPanels";
 import { InfluencerAnalyticsPanel } from "@/components/InfluencerAnalyticsPanel";
 import { GamificationPanel } from "@/components/GamificationPanel";
@@ -60,9 +61,11 @@ export default function InfluencerDashboard() {
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get("tab") as Tab) || "proposals";
   const [tab, setTab] = useState<Tab>(initialTab);
+  const { toast } = useToast();
   const [isOnline, setIsOnline] = useState(false);
   const [onlineSince, setOnlineSince] = useState<string | null>(null);
   const [offlineSince, setOfflineSince] = useState<string | null>(null);
+  const [toggling, setToggling] = useState(false);
 
   const { data: proposals = [], isLoading } = useQuery<Proposal[]>({
     queryKey: ["my-proposals"],
@@ -97,12 +100,23 @@ export default function InfluencerDashboard() {
   };
 
   const togglePresence = async () => {
+    if (toggling) return;
     const next = !isOnline;
-    await api.updatePresence(next);
-    setIsOnline(next);
     const now = new Date().toISOString();
+    setIsOnline(next);
     if (next) { setOnlineSince(now); setOfflineSince(null); }
     else { setOfflineSince(now); setOnlineSince(null); }
+    setToggling(true);
+    try {
+      await api.updatePresence(next);
+    } catch {
+      setIsOnline(!next);
+      if (!next) { setOnlineSince(now); setOfflineSince(null); }
+      else { setOfflineSince(now); setOnlineSince(null); }
+      toast({ title: "Failed to update status", variant: "destructive" });
+    } finally {
+      setToggling(false);
+    }
   };
 
   if (isLoading) return (
@@ -142,7 +156,7 @@ export default function InfluencerDashboard() {
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
               <span className="text-xs text-chalk-dim">Active</span>
-              <button onClick={togglePresence} className={`w-10 h-5 rounded-full transition-all ${isOnline ? "bg-green-500" : "bg-white/10"}`}>
+              <button onClick={togglePresence} disabled={toggling} className={`w-10 h-5 rounded-full transition-all ${toggling ? "opacity-50 cursor-not-allowed" : ""} ${isOnline ? "bg-green-500" : "bg-white/10"}`}>
                 <div className={`w-4 h-4 rounded-full bg-white mx-0.5 transition-transform ${isOnline ? "translate-x-4" : ""}`} />
               </button>
               <span className={`text-[10px] ${isOnline ? "text-green-400" : "text-chalk-faint"}`}>

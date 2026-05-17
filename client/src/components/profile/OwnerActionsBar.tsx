@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, Settings, Wallet, BarChart2 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -36,9 +36,17 @@ export function OwnerActionsBar({
 }: Props) {
   const { toast } = useToast();
   const [isOnline, setIsOnline] = useState(initialOnline);
-  const [onlineSince, setOnlineSince] = useState<string | null>(initialOnlineSince ?? null);
+  const [, setOnlineSince] = useState<string | null>(initialOnlineSince ?? null);
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(initialLastSeenAt ?? null);
   const [toggling, setToggling] = useState(false);
+  const [, forceTick] = useState(0);
+
+  // Re-render every 30s while offline so the "Offline Xm ago" string stays accurate.
+  useEffect(() => {
+    if (isOnline) return;
+    const id = window.setInterval(() => forceTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, [isOnline]);
 
   const togglePresence = async () => {
     if (toggling) return;
@@ -75,10 +83,9 @@ export function OwnerActionsBar({
         title={isOnline ? "Go offline" : "Go online"}
       >
         <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-400" : "bg-chalk-faint"}`} />
-        {isOnline ? "Active" : "Offline"}
-        <span className="text-[10px] text-chalk-faint">
-          {isOnline ? fmtRelative(onlineSince) : fmtRelative(lastSeenAt)}
-        </span>
+        {isOnline
+          ? "Active"
+          : <>Offline <span className="text-[10px] text-chalk-faint">{fmtRelative(lastSeenAt)}</span></>}
       </button>
 
       <div className="flex items-center gap-2 ml-auto">

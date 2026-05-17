@@ -12,6 +12,8 @@ interface ProfileHeaderProps {
     city: string;
     state?: string;
     socialHandles?: { instagram?: string; youtube?: string };
+    bio?: string | null;
+    niches?: string[];
   };
 }
 
@@ -82,6 +84,23 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
             {igHandle && <span className="text-pink-400">{igHandle}</span>}
             {ytHandle && <span className="text-red-400">{ytHandle}</span>}
           </div>
+
+          {profile.niches && profile.niches.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {profile.niches.map((n) => (
+                <span
+                  key={n}
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-chalk-dim capitalize"
+                >
+                  {n}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {profile.bio && (
+            <p className="text-sm text-chalk-dim mt-3 leading-relaxed">{profile.bio}</p>
+          )}
         </div>
 
         {/* Rating Box — orange + white, compact */}

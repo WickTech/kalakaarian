@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Inbox, CheckCircle2, Clock } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Inbox, CheckCircle2, Clock, Upload } from "lucide-react";
 import { api, Proposal } from "@/lib/api";
-import { useToast } from "@/hooks/use-toast";
 import { CampaignProgressTracker } from "@/components/CampaignProgressTracker";
+import { CampaignVideoUploadModal } from "@/components/profile/CampaignVideoUploadModal";
 
 type TabKey = "running" | "completed";
 
@@ -19,35 +20,10 @@ const RUNNING_STAGES = [
 const COMPLETED_STAGES = ["payment_released"];
 const UPLOAD_STAGES = ["accepted", "content_in_progress", "submitted", "under_review"];
 
-type Platform = "instagram" | "youtube";
-
 function CampaignCard({ proposal, onRefresh }: { proposal: Proposal; onRefresh: () => void }) {
-  const { toast } = useToast();
   const stage = proposal.workflow_stage ?? proposal.status ?? "";
   const canUpload = UPLOAD_STAGES.includes(stage);
-
-  const [link, setLink] = useState("");
-  const [platform, setPlatform] = useState<Platform>("instagram");
-  const [confirmed, setConfirmed] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleUpload = async () => {
-    if (!link.trim() || !confirmed) {
-      toast({ title: "Add a link and confirm the content", variant: "destructive" });
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await api.uploadVideo(link.trim(), platform, proposal.campaignId);
-      toast({ title: "Submitted", description: "Content sent for brand review." });
-      setLink(""); setConfirmed(false);
-      onRefresh();
-    } catch {
-      toast({ title: "Upload failed", description: "Try again", variant: "destructive" });
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   return (
     <div className="bento-card p-5 space-y-4">
@@ -58,59 +34,33 @@ function CampaignCard({ proposal, onRefresh }: { proposal: Proposal; onRefresh: 
             ₹{Number(proposal.bidAmount || 0).toLocaleString("en-IN")}
           </p>
         </div>
+        {canUpload && (
+          <button
+            onClick={() => setUploadOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full purple-pill text-xs font-bold shrink-0"
+          >
+            <Upload className="w-3.5 h-3.5" /> Upload Video
+          </button>
+        )}
       </div>
 
       <CampaignProgressTracker currentStage={stage} updatedAt={proposal.workflow_stage_updated_at} compact />
 
-      {canUpload && (
-        <div className="border-t border-white/5 pt-4 space-y-3">
-          <p className="text-xs font-semibold text-chalk-dim uppercase tracking-wide">Upload Content</p>
-          <div className="flex gap-2">
-            {(["instagram", "youtube"] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPlatform(p)}
-                className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
-                  platform === p
-                    ? "border-gold text-gold bg-gold/10"
-                    : "border-white/10 text-chalk-dim"
-                }`}
-              >
-                {p === "instagram" ? "📸 Instagram" : "▶️ YouTube"}
-              </button>
-            ))}
-          </div>
-          <input
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            placeholder="Drive / post URL"
-            className="dark-input w-full px-3 py-2 text-sm"
-          />
-          <label className="flex items-center gap-2 cursor-pointer text-xs text-chalk-dim">
-            <input
-              type="checkbox"
-              checked={confirmed}
-              onChange={(e) => setConfirmed(e.target.checked)}
-              className="w-4 h-4 rounded accent-purple-600"
-            />
-            I confirm this content is ready for brand review
-          </label>
-          <button
-            onClick={handleUpload}
-            disabled={submitting || !link.trim() || !confirmed}
-            className="purple-pill w-full py-2.5 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? "Submitting…" : "Submit for Review"}
-          </button>
-        </div>
-      )}
+      <CampaignVideoUploadModal
+        open={uploadOpen}
+        campaignId={proposal.campaignId}
+        onClose={() => setUploadOpen(false)}
+        onUploaded={() => { setUploadOpen(false); onRefresh(); }}
+      />
     </div>
   );
 }
 
 export default function CreatorCampaigns() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<TabKey>("running");
+  const [searchParams] = useSearchParams();
+  const initialTab = (searchParams.get("tab") as TabKey) || "running";
+  const [tab, setTab] = useState<TabKey>(initialTab === "completed" ? "completed" : "running");
 
   const { data: campaigns = [], isLoading } = useQuery<Proposal[]>({
     queryKey: ["my-proposals"],

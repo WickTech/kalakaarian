@@ -11,6 +11,8 @@ const ALLOWED_TYPES: Record<string, string[]> = {
   'image/webp': ['profile', 'campaign'],
   'application/pdf': ['campaign'],
   'video/mp4': ['video'],
+  'video/quicktime': ['video'],
+  'video/webm': ['video'],
 };
 
 router.post('/presign', auth, async (req: AuthRequest, res: Response) => {

@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, User, Share2, Tags, IndianRupee, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,7 @@ export default function EditInfluencerProfile() {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [daysCount, setDaysCount] = useState<number | null>(null);
+  const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>({
     fullName: "", bio: "", city: "", state: "",
     instagramHandle: "", youtubeHandle: "",
@@ -61,6 +62,7 @@ export default function EditInfluencerProfile() {
       try {
         const profile: InfluencerProfile = await api.getInfluencerProfile();
         setDaysCount(daysAsKalakaar(profile.createdAt));
+        setCreatedAt(profile.createdAt ?? null);
         setForm({
           fullName: profile.name || "",
           bio: profile.bio || "",
@@ -81,6 +83,12 @@ export default function EditInfluencerProfile() {
   }, [toast]);
 
   const bioCount = useMemo(() => form.bio.length, [form.bio]);
+
+  const commercialsLocked = (daysCount ?? 0) < 180;
+  const unlockDate = useMemo(() => {
+    if (!createdAt) return null;
+    return new Date(new Date(createdAt).getTime() + 180 * 86_400_000);
+  }, [createdAt]);
 
   const toggleNiche = (niche: string) => {
     setForm((prev) => ({
@@ -115,7 +123,8 @@ export default function EditInfluencerProfile() {
         instagram: form.instagramHandle.replace(/^@/, "") || undefined,
         youtube: form.youtubeHandle.replace(/^@/, "") || undefined,
       },
-      pricing: form.pricing,
+      // Omit pricing when locked — server enforces 6-month rule too
+      ...(commercialsLocked ? {} : { pricing: form.pricing }),
     };
 
     setSaving(true);
@@ -138,9 +147,16 @@ export default function EditInfluencerProfile() {
     );
   }
 
+  const navItems = [
+    { id: "personal", label: "Personal Info", icon: User },
+    { id: "social", label: "Social Media", icon: Share2 },
+    { id: "niche", label: "Niche / Category", icon: Tags },
+    { id: "commercials", label: "Commercials", icon: IndianRupee, locked: commercialsLocked },
+  ];
+
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:px-6">
-      <div className="mx-auto w-full max-w-2xl space-y-4">
+      <div className="mx-auto w-full max-w-4xl space-y-4">
         <Link to="/profile" className="inline-flex items-center gap-2 text-sm text-chalk-dim hover:text-chalk">
           <ArrowLeft className="h-4 w-4" /> Back to Profile
         </Link>
@@ -151,7 +167,25 @@ export default function EditInfluencerProfile() {
           </div>
         )}
 
-        <Card className="bg-card border-white/10">
+        <div className="grid md:grid-cols-[200px_1fr] gap-6">
+          <aside className="md:sticky md:top-20 self-start">
+            <nav className="space-y-1 p-2 rounded-xl border border-white/10 bg-white/[0.02]">
+              {navItems.map(({ id, label, icon: Icon, locked }) => (
+                <a
+                  key={id}
+                  href={`#${id}`}
+                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <Icon className="w-3.5 h-3.5" /> {label}
+                  </span>
+                  {locked && <Lock className="w-3 h-3 text-chalk-faint" />}
+                </a>
+              ))}
+            </nav>
+          </aside>
+
+          <Card className="bg-card border-white/10">
           <CardHeader>
             <CardTitle className="text-lg text-chalk">Edit Kalakaar Profile</CardTitle>
           </CardHeader>
@@ -159,7 +193,7 @@ export default function EditInfluencerProfile() {
             <form className="space-y-7" onSubmit={handleSubmit}>
 
               {/* Personal Info */}
-              <section className="space-y-3">
+              <section id="personal" className="space-y-3 scroll-mt-20">
                 <h2 className="text-sm font-semibold text-chalk">Personal Info</h2>
 
                 <div className="grid gap-1.5">
@@ -203,7 +237,7 @@ export default function EditInfluencerProfile() {
               </section>
 
               {/* Social Media Handles */}
-              <section className="space-y-3">
+              <section id="social" className="space-y-3 scroll-mt-20">
                 <h2 className="text-sm font-semibold text-chalk">Social Media</h2>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="grid gap-1.5">
@@ -234,7 +268,7 @@ export default function EditInfluencerProfile() {
               </section>
 
               {/* Niche / Category */}
-              <section className="space-y-3">
+              <section id="niche" className="space-y-3 scroll-mt-20">
                 <h2 className="text-sm font-semibold text-chalk">Niche / Category *</h2>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {NICHE_OPTIONS.map((niche) => (
@@ -253,10 +287,22 @@ export default function EditInfluencerProfile() {
               </section>
 
               {/* Commercials */}
-              <section className="space-y-3">
-                <h2 className="text-sm font-semibold text-chalk">Commercials</h2>
-                <p className="text-xs text-chalk-faint">Set your content pricing (brands will see these rates)</p>
-                <CommercialsPricingSection pricing={form.pricing} onChange={handlePricingChange} />
+              <section id="commercials" className="space-y-3 scroll-mt-20">
+                <h2 className="text-sm font-semibold text-chalk flex items-center gap-2">
+                  Commercials
+                  {commercialsLocked && <Lock className="w-3.5 h-3.5 text-chalk-faint" />}
+                </h2>
+                <p className="text-xs text-chalk-faint">
+                  {commercialsLocked
+                    ? `Pricing locks for 6 months from registration${unlockDate ? ` — unlocks on ${unlockDate.toLocaleDateString("en-IN")}` : ""}.`
+                    : "Set your content pricing (brands will see these rates)"}
+                </p>
+                <CommercialsPricingSection
+                  pricing={form.pricing}
+                  onChange={handlePricingChange}
+                  locked={commercialsLocked}
+                  unlockDate={unlockDate}
+                />
               </section>
 
               <Button type="submit" disabled={saving} className="w-full">
@@ -265,6 +311,7 @@ export default function EditInfluencerProfile() {
             </form>
           </CardContent>
         </Card>
+        </div>
       </div>
     </main>
   );

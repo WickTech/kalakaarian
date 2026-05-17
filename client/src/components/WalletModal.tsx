@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Wallet, X, ArrowRight } from "lucide-react";
+import { Wallet, ArrowRight } from "lucide-react";
 import { api, InfluencerAnalytics } from "@/lib/api";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -44,14 +44,9 @@ export function WalletModal({ open, onClose }: WalletModalProps) {
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-sm bg-obsidian border border-white/10 p-0 overflow-hidden">
         <DialogHeader className="px-5 pt-5 pb-3 border-b border-white/5">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2 text-chalk font-display">
-              <Wallet className="w-4 h-4 text-gold" /> Wallet
-            </DialogTitle>
-            <button onClick={onClose} className="p-1 rounded-md hover:bg-white/5 transition-colors">
-              <X className="w-4 h-4 text-chalk-dim" />
-            </button>
-          </div>
+          <DialogTitle className="flex items-center gap-2 text-chalk font-display">
+            <Wallet className="w-4 h-4 text-gold" /> Wallet
+          </DialogTitle>
         </DialogHeader>
 
         <div className="p-5 space-y-3">

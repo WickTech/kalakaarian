@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link, Navigate, useLocation } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload, FolderClock, Crown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api, InfluencerProfile as InfluencerProfileData, SocialStats } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -131,8 +131,33 @@ export default function InfluencerProfile() {
               city: profile.city || '',
               state: profile.state || '',
               socialHandles: profile.socialHandles,
+              bio: profile.bio,
+              niches: profile.niches,
             }}
           />
+
+          {isOwnProfile && (
+            <div className="grid grid-cols-3 gap-2">
+              <Link
+                to="/campaigns"
+                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 bg-white/[0.03] text-xs sm:text-sm text-chalk hover:bg-white/[0.06] transition-all"
+              >
+                <Upload className="w-4 h-4 text-purple-400" /> Upload Video
+              </Link>
+              <Link
+                to="/campaigns?tab=completed"
+                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 bg-white/[0.03] text-xs sm:text-sm text-chalk hover:bg-white/[0.06] transition-all"
+              >
+                <FolderClock className="w-4 h-4 text-chalk-dim" /> Past Campaigns
+              </Link>
+              <Link
+                to="/influencer/dashboard?tab=membership"
+                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 bg-white/[0.03] text-xs sm:text-sm text-chalk hover:bg-white/[0.06] transition-all"
+              >
+                <Crown className="w-4 h-4 text-gold" /> Membership
+              </Link>
+            </div>
+          )}
 
           {isBrand && !isOwnProfile && profile.tier !== 'celeb' && (
             <button

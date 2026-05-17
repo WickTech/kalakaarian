@@ -127,25 +127,48 @@ export default function InfluencerRegisterPage() {
       <div className="absolute -top-20 -left-20 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-pink-500/15 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative z-10 mx-auto w-full max-w-lg">
-        <Link to="/login" className="flex items-center gap-2 text-sm text-chalk-dim hover:text-chalk mb-8 transition-colors">
+      <div className="relative z-10 mx-auto w-full max-w-3xl">
+        <Link to="/login" className="flex items-center gap-2 text-sm text-chalk-dim hover:text-chalk mb-6 transition-colors">
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
 
-        {/* Step indicators */}
-        <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
-          {STEPS.map((label, i) => (
-            <div key={label} className="flex items-center gap-2 flex-shrink-0">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${i < step ? "step-done" : i === step ? "step-active" : "step-pending"}`}>
-                {i < step ? "✓" : i + 1}
-              </div>
-              <span className={`text-xs ${i === step ? "text-chalk" : "text-chalk-faint"}`}>{label}</span>
-              {i < STEPS.length - 1 && <div className="w-4 h-px bg-white/10 flex-shrink-0" />}
-            </div>
-          ))}
-        </div>
+        <div className="grid md:grid-cols-[200px_1fr] gap-6">
+          {/* Left nav — step checklist */}
+          <aside className="md:sticky md:top-20 self-start">
+            <nav className="space-y-1 p-2 rounded-xl border border-white/10 bg-white/[0.02]">
+              {STEPS.map((label, i) => {
+                const done = i < step;
+                const current = i === step;
+                const clickable = done; // only previous steps clickable
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => clickable && setStep(i)}
+                    disabled={!clickable && !current}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                      current
+                        ? "bg-purple-600/15 text-chalk border border-purple-500/30"
+                        : done
+                        ? "text-chalk-dim hover:text-chalk hover:bg-white/5 cursor-pointer"
+                        : "text-chalk-faint cursor-not-allowed"
+                    }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                      done ? "bg-green-500/20 text-green-300"
+                        : current ? "bg-purple-500/20 text-purple-300"
+                        : "bg-white/5 text-chalk-faint"
+                    }`}>
+                      {done ? "✓" : i + 1}
+                    </span>
+                    {label}
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
 
-        <div className="bento-card p-6">
+          <div className="bento-card p-6">
           {/* Step 0: Basic Info */}
           {step === 0 && (
             <div className="space-y-4">
@@ -347,6 +370,7 @@ export default function InfluencerRegisterPage() {
               </button>
             )}
           </div>
+        </div>
         </div>
       </div>
 

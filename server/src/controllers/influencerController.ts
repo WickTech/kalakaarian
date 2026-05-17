@@ -221,7 +221,21 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
       await adminClient.from('influencer_profiles').update(update).eq('id', req.user.userId);
     }
 
-    if (pricing) {
+    if (pricing && Object.keys(pricing).length > 0) {
+      const { data: existing } = await adminClient
+        .from('influencer_profiles')
+        .select('created_at')
+        .eq('id', req.user.userId)
+        .single();
+      const createdAtMs = existing?.created_at ? new Date(existing.created_at).getTime() : 0;
+      const days = createdAtMs ? Math.floor((Date.now() - createdAtMs) / 86_400_000) : 0;
+      if (days < 180) {
+        res.status(403).json({
+          message: 'Commercials are locked for the first 6 months after registration',
+          unlockAt: createdAtMs ? new Date(createdAtMs + 180 * 86_400_000).toISOString() : null,
+        });
+        return;
+      }
       const rows = ['reel', 'story', 'video', 'post', 'shorts']
         .filter(t => pricing[t] != null)
         .map(t => ({ influencer_id: req.user!.userId, platform: 'general', content_type: t, price: pricing[t] }));

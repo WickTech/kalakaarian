@@ -127,7 +127,7 @@ function SmartHome() {
     </div>
   );
   if (user?.role === "brand") return <Navigate to="/brand/welcome" replace />;
-  if (user?.role === "influencer") return <Navigate to="/influencer/dashboard" replace />;
+  if (user?.role === "influencer") return <Navigate to={`/influencer/${user.id}`} replace />;
   return <Landing />;
 }
 

@@ -28,10 +28,10 @@ export function DeleteAccountModal({ open, onClose }: Props) {
       await api.deleteAccount(password);
       logout();
       navigate("/");
-    } catch (err: any) {
+    } catch (err) {
       toast({
         title: "Deletion failed",
-        description: err?.message ?? "Incorrect password or server error.",
+        description: (err as Error)?.message ?? "Incorrect password or server error.",
         variant: "destructive",
       });
     } finally {

@@ -1,44 +1,11 @@
-import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Users, Target, TrendingUp, Sparkles } from "lucide-react";
 import { HeroText } from "@/components/HeroText";
 import { BrandCarousel } from "@/components/BrandCarousel";
-import { api } from "@/lib/api";
 
 export default function Landing() {
-  const navigate = useNavigate();
-  const [tierCounts, setTierCounts] = useState<Record<string, number>>({ nano: 0, micro: 0, macro: 0, celeb: 0 });
-  const [loadingCounts, setLoadingCounts] = useState(true);
-
-  useEffect(() => {
-    const fetchTierCounts = async () => {
-      try {
-        const counts = await api.getTierCounts();
-        setTierCounts({
-          nano: counts.nano || 0,
-          micro: counts.micro || 0,
-          macro: counts.macro || 0,
-          celeb: counts.celeb || 0,
-        });
-      } catch (error) {
-        console.error("Failed to fetch tier counts:", error);
-      } finally {
-        setLoadingCounts(false);
-      }
-    };
-    fetchTierCounts();
-  }, []);
-
-  const tiers = [
-    { key: "nano",  label: "Nano Creator",  range: "2K – 20K followers",    count: tierCounts.nano },
-    { key: "micro", label: "Micro Creator", range: "20K – 200K followers",  count: tierCounts.micro },
-    { key: "macro", label: "Macro Creator", range: "200K – 3M+ followers",  count: tierCounts.macro },
-    { key: "celeb", label: "Celebrity",      range: "",                       count: tierCounts.celeb },
-  ];
-
   const whyKalakaarian = [
     { icon: Users,      title: "Creator Connectivity",    description: "Connect with countless creators in a single click, with zero margins." },
     { icon: Target,     title: "Fast Campaign Delivery",  description: "Get your campaign ready within 24 hours with the lowest platform fee." },
@@ -94,37 +61,6 @@ export default function Landing() {
 
       {/* Brand Carousel */}
       <BrandCarousel />
-
-      {/* Tier Grid */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold font-oswald tracking-tight mb-4 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent">
-              Explore Creators
-            </h2>
-            <p className="text-chalk-dim">
-              Find the perfect influencer tier for your budget and campaign goals
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {tiers.map((tier) => (
-              <div
-                key={tier.key}
-                onClick={() => navigate(`/marketplace?tier=${tier.key}`)}
-                className="border border-white/8 rounded-xl p-8 cursor-pointer group hover:border-purple-500/60 hover:shadow-lg hover:shadow-purple-900/20 transition-all relative bg-charcoal"
-              >
-                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600/0 to-pink-600/0 group-hover:from-purple-600/5 group-hover:to-pink-600/5 transition-all" />
-                {tier.range && <span className="text-sm font-oswald font-medium text-chalk-dim mb-3 block">{tier.range}</span>}
-                <h3 className="text-3xl font-oswald font-bold mb-3 text-chalk group-hover:text-purple-400 transition-colors">{tier.label}</h3>
-                <p className="text-sm text-chalk-dim">
-                  {loadingCounts ? "Loading..." : `${tier.count} Active Influencer${tier.count !== 1 ? 's' : ''}`}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Why Kalakaarian */}
       <section className="py-16 px-4 bg-charcoal/50">

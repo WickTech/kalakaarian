@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, CheckCircle, X, Info, Link2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, X, Info, Link2, CheckSquare, Square } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+
+const BRIEF_INSTRUCTIONS = [
+  "Keep the brief clear, simple, and easy to understand.",
+  "Mention all campaign requirements clearly.",
+  "Specify the platform and deliverables (e.g. Instagram – Reel (UGC Video) & Story).",
+  "Clearly mention the script, posting format, and instructions.",
+  "Mention all mandatory tags, hashtags, and brand mentions.",
+  "If a store visit is required, add the location link and full address.",
+  "If the brief is unclear, incomplete, or outdated, the platform and creator will not be responsible for any issues.",
+];
 
 interface CampaignFileEntry {
   fileUrl: string;
@@ -28,6 +38,7 @@ export default function CreateCampaign() {
   const [files, setFiles] = useState<CampaignFileEntry[]>([]);
   const [fileType, setFileType] = useState<"brief" | "contract" | "other">("brief");
   const [createdTitle, setCreatedTitle] = useState("");
+  const [acknowledged, setAcknowledged] = useState(false);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }));
@@ -103,6 +114,23 @@ export default function CreateCampaign() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Brief Instructions */}
+          <Card className="border-amber-500/30 bg-amber-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm text-amber-500 uppercase tracking-wide">Campaign Brief Guidelines</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ul className="space-y-2.5 overflow-y-auto max-h-56 md:max-h-none">
+                {BRIEF_INSTRUCTIONS.map((item, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                    <span className="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold">{i + 1}</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader><CardTitle className="text-base">Campaign Info</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -171,7 +199,22 @@ export default function CreateCampaign() {
             </CardContent>
           </Card>
 
-          <Button type="submit" className="w-full py-6 text-base font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90" disabled={loading}>
+          {/* Acknowledgment */}
+          <button
+            type="button"
+            onClick={() => setAcknowledged(v => !v)}
+            className="flex items-start gap-3 w-full text-left group p-3 rounded-lg border border-border hover:border-purple-500/50 transition-colors"
+          >
+            {acknowledged
+              ? <CheckSquare className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+              : <Square className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5 group-hover:text-purple-400 transition-colors" />
+            }
+            <span className="text-sm text-muted-foreground leading-relaxed">
+              I confirm the campaign brief is complete and accurate.
+            </span>
+          </button>
+
+          <Button type="submit" className="w-full py-6 text-base font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90" disabled={loading || !acknowledged}>
             {loading ? "Uploading Brief…" : "Upload Campaign Brief"}
           </Button>
         </form>

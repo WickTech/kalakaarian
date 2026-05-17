@@ -3,20 +3,18 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Edit, Settings as SettingsIcon, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { api, Proposal, InfluencerProfile } from "@/lib/api";
+import { api, InfluencerProfile } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { WalletTab, UploadTab, MembershipTab, SettingsTab } from "@/components/InfluencerDashboardPanels";
+import { WalletTab, MembershipTab, SettingsTab } from "@/components/InfluencerDashboardPanels";
 import { InfluencerAnalyticsPanel } from "@/components/InfluencerAnalyticsPanel";
 import { GamificationPanel } from "@/components/GamificationPanel";
 
-type Tab = "proposals" | "analytics" | "rewards" | "wallet" | "upload" | "membership" | "settings";
+type Tab = "analytics" | "rewards" | "wallet" | "membership" | "settings";
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: "proposals", label: "📋 Proposals" },
   { key: "analytics", label: "📈 Overview" },
   { key: "rewards", label: "🏆 Rewards" },
   { key: "wallet", label: "💰 Wallet" },
-  { key: "upload", label: "🎥 Upload" },
   { key: "membership", label: "🎖 Membership" },
   { key: "settings", label: "⚙️ Settings" },
 ];
@@ -35,31 +33,10 @@ function fmtSince(iso?: string | null): string {
   return `${d}d ago`;
 }
 
-const STAGE_BADGE: Record<string, string> = {
-  shortlisted: "text-amber-400 border-amber-400/30",
-  accepted: "text-blue-400 border-blue-400/30",
-  content_in_progress: "text-purple-400 border-purple-400/30",
-  submitted: "text-cyan-400 border-cyan-400/30",
-  under_review: "text-orange-400 border-orange-400/30",
-  approved: "text-green-400 border-green-400/30",
-  payment_pending: "text-yellow-400 border-yellow-400/30",
-  payment_released: "text-emerald-400 border-emerald-400/30",
-  rejected_workflow: "text-red-400 border-red-400/30",
-};
-
-const STAGE_LABEL: Record<string, string> = {
-  shortlisted: "Shortlisted", accepted: "Accepted",
-  content_in_progress: "Content In Progress", submitted: "Submitted",
-  under_review: "Under Review", approved: "Approved",
-  payment_pending: "Payment Pending", payment_released: "Payment Released",
-  rejected_workflow: "Rejected",
-};
-
-
 export default function InfluencerDashboard() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const initialTab = (searchParams.get("tab") as Tab) || "proposals";
+  const initialTab = (searchParams.get("tab") as Tab) || "analytics";
   const [tab, setTab] = useState<Tab>(initialTab);
   const { toast } = useToast();
   const [isOnline, setIsOnline] = useState(false);
@@ -67,12 +44,7 @@ export default function InfluencerDashboard() {
   const [offlineSince, setOfflineSince] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
 
-  const { data: proposals = [], isLoading } = useQuery<Proposal[]>({
-    queryKey: ["my-proposals"],
-    queryFn: () => api.getProposals().catch(() => []),
-  });
-
-  const { data: profile } = useQuery<InfluencerProfile | null>({
+  const { data: profile, isLoading } = useQuery<InfluencerProfile | null>({
     queryKey: ["influencer-profile-own"],
     queryFn: () => api.getInfluencerProfile().catch(() => null),
   });
@@ -93,10 +65,8 @@ export default function InfluencerDashboard() {
   });
 
   const stats = {
-    total: proposals.length,
-    accepted: proposals.filter((p) => p.status === "accepted").length,
-    earnings: analytics?.totalEarnings ?? proposals.filter((p) => p.status === "accepted").reduce((s, p) => s + p.bidAmount, 0),
-    pendingTotal: proposals.filter((p) => p.status === "submitted").reduce((s, p) => s + p.bidAmount, 0),
+    earnings: analytics?.totalEarnings ?? 0,
+    pendingTotal: analytics?.pendingPayouts ?? 0,
   };
 
   const togglePresence = async () => {
@@ -185,44 +155,10 @@ export default function InfluencerDashboard() {
           ))}
         </div>
 
-        {tab === "proposals" && (
-          <div className="space-y-3">
-            {proposals.length === 0 ? (
-              <div className="bento-card-dark p-6 rounded-xl text-center text-chalk-dim text-sm">
-                No proposals yet. <Link to="/campaigns" className="text-purple-400 hover:text-purple-300">Browse campaigns →</Link>
-              </div>
-            ) : (
-              proposals.map((p) => (
-                <Link key={p._id} to={`/proposals/${p._id}`}
-                  className="bento-card-dark p-4 rounded-xl flex items-center justify-between gap-3 hover:border-purple-500/40 transition-colors block">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-chalk truncate">{p.campaignTitle || "Campaign"}</p>
-                    <p className="text-xs text-chalk-dim mt-0.5">₹{p.bidAmount.toLocaleString("en-IN")}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {p.workflow_stage ? (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border ${STAGE_BADGE[p.workflow_stage] ?? "text-chalk-dim border-white/20"}`}>
-                        {STAGE_LABEL[p.workflow_stage] ?? p.workflow_stage}
-                      </span>
-                    ) : (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                        p.status === "accepted" ? "text-green-400 border-green-400/30" :
-                        p.status === "rejected" ? "text-red-400 border-red-400/30" :
-                        "text-chalk-dim border-white/20"
-                      }`}>{p.status}</span>
-                    )}
-                    <span className="text-chalk-dim text-xs">→</span>
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        )}
-        {tab === "analytics" && <InfluencerAnalyticsPanel proposals={proposals} stats={stats} />}
+        {tab === "analytics" && <InfluencerAnalyticsPanel stats={stats} />}
         {tab === "rewards" && <GamificationPanel />}
 
         {tab === "wallet" && <WalletTab earnings={stats.earnings} pendingTotal={stats.pendingTotal} />}
-        {tab === "upload" && <UploadTab />}
         {tab === "membership" && <MembershipTab membershipStatus={membershipStatus} />}
         {tab === "settings" && <SettingsTab profile={profile} />}
       </div>

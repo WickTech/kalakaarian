@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
-import { getProposals, getProposalById, createProposal, getMyProposals } from '../controllers/proposalController';
-import { updateProposal, deleteProposal, respondToProposal } from '../controllers/proposalActions';
+import { getProposals, getProposalById, getMyProposals } from '../controllers/proposalController';
+import { respondToProposal } from '../controllers/proposalActions';
 import { submitRating, getProposalRating } from '../controllers/ratingController';
 import { auth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
@@ -12,22 +12,8 @@ router.get('/my', auth, getMyProposals);
 router.get('/', auth, getProposals);
 router.get('/:id', auth, getProposalById);
 
-router.post(
-  '/',
-  auth,
-  [
-    body('campaignId').notEmpty().withMessage('Campaign ID is required'),
-    body('message').notEmpty().withMessage('Message is required'),
-    body('bidAmount').isNumeric().withMessage('Bid amount must be a number'),
-  ],
-  validate,
-  createProposal
-);
-
 router.get('/:id/rating', auth, getProposalRating);
 router.post('/:id/rate', auth, submitRating);
-router.put('/:id', auth, updateProposal);
-router.delete('/:id', auth, deleteProposal);
 
 router.post(
   '/:id/respond',

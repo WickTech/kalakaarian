@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { MapPin, Wifi, WifiOff, Pencil, Settings } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 interface ProfileHeaderProps {
   profile: {
@@ -14,27 +12,7 @@ interface ProfileHeaderProps {
     city: string;
     state?: string;
     socialHandles?: { instagram?: string; youtube?: string };
-    isOnline?: boolean;
-    onlineSince?: string | null;
-    lastSeenAt?: string | null;
   };
-  isOwnProfile: boolean;
-  onStatusToggle?: (isOnline: boolean) => void;
-}
-
-function fmtRelative(iso?: string | null): string {
-  if (!iso) return '—';
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return '—';
-  const diff = Math.max(0, Date.now() - then);
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'just now';
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString();
 }
 
 const tierStyles = {
@@ -59,20 +37,7 @@ const INFLUENCER_TIER_LABEL: Record<string, string> = {
   nano: 'Nano', micro: 'Micro', macro: 'Macro', celeb: 'Celebrity',
 };
 
-export function ProfileHeader({ profile, isOwnProfile, onStatusToggle }: ProfileHeaderProps) {
-  const [isOnline, setIsOnline] = useState(profile.isOnline || false);
-  const [onlineSince, setOnlineSince] = useState<string | null>(profile.onlineSince ?? null);
-  const [lastSeenAt, setLastSeenAt] = useState<string | null>(profile.lastSeenAt ?? null);
-
-  const handleStatusToggle = () => {
-    const newStatus = !isOnline;
-    const now = new Date().toISOString();
-    setIsOnline(newStatus);
-    if (newStatus) { setOnlineSince(now); setLastSeenAt(null); }
-    else { setLastSeenAt(now); setOnlineSince(null); }
-    onStatusToggle?.(newStatus);
-  };
-
+export function ProfileHeader({ profile }: ProfileHeaderProps) {
   const location = [profile.city, profile.state].filter(Boolean).join(', ');
   const igHandle = profile.socialHandles?.instagram
     ? `@${profile.socialHandles.instagram.replace(/^@/, '')}`
@@ -89,23 +54,6 @@ export function ProfileHeader({ profile, isOwnProfile, onStatusToggle }: Profile
           <div className="w-28 h-28 rounded-full overflow-hidden ring-2 ring-white/10 shadow-premium">
             <img src={profile.profileImage} alt={profile.name} className="w-full h-full object-cover" />
           </div>
-          {/* Online toggle */}
-          {isOwnProfile && (
-            <button
-              onClick={handleStatusToggle}
-              className="absolute top-0 right-0 p-1.5 rounded-full bg-card border-2 border-border hover:border-primary transition-colors"
-              title={isOnline ? 'Go offline' : 'Go online'}
-            >
-              {isOnline
-                ? <Wifi className="w-3.5 h-3.5 text-green-500" />
-                : <WifiOff className="w-3.5 h-3.5 text-gray-400" />}
-            </button>
-          )}
-          {isOwnProfile && (
-            <p className={`mt-1.5 text-[10px] text-center ${isOnline ? 'text-green-400' : 'text-chalk-faint'}`}>
-              {isOnline ? `Online ${fmtRelative(onlineSince)}` : `Offline ${fmtRelative(lastSeenAt)}`}
-            </p>
-          )}
         </div>
 
         {/* Profile Info */}
@@ -121,24 +69,6 @@ export function ProfileHeader({ profile, isOwnProfile, onStatusToggle }: Profile
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${tierStyles[profile.tier]}`}>
                 {profile.tier === 'gold' ? '★ Gold' : '◇ Silver'}
               </span>
-            )}
-            {isOwnProfile && (
-              <>
-                <Link
-                  to="/profile/edit"
-                  className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
-                  title="Edit profile"
-                >
-                  <Pencil className="w-3.5 h-3.5 text-chalk-dim" />
-                </Link>
-                <Link
-                  to="/influencer/dashboard?tab=settings"
-                  className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
-                  title="Settings"
-                >
-                  <Settings className="w-3.5 h-3.5 text-chalk-dim" />
-                </Link>
-              </>
             )}
           </div>
 

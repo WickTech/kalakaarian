@@ -25,8 +25,6 @@ const BrandDashboard = lazy(() => import("./pages/BrandDashboard"));
 const CreateCampaign = lazy(() => import("./pages/CreateCampaign"));
 const InfluencerDashboard = lazy(() => import("./pages/InfluencerDashboard"));
 const BrowseCampaigns = lazy(() => import("./pages/BrowseCampaigns"));
-const CampaignDetails = lazy(() => import("./pages/CampaignDetails"));
-const SubmitProposal = lazy(() => import("./pages/SubmitProposal"));
 const MyProfile = lazy(() => import("./pages/MyProfile"));
 const EditInfluencerProfile = lazy(() => import("./pages/EditInfluencerProfile"));
 const EditBrandProfile = lazy(() => import("./pages/EditBrandProfile"));
@@ -243,22 +241,6 @@ function AppContent() {
           element={
             <InfluencerRoute>
               <BrowseCampaigns />
-            </InfluencerRoute>
-          }
-        />
-        <Route
-          path="/campaign/:id"
-          element={
-            <InfluencerRoute>
-              <CampaignDetails />
-            </InfluencerRoute>
-          }
-        />
-        <Route
-          path="/campaign/:id/propose"
-          element={
-            <InfluencerRoute>
-              <SubmitProposal />
             </InfluencerRoute>
           }
         />

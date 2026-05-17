@@ -1,21 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Loader2, BarChart2, Wallet } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, InfluencerProfile as InfluencerProfileData, VideoItem, SocialStats } from '@/lib/api';
+import { useParams, Link, Navigate, useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { api, InfluencerProfile as InfluencerProfileData, SocialStats } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useCartContext } from '@/contexts/CartContext';
 import { ProfileHeader } from '@/components/ProfileHeader';
-import { VideoGrid } from '@/components/VideoGrid';
 import { InfluencerTrustSection } from '@/components/InfluencerTrustSection';
 import { BadgeStrip } from '@/components/BadgeStrip';
 import { CelebCallbackModal } from '@/components/CelebCallbackModal';
 import { SocialPlatformPanel } from '@/components/profile/SocialPlatformPanel';
 import { AnalyticsSection } from '@/components/profile/AnalyticsSection';
-import { MembershipSection } from '@/components/profile/MembershipSection';
 import { ProfileGallery } from '@/components/profile/ProfileGallery';
-import { CreatorCampaignsSection } from '@/components/profile/CreatorCampaignsSection';
+import { OwnerActionsBar } from '@/components/profile/OwnerActionsBar';
 import { WalletModal } from '@/components/WalletModal';
 import { Influencer } from '@/lib/store';
 
@@ -24,8 +22,6 @@ export default function InfluencerProfile() {
   const { hash } = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
-  const qc = useQueryClient();
-  const navigate = useNavigate();
   const { addToCart, isInCart } = useCartContext();
   const socialRef = useRef<HTMLDivElement>(null);
   const analyticsRef = useRef<HTMLDivElement>(null);
@@ -41,12 +37,6 @@ export default function InfluencerProfile() {
     queryKey: ['influencer-profile', id],
     queryFn: () => api.getInfluencerById(id!),
     enabled: !!id,
-  });
-
-  const { data: videos = [] as VideoItem[] } = useQuery({
-    queryKey: ['my-videos'],
-    queryFn: () => api.getMyVideos(),
-    enabled: !!id && isOwnProfile,
   });
 
   const { data: socialStats } = useQuery({
@@ -75,11 +65,6 @@ export default function InfluencerProfile() {
       return () => clearTimeout(t);
     }
   }, [hash, profile?.id]);
-
-  const handleStatusToggle = async (isOnline: boolean) => {
-    try { await api.updatePresence(isOnline); }
-    catch { toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' }); }
-  };
 
   const handlePlatformAddToCart = async (totalPrice: number, platforms: Array<'instagram' | 'youtube'>) => {
     if (!profile || !id) return;
@@ -124,6 +109,16 @@ export default function InfluencerProfile() {
     <>
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
+          {isOwnProfile && (
+            <OwnerActionsBar
+              isOnline={!!profile.isOnline}
+              onlineSince={profile.onlineSince}
+              lastSeenAt={profile.lastSeenAt}
+              onOpenWallet={() => setShowWallet(true)}
+              onScrollAnalytics={() => analyticsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            />
+          )}
+
           <ProfileHeader
             profile={{
               name: profile.name || 'Unknown',
@@ -136,12 +131,7 @@ export default function InfluencerProfile() {
               city: profile.city || '',
               state: profile.state || '',
               socialHandles: profile.socialHandles,
-              isOnline: profile.isOnline,
-              onlineSince: profile.onlineSince,
-              lastSeenAt: profile.lastSeenAt,
             }}
-            isOwnProfile={isOwnProfile}
-            onStatusToggle={handleStatusToggle}
           />
 
           {isBrand && !isOwnProfile && profile.tier !== 'celeb' && (
@@ -151,23 +141,6 @@ export default function InfluencerProfile() {
             >
               Select Kalakaar — Choose Platforms
             </button>
-          )}
-
-          {isOwnProfile && (
-            <div className="flex gap-3">
-              <button
-                onClick={() => navigate(`/influencer/${id}#analytics`)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all"
-              >
-                <BarChart2 className="w-4 h-4" /> My Analytics
-              </button>
-              <button
-                onClick={() => setShowWallet(true)}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-sm text-chalk-dim hover:text-chalk hover:border-white/20 transition-all"
-              >
-                <Wallet className="w-4 h-4 text-gold" /> Wallet
-              </button>
-            </div>
           )}
 
           <ProfileGallery
@@ -196,20 +169,6 @@ export default function InfluencerProfile() {
 
           <InfluencerTrustSection influencerId={id!} avgRating={profile.avgRating} ratingCount={profile.ratingCount} />
           <BadgeStrip influencerId={id!} />
-
-          {isOwnProfile && <CreatorCampaignsSection />}
-
-          {isOwnProfile && <MembershipSection />}
-
-          {(isOwnProfile || videos.length > 0) && (
-            <VideoGrid videos={videos} isOwnProfile={isOwnProfile} onUpload={async (url, platform) => {
-              try {
-                await api.uploadVideo(url, platform);
-                qc.invalidateQueries({ queryKey: ['my-videos'] });
-                toast({ title: 'Success', description: 'Video uploaded successfully' });
-              } catch { toast({ title: 'Error', description: 'Failed to upload video', variant: 'destructive' }); }
-            }} />
-          )}
 
           {profile.tier === 'celeb' && !isOwnProfile && (
             <div className="bento-card p-5 text-center space-y-3">

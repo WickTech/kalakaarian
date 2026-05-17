@@ -476,16 +476,6 @@ export const api = {
     return res.proposals;
   },
 
-  getOpenCampaigns: async (filters?: CampaignFilters): Promise<Campaign[]> => {
-    const params = new URLSearchParams();
-    if (filters?.niche) params.append("niche", filters.niche);
-    if (filters?.minBudget) params.append("minBudget", filters.minBudget.toString());
-    if (filters?.maxBudget) params.append("maxBudget", filters.maxBudget.toString());
-    const query = params.toString() ? `?${params.toString()}` : "";
-    const res = await request<{ campaigns: Campaign[] }>(`/api/campaigns/open${query}`);
-    return res.campaigns;
-  },
-
   getCampaignById: async (id: string): Promise<Campaign> => {
     const res = await request<{ campaign: Campaign }>(`/api/campaigns/${id}`);
     return res.campaign;
@@ -494,17 +484,6 @@ export const api = {
   getCampaignInfluencers: async (campaignId: string): Promise<CampaignInfluencer[]> => {
     const res = await request<{ influencers: CampaignInfluencer[] }>(`/api/campaigns/${campaignId}/influencers`);
     return res.influencers;
-  },
-
-  submitProposal: async (campaignId: string, message: string, bidAmount: number): Promise<Proposal> => {
-    return request<Proposal>(`/api/campaigns/${campaignId}/proposals`, {
-      method: "POST",
-      body: JSON.stringify({ message, bidAmount }),
-    });
-  },
-
-  getMyProposalForCampaign: async (campaignId: string): Promise<Proposal | null> => {
-    return request<Proposal>(`/api/campaigns/${campaignId}/proposals/my`);
   },
 
   getProposalsForCampaign: async (campaignId: string): Promise<Proposal[]> => {

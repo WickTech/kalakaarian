@@ -1,123 +1,190 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Search, Briefcase } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useQuery } from "@tanstack/react-query";
-import { api, Campaign, CampaignFilters } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Inbox, CheckCircle2, Clock } from "lucide-react";
+import { api, Proposal } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { CampaignProgressTracker } from "@/components/CampaignProgressTracker";
 
-const genres = ["Fashion", "Tech", "Food", "Fitness", "Beauty", "Lifestyle", "Gaming", "Travel"];
+type TabKey = "running" | "completed";
 
-export default function BrowseCampaigns() {
-  const [filters, setFilters] = useState<CampaignFilters>({});
-  const [searchTerm, setSearchTerm] = useState("");
+const RUNNING_STAGES = [
+  "shortlisted",
+  "accepted",
+  "content_in_progress",
+  "submitted",
+  "under_review",
+  "approved",
+  "payment_pending",
+];
+const COMPLETED_STAGES = ["payment_released"];
+const UPLOAD_STAGES = ["accepted", "content_in_progress", "submitted", "under_review"];
 
-  const { data: campaigns = [], isLoading: loading, isError } = useQuery({
-    queryKey: ['open-campaigns', filters],
-    queryFn: () => api.getOpenCampaigns(filters),
-    staleTime: 60_000,
-  });
+type Platform = "instagram" | "youtube";
 
-  const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
-    if (searchTerm && !campaign.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-    if (filters.niche && campaign.genre !== filters.niche) return false;
-    return true;
-  });
+function CampaignCard({ proposal, onRefresh }: { proposal: Proposal; onRefresh: () => void }) {
+  const { toast } = useToast();
+  const stage = proposal.workflow_stage ?? proposal.status ?? "";
+  const canUpload = UPLOAD_STAGES.includes(stage);
+
+  const [link, setLink] = useState("");
+  const [platform, setPlatform] = useState<Platform>("instagram");
+  const [confirmed, setConfirmed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleUpload = async () => {
+    if (!link.trim() || !confirmed) {
+      toast({ title: "Add a link and confirm the content", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.uploadVideo(link.trim(), platform, proposal.campaignId);
+      toast({ title: "Submitted", description: "Content sent for brand review." });
+      setLink(""); setConfirmed(false);
+      onRefresh();
+    } catch {
+      toast({ title: "Upload failed", description: "Try again", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-purple-700 via-fuchsia-600 to-pink-500 px-4 py-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+    <div className="bento-card p-5 space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-bold text-chalk truncate">{proposal.campaignTitle || "Campaign"}</h3>
+          <p className="text-xs text-chalk-dim mt-0.5">
+            ₹{Number(proposal.bidAmount || 0).toLocaleString("en-IN")}
+          </p>
+        </div>
+      </div>
+
+      <CampaignProgressTracker currentStage={stage} updatedAt={proposal.workflow_stage_updated_at} compact />
+
+      {canUpload && (
+        <div className="border-t border-white/5 pt-4 space-y-3">
+          <p className="text-xs font-semibold text-chalk-dim uppercase tracking-wide">Upload Content</p>
+          <div className="flex gap-2">
+            {(["instagram", "youtube"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPlatform(p)}
+                className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
+                  platform === p
+                    ? "border-gold text-gold bg-gold/10"
+                    : "border-white/10 text-chalk-dim"
+                }`}
+              >
+                {p === "instagram" ? "📸 Instagram" : "▶️ YouTube"}
+              </button>
+            ))}
+          </div>
+          <input
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="Drive / post URL"
+            className="dark-input w-full px-3 py-2 text-sm"
+          />
+          <label className="flex items-center gap-2 cursor-pointer text-xs text-chalk-dim">
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => setConfirmed(e.target.checked)}
+              className="w-4 h-4 rounded accent-purple-600"
+            />
+            I confirm this content is ready for brand review
+          </label>
+          <button
+            onClick={handleUpload}
+            disabled={submitting || !link.trim() || !confirmed}
+            className="purple-pill w-full py-2.5 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? "Submitting…" : "Submit for Review"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function CreatorCampaigns() {
+  const qc = useQueryClient();
+  const [tab, setTab] = useState<TabKey>("running");
+
+  const { data: campaigns = [], isLoading } = useQuery<Proposal[]>({
+    queryKey: ["my-proposals"],
+    queryFn: () => api.getProposals().catch(() => []),
+  });
+
+  const { running, completed } = useMemo(() => {
+    const running: Proposal[] = [];
+    const completed: Proposal[] = [];
+    for (const c of campaigns) {
+      const stage = c.workflow_stage ?? "";
+      if (COMPLETED_STAGES.includes(stage)) completed.push(c);
+      else if (RUNNING_STAGES.includes(stage)) running.push(c);
+    }
+    return { running, completed };
+  }, [campaigns]);
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ["my-proposals"] });
+  const visible = tab === "running" ? running : completed;
+  const empty = visible.length === 0;
+
+  return (
+    <main className="min-h-screen bg-obsidian px-4 py-8">
+      <div className="mx-auto max-w-3xl space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-white">Browse Campaigns</h1>
-          <p className="text-white/80">Find open campaigns that match your niche and style</p>
+          <h1 className="text-2xl font-bold text-chalk">My Campaigns</h1>
+          <p className="text-sm text-chalk-dim mt-1">
+            Campaigns brands have selected you for. Upload content per campaign here.
+          </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Find Campaigns
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col gap-4 md:flex-row">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search campaigns..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="w-full md:w-48">
-                <Select
-                  value={filters.niche || ""}
-                  onValueChange={(value) => setFilters({ ...filters, niche: value || undefined })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Niche" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Niches</SelectItem>
-                    {genres.map((genre) => (
-                      <SelectItem key={genre} value={genre}>{genre}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setTab("running")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all ${
+              tab === "running"
+                ? "bg-purple-600 text-white"
+                : "border border-white/10 text-chalk-dim hover:text-chalk"
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" /> Running
+            <span className="text-[10px] opacity-80">{running.length}</span>
+          </button>
+          <button
+            onClick={() => setTab("completed")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all ${
+              tab === "completed"
+                ? "bg-purple-600 text-white"
+                : "border border-white/10 text-chalk-dim hover:text-chalk"
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" /> Completed
+            <span className="text-[10px] opacity-80">{completed.length}</span>
+          </button>
+        </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
           </div>
-        ) : isError ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">Failed to load campaigns.</p>
-            </CardContent>
-          </Card>
-        ) : filteredCampaigns.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No campaigns found matching your criteria.</p>
-            </CardContent>
-          </Card>
+        ) : empty ? (
+          <div className="bento-card p-10 text-center">
+            <Inbox className="w-10 h-10 text-chalk-faint mx-auto mb-3" />
+            <p className="text-sm text-chalk-dim">
+              {tab === "running" ? "No running campaigns." : "No completed campaigns yet."}
+            </p>
+            <p className="text-xs text-chalk-faint mt-1">
+              Brands will select you directly from the marketplace.
+            </p>
+          </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {filteredCampaigns.map((campaign: Campaign) => (
-              <Card key={campaign.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg">{campaign.title}</CardTitle>
-                      <CardDescription>{campaign.brandName}</CardDescription>
-                    </div>
-                    <Badge variant="secondary">{campaign.genre}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground line-clamp-2">{campaign.description}</p>
-                  {campaign.platform && (
-                    <div className="flex items-center gap-1 text-sm">
-                      <Briefcase className="h-4 w-4 text-muted-foreground" />
-                      <span>{campaign.platform}</span>
-                    </div>
-                  )}
-                  {campaign.deliverables && (
-                    <p className="text-xs text-muted-foreground line-clamp-1">
-                      <span className="font-medium">Deliverables:</span> {campaign.deliverables}
-                    </p>
-                  )}
-                  <Button asChild className="w-full">
-                    <Link to={`/campaign/${campaign.id}`}>View Details</Link>
-                  </Button>
-                </CardContent>
-              </Card>
+          <div className="grid gap-4">
+            {visible.map((p) => (
+              <CampaignCard key={p._id} proposal={p} onRefresh={refresh} />
             ))}
           </div>
         )}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Edit, Settings as SettingsIcon, Star } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { api, InfluencerProfile } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -35,10 +35,12 @@ function fmtSince(iso?: string | null): string {
 
 export default function InfluencerDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialTab = (searchParams.get("tab") as Tab) || "analytics";
   const [tab, setTab] = useState<Tab>(initialTab);
   const { toast } = useToast();
+  const qc = useQueryClient();
   const [isOnline, setIsOnline] = useState(false);
   const [onlineSince, setOnlineSince] = useState<string | null>(null);
   const [offlineSince, setOfflineSince] = useState<string | null>(null);
@@ -53,6 +55,36 @@ export default function InfluencerDashboard() {
     setOnlineSince(profile?.onlineSince ?? null);
     setOfflineSince(profile?.lastSeenAt ?? null);
   }, [profile]);
+
+  // Handle OAuth redirect params from IG/YT platform connection
+  useEffect(() => {
+    const igConnected = searchParams.get("ig_connected");
+    const ytConnected = searchParams.get("yt_connected");
+    const igError = searchParams.get("ig_error");
+    const ytError = searchParams.get("yt_error");
+    if (!igConnected && !ytConnected && !igError && !ytError) return;
+
+    if (igConnected === "1") {
+      toast({ title: "Instagram connected", description: "Your Instagram account is now linked." });
+      qc.invalidateQueries({ queryKey: ["connected-platforms"] });
+    }
+    if (ytConnected === "1") {
+      toast({ title: "YouTube connected", description: "Your YouTube channel is now linked." });
+      qc.invalidateQueries({ queryKey: ["connected-platforms"] });
+    }
+    if (igError) {
+      toast({ title: "Instagram connection failed", description: igError, variant: "destructive" });
+    }
+    if (ytError) {
+      toast({ title: "YouTube connection failed", description: ytError, variant: "destructive" });
+    }
+    // Strip params from URL without re-render loop
+    const clean = new URLSearchParams(searchParams);
+    clean.delete("ig_connected"); clean.delete("yt_connected");
+    clean.delete("ig_error"); clean.delete("yt_error");
+    navigate({ search: clean.toString() }, { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { data: analytics } = useQuery({
     queryKey: ["influencer-analytics"],

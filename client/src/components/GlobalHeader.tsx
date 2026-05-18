@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Menu, ShoppingCart, Wallet, LogOut, User,
-  Bell, Settings, FileText, ChevronDown, BarChart2, ShieldCheck, LayoutDashboard,
+  Bell, Settings, ChevronDown, BarChart2, ShieldCheck, LayoutDashboard,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCartContext } from "@/contexts/CartContext";
@@ -32,7 +32,6 @@ const CREATOR_NAV = [
 ];
 const DEFAULT_NAV = [
   { to: "/", label: "Home", exact: true },
-  { to: "/marketplace", label: "Marketplace", exact: false },
   { to: "/contact", label: "Contact", exact: false },
 ];
 
@@ -195,13 +194,8 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/campaigns" className="flex items-center gap-2 cursor-pointer">
-                          <FileText className="w-4 h-4" /> My Campaigns
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/influencer/dashboard" className="flex items-center gap-2 cursor-pointer">
-                          <Wallet className="w-4 h-4 text-gold" /> Earnings
+                        <Link to="/influencer/dashboard?tab=wallet" className="flex items-center gap-2 cursor-pointer">
+                          <Wallet className="w-4 h-4 text-gold" /> Wallet
                         </Link>
                       </DropdownMenuItem>
                     </>
@@ -311,11 +305,8 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                           <Link to="/influencer/dashboard" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
                             <LayoutDashboard className="w-4 h-4" /> My Dashboard
                           </Link>
-                          <Link to="/campaigns" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
-                            <FileText className="w-4 h-4" /> My Campaigns
-                          </Link>
-                          <Link to="/influencer/dashboard" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-gold hover:bg-gold/10 transition-colors flex items-center gap-2">
-                            <Wallet className="w-4 h-4" /> Earnings
+                          <Link to="/influencer/dashboard?tab=wallet" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-gold hover:bg-gold/10 transition-colors flex items-center gap-2">
+                            <Wallet className="w-4 h-4" /> Wallet
                           </Link>
                         </>
                       )}

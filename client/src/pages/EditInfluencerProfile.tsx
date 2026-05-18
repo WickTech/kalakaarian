@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, User, Share2, Tags, IndianRupee, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +47,7 @@ export default function EditInfluencerProfile() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -130,6 +132,8 @@ export default function EditInfluencerProfile() {
     setSaving(true);
     try {
       await api.updateInfluencerProfile(updateData);
+      qc.invalidateQueries({ queryKey: ["influencer-profile", user?.id] });
+      qc.invalidateQueries({ queryKey: ["influencer-profile-own"] });
       toast({ title: "Profile updated" });
       navigate("/profile");
     } catch {

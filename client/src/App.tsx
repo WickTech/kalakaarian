@@ -167,13 +167,13 @@ function AppContent() {
         <Route
           path="/marketplace"
           element={
-            <BlockCreatorRoute>
+            <BrandRoute>
               <Marketplace
                 isInCart={cart.isInCart}
                 addToCart={cart.addToCart}
                 removeFromCart={cart.removeFromCart}
               />
-            </BlockCreatorRoute>
+            </BrandRoute>
           }
         />
         <Route path="/login" element={<LoginPage />} />

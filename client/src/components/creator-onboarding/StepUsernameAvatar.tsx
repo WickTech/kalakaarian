@@ -40,6 +40,16 @@ export default function StepUsernameAvatar({ form, setField }: Props) {
       </div>
 
       <div>
+        <div className="mb-3 rounded-lg border border-amber-400/30 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-pink-500/10 px-4 py-3">
+          <p className="text-sm font-semibold text-amber-200 leading-snug">
+            ⚡ Your username is your public identity on Kalakaarian.
+          </p>
+          <p className="text-xs text-amber-100/80 mt-1 leading-relaxed">
+            Brands will see, search, and recognise you by this name across the
+            marketplace, your profile, and every campaign. Pick something
+            unique, memorable, and unmistakably <span className="font-semibold text-amber-200">you</span> — this is how the world will find your work.
+          </p>
+        </div>
         <label className="block text-sm text-chalk-dim mb-1.5">Username *</label>
         <div className="flex overflow-hidden rounded-md border border-white/10">
           <span className="px-3 py-3 text-sm text-chalk-dim border-r border-white/10 bg-white/5 shrink-0">@</span>

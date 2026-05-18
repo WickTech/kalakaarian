@@ -20,7 +20,7 @@ export const toInfluencer = (inf: InfluencerProfile): Influencer => {
     connected[0] ?? ((inf.platform?.[0] as "instagram" | "youtube") || "instagram");
   return {
     id: inf.id ?? inf._id ?? "",
-    name: inf.name || "",
+    name: inf.username || inf.name || "",
     handle: inf.socialHandles?.instagram || inf.socialHandles?.youtube || "",
     photo: inf.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${inf.name}`,
     platform: primary,

@@ -79,7 +79,7 @@ export default function InfluencerProfile() {
       return;
     }
     const inf: Influencer = {
-      id, name: profile.name || 'Kalakaar',
+      id, name: profile.username || profile.name || 'Kalakaar',
       handle: profile.socialHandles?.instagram || profile.socialHandles?.youtube || '',
       photo: profile.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`,
       platform: platforms[0] ?? 'instagram',
@@ -137,7 +137,7 @@ export default function InfluencerProfile() {
 
           <ProfileHeader
             profile={{
-              name: profile.name || 'Unknown',
+              name: profile.username || profile.name || 'Unknown',
               handle: `@${profile.socialHandles?.instagram || 'user'}`,
               profileImage: profile.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=default`,
               tier: 'regular',

@@ -76,7 +76,7 @@ export default function PersonalInfo() {
           onSave={async (v) => save({ name: String(v).trim() })} />
 
         <InlineEditField label="Username" value={profile.username ?? ''} placeholder="unique handle (letters, numbers)"
-          hint="Used for your public profile URL. Must be unique."
+          hint="⚡ This is your public identity on Kalakaarian — brands see, search, and recognise you by this name. Pick something unique that represents you."
           onSave={async (v) => save({ username: String(v).trim().toLowerCase() })} />
 
         <InlineEditField label="Email" value={user?.email ?? ''} disabled hint="Change via Security settings" onSave={async () => {}} />

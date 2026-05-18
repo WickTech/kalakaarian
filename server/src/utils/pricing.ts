@@ -16,6 +16,7 @@ type Pricing = {
   reel?: number;
   video?: number;
   post?: number;
+  shorts?: number;
 } | undefined | null;
 
 const markup = (n?: number) =>
@@ -34,5 +35,6 @@ export const applyPlatformMargin = (pricing: Pricing) => {
     reel: markup(pricing.reel),
     video: markup(pricing.video),
     post: markup(pricing.post),
+    shorts: markup(pricing.shorts),
   };
 };

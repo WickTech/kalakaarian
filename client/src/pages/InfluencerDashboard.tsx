@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { Edit, Settings as SettingsIcon, Star } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { Star } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { api, InfluencerProfile } from "@/lib/api";
@@ -19,20 +19,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "settings", label: "⚙️ Settings" },
 ];
 
-function fmtSince(iso?: string | null): string {
-  if (!iso) return "—";
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "—";
-  const diff = Math.max(0, Date.now() - then);
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  return `${d}d ago`;
-}
-
 export default function InfluencerDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -41,21 +27,11 @@ export default function InfluencerDashboard() {
   const [tab, setTab] = useState<Tab>(initialTab);
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [isOnline, setIsOnline] = useState(false);
-  const [onlineSince, setOnlineSince] = useState<string | null>(null);
-  const [offlineSince, setOfflineSince] = useState<string | null>(null);
-  const [toggling, setToggling] = useState(false);
 
   const { data: profile, isLoading } = useQuery<InfluencerProfile | null>({
     queryKey: ["influencer-profile-own"],
     queryFn: () => api.getInfluencerProfile().catch(() => null),
   });
-  useEffect(() => {
-    if (profile?.isOnline !== undefined) setIsOnline(profile.isOnline!);
-    setOnlineSince(profile?.onlineSince ?? null);
-    setOfflineSince(profile?.lastSeenAt ?? null);
-  }, [profile]);
-
   // Handle OAuth redirect params from IG/YT platform connection
   useEffect(() => {
     const igConnected = searchParams.get("ig_connected");
@@ -101,25 +77,7 @@ export default function InfluencerDashboard() {
     pendingTotal: analytics?.pendingPayouts ?? 0,
   };
 
-  const togglePresence = async () => {
-    if (toggling) return;
-    const next = !isOnline;
-    const now = new Date().toISOString();
-    setIsOnline(next);
-    if (next) { setOnlineSince(now); setOfflineSince(null); }
-    else { setOfflineSince(now); setOnlineSince(null); }
-    setToggling(true);
-    try {
-      await api.updatePresence(next);
-    } catch {
-      setIsOnline(!next);
-      if (!next) { setOnlineSince(now); setOfflineSince(null); }
-      else { setOfflineSince(now); setOnlineSince(null); }
-      toast({ title: "Failed to update status", variant: "destructive" });
-    } finally {
-      setToggling(false);
-    }
-  };
+
 
   if (isLoading) return (
     <div className="min-h-screen bg-obsidian flex items-center justify-center">
@@ -135,7 +93,7 @@ export default function InfluencerDashboard() {
             <div className="relative flex-shrink-0">
               <img src={profile?.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name}`}
                 alt="avatar" className="w-16 h-16 rounded-full object-cover bg-charcoal" />
-              <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-obsidian ${isOnline ? "bg-green-400" : "bg-chalk-faint"}`} />
+              <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-obsidian ${profile?.isOnline ? "bg-green-400" : "bg-chalk-faint"}`} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -155,25 +113,6 @@ export default function InfluencerDashboard() {
               </div>
               <p className="text-xs text-chalk-dim mt-0.5">{profile?.niches?.join(", ") || "—"} · {profile?.city || "—"}</p>
               <p className="text-xs text-chalk-faint mt-0.5">{(profile?.followerCount || 0).toLocaleString("en-IN")} followers</p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
-              <span className="text-xs text-chalk-dim">Active</span>
-              <button onClick={togglePresence} disabled={toggling} className={`w-10 h-5 rounded-full transition-all ${toggling ? "opacity-50 cursor-not-allowed" : ""} ${isOnline ? "bg-green-500" : "bg-white/10"}`}>
-                <div className={`w-4 h-4 rounded-full bg-white mx-0.5 transition-transform ${isOnline ? "translate-x-4" : ""}`} />
-              </button>
-              <span className={`text-[10px] ${isOnline ? "text-green-400" : "text-chalk-faint"}`}>
-                {isOnline ? `Active since ${fmtSince(onlineSince)}` : `Offline since ${fmtSince(offlineSince)}`}
-              </span>
-              <Link to="/profile/edit" className="p-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk transition-colors" aria-label="Edit profile">
-                <Edit className="w-3.5 h-3.5" />
-              </Link>
-              <button
-                onClick={() => setTab("settings")}
-                className="p-2 rounded-lg border border-white/10 text-chalk-dim hover:text-chalk transition-colors"
-                aria-label="Settings"
-              >
-                <SettingsIcon className="w-3.5 h-3.5" />
-              </button>
             </div>
           </div>
         </div>

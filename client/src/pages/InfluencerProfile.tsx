@@ -20,23 +20,28 @@ import { Influencer } from '@/lib/store';
 export default function InfluencerProfile() {
   const { id } = useParams<{ id: string }>();
   const { hash } = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const { addToCart, isInCart } = useCartContext();
   const socialRef = useRef<HTMLDivElement>(null);
   const analyticsRef = useRef<HTMLDivElement>(null);
 
   const isOwnProfile = user?.id === id;
+  const isCreator = user?.role === 'influencer';
   const isBrand = user?.role === 'brand';
   const [showCelebModal, setShowCelebModal] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
   const [gallery, setGallery] = useState<string[]>([]);
   const highlightSocial = hash === '#social';
 
+  // Own profile: use authenticated endpoint (no visibility/presence restrictions).
+  // Wait for auth to resolve so isOwnProfile is accurate before firing any query.
   const { data: profile, isLoading } = useQuery<InfluencerProfileData>({
-    queryKey: ['influencer-profile', id],
-    queryFn: () => api.getInfluencerById(id!),
-    enabled: !!id,
+    queryKey: isOwnProfile ? ['influencer-profile-own'] : ['influencer-profile', id],
+    queryFn: isOwnProfile
+      ? () => api.getInfluencerProfile()
+      : () => api.getInfluencerById(id!),
+    enabled: !!id && !authLoading,
   });
 
   const { data: socialStats } = useQuery({
@@ -97,10 +102,21 @@ export default function InfluencerProfile() {
   }
 
   if (!profile) {
+    if (isCreator && isOwnProfile) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
+          <p className="text-chalk font-semibold">Profile not set up yet</p>
+          <p className="text-sm text-chalk-dim">Complete your profile so brands can discover you.</p>
+          <Link to="/account/personal" className="px-6 py-2.5 rounded-full bg-purple-600 text-white text-sm font-semibold hover:bg-purple-700 transition-colors">
+            Set Up Profile
+          </Link>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p>Kalakaar not found</p>
-        <Link to="/marketplace" className="text-primary hover:underline">Back to Marketplace</Link>
+        <p className="text-chalk">Creator not found</p>
+        <Link to="/" className="text-primary hover:underline text-sm">Back to Home</Link>
       </div>
     );
   }

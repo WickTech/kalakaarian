@@ -172,17 +172,21 @@ export const completeGoogleOnboarding = async (req: AuthRequest, res: Response):
       await adminClient.from('influencer_profiles').upsert(influencerRow);
 
       const p = pricing || {};
+      // Only persist rows with positive prices — zero/empty entries are skipped
+      // so the 6-month commercials lock kicks in only when the creator has
+      // actually set their rates.
       const pricingRows = [
-        { content_type: 'reel',  price: p.reel  ?? p.reelRate },
-        { content_type: 'story', price: p.story ?? p.storyRate },
-        { content_type: 'video', price: p.video ?? p.longVideoRate },
-        { content_type: 'post',  price: p.post  ?? p.shortsRate },
-      ].filter(r => r.price != null);
+        { content_type: 'reel',   price: Number(p.reel  ?? p.reelRate) || 0 },
+        { content_type: 'story',  price: Number(p.story ?? p.storyRate) || 0 },
+        { content_type: 'video',  price: Number(p.video ?? p.longVideoRate) || 0 },
+        { content_type: 'shorts', price: Number(p.shorts ?? p.post ?? p.shortsRate) || 0 },
+      ].filter(r => r.price > 0);
       if (pricingRows.length > 0) {
-        await adminClient.from('influencer_pricing').upsert(
+        const { error: prErr } = await adminClient.from('influencer_pricing').upsert(
           pricingRows.map(r => ({ influencer_id: userId, platform: 'general', ...r })),
           { onConflict: 'influencer_id,platform,content_type' },
         );
+        if (prErr) console.error('pricing upsert failed:', prErr);
       }
     }
 

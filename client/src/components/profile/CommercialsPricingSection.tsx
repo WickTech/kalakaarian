@@ -31,7 +31,19 @@ function PriceInput({
 
 export function CommercialsPricingSection({ pricing, onChange, locked, unlockDate }: CommercialsPricingProps) {
   return (
-    <div className="relative space-y-4">
+    <div className="space-y-4">
+      {locked && (
+        <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-4 py-3 flex items-start gap-3">
+          <Lock className="w-4 h-4 text-amber-300 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-amber-200">Commercials locked for 6 months</p>
+            <p className="text-xs text-amber-100/80 mt-0.5">
+              Your rates are visible to you and brands but cannot be edited
+              {unlockDate ? ` until ${unlockDate.toLocaleDateString('en-IN')}` : ''}.
+            </p>
+          </div>
+        </div>
+      )}
       {/* Instagram */}
       <div className="rounded-xl border border-pink-500/20 bg-pink-500/5 p-4 space-y-3">
         <div className="flex items-center gap-2 mb-1">
@@ -56,16 +68,6 @@ export function CommercialsPricingSection({ pricing, onChange, locked, unlockDat
         </div>
       </div>
 
-      {locked && (
-        <div className="absolute inset-0 rounded-xl bg-obsidian/70 backdrop-blur-sm flex flex-col items-center justify-center text-center p-4 z-10">
-          <Lock className="w-6 h-6 text-chalk-faint mb-2" />
-          <p className="text-sm font-semibold text-chalk">Commercials locked</p>
-          <p className="text-xs text-chalk-dim mt-1 max-w-xs">
-            Pricing can be updated 6 months after registration
-            {unlockDate ? ` (unlocks ${unlockDate.toLocaleDateString("en-IN")})` : ""}.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

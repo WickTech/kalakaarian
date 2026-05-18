@@ -111,16 +111,30 @@ export default function PersonalInfo() {
         <InlineEditField label="Niches" type="multiselect" value={profile.niches ?? []} options={NICHE_OPTIONS}
           onSave={async (v) => save({ niches: v as string[] })} />
 
-        {!commercialsLocked && (
-          <p className="text-[11px] text-chalk-faint px-1">
-            Commercials available — edit pricing from your profile.
-          </p>
-        )}
-        {commercialsLocked && profile.createdAt && (
-          <p className="text-[11px] text-chalk-faint px-1">
-            Commercials locked for 6 months — unlocks {new Date(new Date(profile.createdAt).getTime() + 180 * 86_400_000).toLocaleDateString('en-IN')}.
-          </p>
-        )}
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] uppercase tracking-wide text-chalk-faint">Commercials</p>
+            {commercialsLocked && profile.createdAt && (
+              <span className="text-[10px] text-amber-200/80 bg-amber-500/10 border border-amber-400/20 rounded-full px-2 py-0.5">
+                Locked · unlocks {new Date(new Date(profile.createdAt).getTime() + 180 * 86_400_000).toLocaleDateString('en-IN')}
+              </span>
+            )}
+          </div>
+          {profile.pricing && Object.keys(profile.pricing).length > 0 ? (
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              {(['reel','story','video','shorts','post'] as const).map(k => (
+                profile.pricing?.[k] ? (
+                  <div key={k} className="flex justify-between rounded-md bg-white/5 px-3 py-2">
+                    <span className="text-chalk-dim capitalize">{k}</span>
+                    <span className="text-chalk font-semibold">₹{Number(profile.pricing[k]).toLocaleString('en-IN')}</span>
+                  </div>
+                ) : null
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-chalk-faint">No rates set yet. {commercialsLocked ? 'You can still set your initial rates from the Edit Profile page.' : 'Add rates from your profile.'}</p>
+          )}
+        </div>
       </div>
     </div>
   );

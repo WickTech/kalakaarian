@@ -34,17 +34,29 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
       if (verifyError) { res.status(401).json({ message: 'Incorrect password' }); return; }
     }
 
-    // Explicitly delete influencer/brand profile rows before auth deletion
-    // (belt-and-suspenders on top of ON DELETE CASCADE)
+    const userId = req.user.userId;
     const role = req.user.role;
-    if (role === 'influencer') {
-      await adminClient.from('influencer_profiles').delete().eq('id', req.user.userId);
-    } else if (role === 'brand') {
-      await adminClient.from('brand_profiles').delete().eq('id', req.user.userId);
-    }
-    await adminClient.from('profiles').delete().eq('id', req.user.userId);
 
-    const { error: deleteError } = await adminClient.auth.admin.deleteUser(req.user.userId);
+    // conversations.participant_ids is a UUID array — no FK cascade, delete explicitly
+    const { data: convRows } = await adminClient
+      .from('conversations')
+      .select('id')
+      .contains('participant_ids', [userId]);
+    if (convRows && convRows.length > 0) {
+      const ids = convRows.map((r: { id: string }) => r.id);
+      await adminClient.from('messages').delete().in('conversation_id', ids);
+      await adminClient.from('conversations').delete().in('id', ids);
+    }
+
+    // Explicitly delete role profile rows (belt-and-suspenders on top of CASCADE)
+    if (role === 'influencer') {
+      await adminClient.from('influencer_profiles').delete().eq('id', userId);
+    } else if (role === 'brand') {
+      await adminClient.from('brand_profiles').delete().eq('id', userId);
+    }
+    await adminClient.from('profiles').delete().eq('id', userId);
+
+    const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId);
     if (deleteError) throw deleteError;
 
     res.json({ message: 'Account deleted successfully' });

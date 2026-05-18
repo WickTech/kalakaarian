@@ -58,7 +58,8 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
       });
       return (Array.isArray(data) ? data : []).map(toInfluencer);
     },
-    staleTime: 30_000,
+    staleTime: 20_000,
+    refetchInterval: 60_000,
     placeholderData: (prev) => prev,
   });
 

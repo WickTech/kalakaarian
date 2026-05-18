@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Pencil, Settings, Wallet, BarChart2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {
@@ -35,11 +37,18 @@ export function OwnerActionsBar({
   onScrollAnalytics,
 }: Props) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const qc = useQueryClient();
   const [isOnline, setIsOnline] = useState(initialOnline);
   const [, setOnlineSince] = useState<string | null>(initialOnlineSince ?? null);
   const [lastSeenAt, setLastSeenAt] = useState<string | null>(initialLastSeenAt ?? null);
   const [toggling, setToggling] = useState(false);
   const [, forceTick] = useState(0);
+
+  // Sync from parent when cached profile data arrives/changes (e.g. after navigation)
+  useEffect(() => {
+    setIsOnline(initialOnline);
+  }, [initialOnline]);
 
   // Re-render every 30s while offline so the "Offline Xm ago" string stays accurate.
   useEffect(() => {
@@ -58,6 +67,12 @@ export function OwnerActionsBar({
     setToggling(true);
     try {
       await api.updatePresence(next);
+      // Update cached profile so state survives navigation
+      const patch = next
+        ? { isOnline: true, onlineSince: now, lastSeenAt: null }
+        : { isOnline: false, onlineSince: null, lastSeenAt: now };
+      qc.setQueryData(['influencer-profile', user?.id], (old: any) => old ? { ...old, ...patch } : old);
+      qc.setQueryData(['influencer-profile-own'], (old: any) => old ? { ...old, ...patch } : old);
     } catch {
       setIsOnline(!next);
       if (!next) { setOnlineSince(now); setLastSeenAt(null); }

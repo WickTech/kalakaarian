@@ -198,10 +198,15 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
     if (!req.user || req.user.role !== 'influencer') {
       res.status(403).json({ message: 'Only influencers can update their profile' }); return;
     }
-    const { bio, city, state, gender, niches, platform, tier, pricing, portfolio, instagramPosts, youtubeVideos, socialHandles } = req.body;
+    const { name, bio, city, state, gender, niches, platform, tier, pricing, portfolio, instagramPosts, youtubeVideos, socialHandles } = req.body;
     const instagramHandle = req.body.instagramHandle ?? socialHandles?.instagram;
     const youtubeHandle = req.body.youtubeHandle ?? socialHandles?.youtube;
     const update: Record<string, unknown> = {};
+
+    if (name && typeof name === 'string' && name.trim()) {
+      await adminClient.from('profiles').update({ name: name.trim() }).eq('id', req.user.userId);
+      await adminClient.auth.admin.updateUserById(req.user.userId, { user_metadata: { name: name.trim() } });
+    }
     if (bio !== undefined) update.bio = bio;
     if (city) update.city = city;
     if (state !== undefined) update.state = state;

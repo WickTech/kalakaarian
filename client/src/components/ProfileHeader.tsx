@@ -1,4 +1,4 @@
-import { MapPin } from 'lucide-react';
+import { MapPin, Instagram, Youtube } from 'lucide-react';
 
 interface ProfileHeaderProps {
   profile: {
@@ -42,11 +42,11 @@ const INFLUENCER_TIER_LABEL: Record<string, string> = {
 export function ProfileHeader({ profile }: ProfileHeaderProps) {
   const location = [profile.city, profile.state].filter(Boolean).join(', ');
   const igHandle = profile.socialHandles?.instagram
-    ? `@${profile.socialHandles.instagram.replace(/^@/, '')}`
-    : null;
+    ? profile.socialHandles.instagram.replace(/^@/, '')
+    : '';
   const ytHandle = profile.socialHandles?.youtube
-    ? `@${profile.socialHandles.youtube.replace(/^@/, '')}`
-    : null;
+    ? profile.socialHandles.youtube.replace(/^@/, '')
+    : '';
 
   return (
     <div className="premium-card p-6 sm:p-8">
@@ -74,16 +74,29 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-3 text-sm text-chalk-dim mt-2">
-            {location && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5" />
-                {location}
-              </span>
-            )}
-            {igHandle && <span className="text-pink-400">{igHandle}</span>}
-            {ytHandle && <span className="text-red-400">{ytHandle}</span>}
+          {/* Social handles — always shown */}
+          <div className="flex flex-wrap gap-4 mt-2">
+            <span className="flex items-center gap-1.5 text-sm">
+              <Instagram className="w-4 h-4 text-pink-400 shrink-0" />
+              {igHandle
+                ? <span className="text-pink-400">@{igHandle}</span>
+                : <span className="text-chalk-faint italic text-xs">not connected</span>}
+            </span>
+            <span className="flex items-center gap-1.5 text-sm">
+              <Youtube className="w-4 h-4 text-red-400 shrink-0" />
+              {ytHandle
+                ? <span className="text-red-400">@{ytHandle}</span>
+                : <span className="text-chalk-faint italic text-xs">not connected</span>}
+            </span>
           </div>
+
+          {/* Location */}
+          {location && (
+            <div className="flex items-center gap-1 mt-1.5 text-sm text-chalk-dim">
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span>{location}</span>
+            </div>
+          )}
 
           {profile.niches && profile.niches.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">

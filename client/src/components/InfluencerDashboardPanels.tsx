@@ -1,12 +1,9 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { api, InfluencerProfile } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { openRazorpayCheckout } from "@/lib/razorpay";
-import { ExternalLink, LogOut, Trash2 } from "lucide-react";
-import { DeleteAccountModal } from "@/components/DeleteAccountModal";
 
 export { WalletTab } from "./WalletTab";
 
@@ -133,58 +130,3 @@ export function MembershipTab({ membershipStatus }: MembershipProps) {
   );
 }
 
-interface SettingsProps { profile: InfluencerProfile | null; }
-export function SettingsTab({ profile }: SettingsProps) {
-  const { toast } = useToast();
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-  const [newEmail, setNewEmail] = useState("");
-  const [newPhone, setNewPhone] = useState("");
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  return (
-    <div className="bento-card p-6 space-y-5">
-      <h2 className="font-display font-bold text-chalk">Account Settings</h2>
-      <div>
-        <label className="block text-sm text-chalk-dim mb-1.5">Change Email</label>
-        <div className="flex gap-2">
-          <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)}
-            className="dark-input flex-1 px-4 py-3 text-sm" placeholder="new@email.com" />
-          <button className="purple-pill px-4 py-2 text-sm" onClick={() => toast({ title: "Updated" })}>Update</button>
-        </div>
-      </div>
-      <div>
-        <label className="block text-sm text-chalk-dim mb-1.5">Change WhatsApp</label>
-        <div className="flex gap-2">
-          <span className="dark-input px-3 py-3 text-sm text-chalk-dim flex-shrink-0">+91</span>
-          <input type="tel" value={newPhone} onChange={(e) => setNewPhone(e.target.value)}
-            className="dark-input flex-1 px-4 py-3 text-sm" placeholder="9876543210" />
-          <button className="purple-pill px-4 py-2 text-sm" onClick={() => toast({ title: "OTP Sent" })}>OTP</button>
-        </div>
-      </div>
-      <div className="border-t border-white/5 pt-4">
-        <a href={profile?.socialHandles?.instagram ? `https://instagram.com/${profile.socialHandles.instagram.replace("@", "")}` : "#"}
-          target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-2 text-sm text-chalk-dim hover:text-chalk transition-colors">
-          <ExternalLink className="w-4 h-4" /> View Public Profile
-        </a>
-      </div>
-      <div className="border-t border-white/5 pt-4">
-        <button
-          onClick={() => { logout(); navigate("/"); }}
-          className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors"
-        >
-          <LogOut className="w-4 h-4" /> Logout
-        </button>
-      </div>
-      <div className="border-t border-white/5 pt-4">
-        <button
-          onClick={() => setDeleteOpen(true)}
-          className="flex items-center gap-2 text-sm text-red-500 hover:text-red-400 transition-colors"
-        >
-          <Trash2 className="w-4 h-4" /> Delete Account
-        </button>
-      </div>
-      <DeleteAccountModal open={deleteOpen} onClose={() => setDeleteOpen(false)} />
-    </div>
-  );
-}

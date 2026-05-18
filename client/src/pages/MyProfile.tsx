@@ -82,10 +82,10 @@ export default function MyProfile() {
               </div>
             </div>
             <button
-              onClick={() => navigate("/profile/edit")}
+              onClick={() => navigate("/account")}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border border-white/10 text-chalk-dim hover:bg-white/5 hover:text-chalk transition-all"
             >
-              <Settings className="w-3 h-3" /> Settings
+              <Settings className="w-3 h-3" /> Account
             </button>
           </div>
 
@@ -137,7 +137,7 @@ export default function MyProfile() {
             <LayoutDashboard className="w-4 h-4" /> Dashboard
           </button>
           <button
-            onClick={() => navigate("/profile/edit")}
+            onClick={() => navigate("/account/personal")}
             className="flex-1 purple-pill py-2.5 text-sm font-bold flex items-center justify-center gap-2"
           >
             <Settings className="w-4 h-4" /> Edit Profile

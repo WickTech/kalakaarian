@@ -5,25 +5,26 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { api, InfluencerProfile } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { WalletTab, MembershipTab, SettingsTab } from "@/components/InfluencerDashboardPanels";
+import { WalletTab, MembershipTab } from "@/components/InfluencerDashboardPanels";
 import { InfluencerAnalyticsPanel } from "@/components/InfluencerAnalyticsPanel";
 import { GamificationPanel } from "@/components/GamificationPanel";
 
-type Tab = "analytics" | "rewards" | "wallet" | "membership" | "settings";
+type Tab = "analytics" | "rewards" | "wallet" | "membership";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "analytics", label: "📈 Overview" },
   { key: "rewards", label: "🏆 Rewards" },
   { key: "wallet", label: "💰 Wallet" },
   { key: "membership", label: "🎖 Membership" },
-  { key: "settings", label: "⚙️ Settings" },
 ];
 
 export default function InfluencerDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const initialTab = (searchParams.get("tab") as Tab) || "analytics";
+  const rawTab = searchParams.get("tab");
+  const validTabs: Tab[] = ["analytics", "rewards", "wallet", "membership"];
+  const initialTab = (validTabs.includes(rawTab as Tab) ? rawTab : "analytics") as Tab;
   const [tab, setTab] = useState<Tab>(initialTab);
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -131,7 +132,6 @@ export default function InfluencerDashboard() {
 
         {tab === "wallet" && <WalletTab earnings={stats.earnings} pendingTotal={stats.pendingTotal} />}
         {tab === "membership" && <MembershipTab membershipStatus={membershipStatus} />}
-        {tab === "settings" && <SettingsTab profile={profile} />}
       </div>
     </main>
   );

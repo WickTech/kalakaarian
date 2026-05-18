@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 
 const FROM = process.env.RESEND_FROM || 'Kalakaarian <noreply@kalakaarian.com>';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@kalakaarian.com';
 
 let client: Resend | null = null;
 function getClient(): Resend | null {
@@ -81,5 +82,16 @@ export const sendProposalStatusEmail = async (
     to,
     subject: `Your proposal was ${status} — ${campaignTitle}`,
     html: `<h2>Proposal ${accepted ? 'Accepted 🎉' : 'Update'}</h2><p>Hi ${name},</p><p>Your proposal for <strong>${campaignTitle}</strong> has been <strong>${status}</strong>.</p>${accepted ? '<p>The brand will reach out shortly with next steps.</p>' : ''}`,
+  });
+};
+
+export const sendAdminAlertEmail = async (subject: string, body: string): Promise<void> => {
+  const r = getClient();
+  if (!r) return;
+  await r.emails.send({
+    from: FROM,
+    to: ADMIN_EMAIL,
+    subject: `[Kalakaarian Admin] ${subject}`,
+    html: `<p>${body.replace(/\n/g, '<br>')}</p>`,
   });
 };

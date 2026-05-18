@@ -1008,6 +1008,25 @@ export const api = {
       body: JSON.stringify({ ...data, type: 'callback' }),
     });
   },
+
+  // ─── Account Hub ────────────────────────────────────────────────────────────
+
+  signOutAll: async (): Promise<{ message: string }> =>
+    request('/api/account/sign-out-all', { method: 'POST' }),
+
+  getPreferences: async (): Promise<{
+    notifications: Record<string, boolean>;
+    privacy: Record<string, unknown>;
+  }> => request('/api/account/preferences'),
+
+  updatePreferences: async (data: {
+    notifications?: Record<string, boolean>;
+    privacy?: Record<string, unknown>;
+  }): Promise<{ message: string }> =>
+    request('/api/account/preferences', { method: 'PUT', body: JSON.stringify(data) }),
+
+  requestDataExport: async (): Promise<{ message: string }> =>
+    request('/api/account/data-export', { method: 'POST' }),
 };
 
 export { ApiError };

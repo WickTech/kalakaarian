@@ -71,8 +71,8 @@ export function OwnerActionsBar({
       const patch = next
         ? { isOnline: true, onlineSince: now, lastSeenAt: null }
         : { isOnline: false, onlineSince: null, lastSeenAt: now };
-      qc.setQueryData(['influencer-profile', user?.id], (old: any) => old ? { ...old, ...patch } : old);
-      qc.setQueryData(['influencer-profile-own'], (old: any) => old ? { ...old, ...patch } : old);
+      qc.setQueryData(['influencer-profile', user?.id], (old: unknown) => old && typeof old === 'object' ? { ...old, ...patch } : old);
+      qc.setQueryData(['influencer-profile-own'], (old: unknown) => old && typeof old === 'object' ? { ...old, ...patch } : old);
     } catch {
       setIsOnline(!next);
       if (!next) { setOnlineSince(now); setLastSeenAt(null); }
@@ -105,18 +105,18 @@ export function OwnerActionsBar({
 
       <div className="flex items-center gap-2 ml-auto">
         <Link
-          to="/profile/edit"
+          to="/account/personal"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 text-xs text-chalk-dim hover:text-chalk hover:border-white/20 transition-all"
           title="Edit profile"
         >
           <Pencil className="w-3.5 h-3.5" /> Edit
         </Link>
         <Link
-          to="/influencer/dashboard?tab=settings"
+          to="/account"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 text-xs text-chalk-dim hover:text-chalk hover:border-white/20 transition-all"
-          title="Settings"
+          title="Account"
         >
-          <Settings className="w-3.5 h-3.5" /> Settings
+          <Settings className="w-3.5 h-3.5" /> Account
         </Link>
         <button
           onClick={onOpenWallet}

@@ -194,7 +194,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to="/influencer/dashboard?tab=wallet" className="flex items-center gap-2 cursor-pointer">
+                        <Link to="/account/payments" className="flex items-center gap-2 cursor-pointer">
                           <Wallet className="w-4 h-4 text-gold" /> Wallet
                         </Link>
                       </DropdownMenuItem>
@@ -206,8 +206,8 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/profile/edit" className="flex items-center gap-2 cursor-pointer">
-                      <Settings className="w-4 h-4" /> Settings
+                    <Link to="/account" className="flex items-center gap-2 cursor-pointer">
+                      <Settings className="w-4 h-4" /> Account
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -305,7 +305,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                           <Link to="/influencer/dashboard" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
                             <LayoutDashboard className="w-4 h-4" /> My Dashboard
                           </Link>
-                          <Link to="/influencer/dashboard?tab=wallet" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-gold hover:bg-gold/10 transition-colors flex items-center gap-2">
+                          <Link to="/account/payments" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-gold hover:bg-gold/10 transition-colors flex items-center gap-2">
                             <Wallet className="w-4 h-4" /> Wallet
                           </Link>
                         </>
@@ -313,8 +313,8 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                       <Link to="/notifications" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
                         <Bell className="w-4 h-4" /> Notifications
                       </Link>
-                      <Link to="/profile/edit" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
-                        <Settings className="w-4 h-4" /> Settings
+                      <Link to="/account" onClick={() => setMobileOpen(false)} className="px-4 py-3 rounded-lg text-sm font-medium text-chalk-dim hover:text-chalk hover:bg-white/5 transition-colors flex items-center gap-2">
+                        <Settings className="w-4 h-4" /> Account
                       </Link>
                       <button
                         onClick={() => { handleLogout(); setMobileOpen(false); }}

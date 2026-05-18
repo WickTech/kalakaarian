@@ -563,3 +563,50 @@ Both require auth.
 
 ### GET /api/gamification/influencer/:id/public
 **No auth.** Returns only earned badges. `Cache-Control: public, max-age=60`.
+
+---
+
+## Account Hub — `/api/account`
+
+All routes require `Authorization: Bearer <token>`.
+
+### POST /api/account/sign-out-all
+**Auth required.** Invalidates all refresh tokens via Supabase `signOut(userId, 'global')`. Client should clear local token and redirect to `/login`.
+```json
+// → 200
+{ "message": "Signed out from all devices" }
+```
+
+### GET /api/account/preferences
+**Auth required.** Returns notification preferences and privacy flags for the authenticated user.
+```json
+// → 200
+{
+  "notifications": { "campaigns": true, "proposals": true, "messages": true, "payments": true, "marketing": false },
+  "privacy": {
+    "marketplace_visible": true,
+    "is_discoverable": true,        // influencer only
+    "presence_visible": true,       // influencer only
+    "profile_visibility": "public"
+  }
+}
+```
+
+### PUT /api/account/preferences
+**Auth required.** Merges provided keys — send only what changed.
+```json
+// body
+{ "notifications": { "marketing": true }, "privacy": { "marketplace_visible": false } }
+// → 200
+{ "message": "Preferences updated" }
+```
+Allowed notification keys: `campaigns | proposals | messages | payments | marketing`.
+Allowed `profile_visibility` for influencer: `public | brands_only | private`. For brand: `public | private`.
+
+### POST /api/account/data-export
+**Auth required. Rate-limited to 1 per 24 hours.** Logs a data export request and notifies admin.
+```json
+// → 200
+{ "message": "Data export requested. You will receive an email within 30 days." }
+// → 429 if a pending request already exists
+```

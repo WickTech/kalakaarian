@@ -40,6 +40,13 @@ const CampaignTrackPage = lazy(() => import("./pages/campaign/TrackPage"));
 const NotificationsPage = lazy(() => import("./pages/Notifications"));
 const BrandWelcome = lazy(() => import("./pages/BrandWelcome"));
 const CartPage = lazy(() => import("./pages/CartPage"));
+const AccountLayout = lazy(() => import("./pages/account/AccountLayout"));
+const AccountHome = lazy(() => import("./pages/account/AccountHome"));
+const AccountPersonal = lazy(() => import("./pages/account/PersonalInfo"));
+const AccountSecurity = lazy(() => import("./pages/account/Security"));
+const AccountIntegrations = lazy(() => import("./pages/account/Integrations"));
+const AccountPrivacy = lazy(() => import("./pages/account/Privacy"));
+const AccountPayments = lazy(() => import("./pages/account/Payments"));
 
 function PageLoader() {
   return (
@@ -250,12 +257,21 @@ function AppContent() {
         />
         <Route
           path="/profile/edit"
-          element={
-            <ProtectedRoute>
-              <EditProfileWrapper />
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/account/personal" replace />}
         />
+
+        {/* Account Hub */}
+        <Route
+          path="/account"
+          element={<ProtectedRoute><AccountLayout /></ProtectedRoute>}
+        >
+          <Route index element={<AccountHome />} />
+          <Route path="personal" element={<AccountPersonal />} />
+          <Route path="security" element={<AccountSecurity />} />
+          <Route path="integrations" element={<AccountIntegrations />} />
+          <Route path="privacy" element={<AccountPrivacy />} />
+          <Route path="payments" element={<AccountPayments />} />
+        </Route>
         <Route path="/messages" element={<Navigate to="/dashboard" replace />} />
         <Route
           path="/influencer/:id"

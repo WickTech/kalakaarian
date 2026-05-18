@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Account Hub (2026-05-18)
+
+### Added
+- New `/account/*` hub with Google Account–style sidebar navigation (Home, Personal Info, Security, Connected Apps, Data & Privacy, Payments & Subscriptions)
+- Role-aware sections: Creator sees Connected Apps (IG/YT OAuth) + creator wallet/membership; Brand sees brand transactions
+- Super Admin `viewAs` respected throughout account hub
+- Migration `028_account_preferences.sql`: privacy flags (`is_discoverable`, `marketplace_visible`, `presence_visible`, `profile_visibility`) on `influencer_profiles` + `brand_profiles`; `notification_prefs jsonb` on `profiles`; `data_export_requests` table
+- New `/api/account/*` endpoints: `POST /sign-out-all`, `GET /preferences`, `PUT /preferences`, `POST /data-export`
+- Influencer marketplace list query honours `marketplace_visible` + `is_discoverable` flags
+- Mobile collapsible sidebar drawer for `<md` breakpoint
+- `sendAdminAlertEmail()` helper in `emailService.ts`
+
+### Changed
+- Header "Settings" → "Account" link now points to `/account`; Wallet link → `/account/payments`
+- `OwnerActionsBar` Edit → `/account/personal`; Settings → `/account`
+- `/profile/edit` redirects to `/account/personal`
+- `?tab=settings` removed from `InfluencerDashboard`; settings moved fully to hub
+
+### Removed
+- `SettingsTab` (stub) from `InfluencerDashboardPanels.tsx`
+- `SocialConnect.tsx` (dead legacy component, superseded by `PlatformConnectCard`)
+
+---
+
 ## [Unreleased] — Creator UX Polish + Presence Fix (2026-05-18)
 
 ### Added

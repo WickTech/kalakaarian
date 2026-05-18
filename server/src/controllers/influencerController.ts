@@ -92,6 +92,9 @@ const buildInfluencerQuery = (params: Record<string, any>) => {
   // Creators who never toggled presence (last_seen_at IS NULL) still appear.
   q = q.or('is_online.eq.true,last_seen_at.is.null');
 
+  // Respect creator privacy flags — default true keeps existing rows unaffected
+  q = q.eq('marketplace_visible', true).eq('is_discoverable', true);
+
   return q;
 };
 

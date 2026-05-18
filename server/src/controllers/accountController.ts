@@ -164,6 +164,43 @@ export const updatePreferences = async (req: AuthRequest, res: Response): Promis
   }
 };
 
+const ALLOWED_AVATAR_MIME = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2MB
+
+export const updateAvatar = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) { res.status(401).json({ message: 'Unauthorized' }); return; }
+    const { imageBase64, mimeType } = req.body as { imageBase64?: string; mimeType?: string };
+    if (!imageBase64 || !mimeType) {
+      res.status(400).json({ message: 'imageBase64 and mimeType are required' }); return;
+    }
+    if (!ALLOWED_AVATAR_MIME.has(mimeType)) {
+      res.status(400).json({ message: 'Unsupported image type. Use PNG, JPEG, or WebP.' }); return;
+    }
+    const data = imageBase64.replace(/^data:[^;]+;base64,/, '');
+    const buf = Buffer.from(data, 'base64');
+    if (buf.length === 0) { res.status(400).json({ message: 'Empty image' }); return; }
+    if (buf.length > MAX_AVATAR_BYTES) {
+      res.status(400).json({ message: 'Image exceeds 2MB limit' }); return;
+    }
+
+    const ext = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+    const key = `profile/${req.user.userId}/${Date.now()}.${ext}`;
+    const { error: upErr } = await adminClient.storage
+      .from('avatars')
+      .upload(key, buf, { contentType: mimeType, upsert: true });
+    if (upErr) { res.status(500).json({ message: 'Upload failed' }); return; }
+
+    const { data: pub } = adminClient.storage.from('avatars').getPublicUrl(key);
+    const avatarUrl = pub.publicUrl;
+    await adminClient.from('profiles').update({ avatar_url: avatarUrl }).eq('id', req.user.userId);
+    res.json({ avatarUrl });
+  } catch (error) {
+    console.error('updateAvatar error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const requestDataExport = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user) { res.status(401).json({ message: 'Unauthorized' }); return; }

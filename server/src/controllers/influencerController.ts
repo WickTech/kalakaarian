@@ -15,6 +15,8 @@ export const formatInfluencer = (row: any) => {
     id: row.id,
     userId: row.id,
     name: row.profiles?.name ?? 'Unknown',
+    username: row.profiles?.username ?? null,
+    phone: row.profiles?.phone ?? null,
     bio: row.bio ?? '',
     city: row.city ?? '',
     state: row.state ?? '',
@@ -71,7 +73,7 @@ const normalizeTier = (t: unknown): string | undefined => {
 const buildInfluencerQuery = (params: Record<string, any>) => {
   let q = adminClient
     .from('influencer_profiles')
-    .select('*, profiles(name, avatar_url), influencer_pricing(platform, content_type, price)');
+    .select('*, profiles(name, username, phone, avatar_url), influencer_pricing(platform, content_type, price)');
 
   const tier = normalizeTier(params.tier);
   if (tier) q = q.eq('tier', tier);
@@ -155,7 +157,7 @@ export const getInfluencerById = async (req: Request, res: Response): Promise<vo
   try {
     const { data, error } = await adminClient
       .from('influencer_profiles')
-      .select('*, profiles(name, avatar_url), influencer_pricing(platform, content_type, price)')
+      .select('*, profiles(name, username, phone, avatar_url), influencer_pricing(platform, content_type, price)')
       .eq('id', req.params.id)
       .single();
     if (error || !data) { res.status(404).json({ message: 'Influencer not found' }); return; }
@@ -182,7 +184,7 @@ export const getOwnProfile = async (req: AuthRequest, res: Response): Promise<vo
     }
     const { data, error } = await adminClient
       .from('influencer_profiles')
-      .select('*, profiles(name, avatar_url), influencer_pricing(platform, content_type, price)')
+      .select('*, profiles(name, username, phone, avatar_url), influencer_pricing(platform, content_type, price)')
       .eq('id', req.user.userId)
       .single();
     if (error || !data) { res.status(404).json({ message: 'Influencer profile not found' }); return; }
@@ -198,14 +200,24 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
     if (!req.user || req.user.role !== 'influencer') {
       res.status(403).json({ message: 'Only influencers can update their profile' }); return;
     }
-    const { name, bio, city, state, gender, niches, platform, tier, pricing, portfolio, instagramPosts, youtubeVideos, socialHandles } = req.body;
+    const { name, bio, city, state, gender, niches, platform, tier, pricing, portfolio, instagramPosts, youtubeVideos, socialHandles, username, phone, avatarUrl } = req.body;
     const instagramHandle = req.body.instagramHandle ?? socialHandles?.instagram;
     const youtubeHandle = req.body.youtubeHandle ?? socialHandles?.youtube;
     const update: Record<string, unknown> = {};
+    const profilesUpdate: Record<string, unknown> = {};
 
     if (name && typeof name === 'string' && name.trim()) {
-      await adminClient.from('profiles').update({ name: name.trim() }).eq('id', req.user.userId);
+      profilesUpdate.name = name.trim();
       await adminClient.auth.admin.updateUserById(req.user.userId, { user_metadata: { name: name.trim() } });
+    }
+    if (typeof username === 'string' && username.trim()) profilesUpdate.username = username.trim().toLowerCase();
+    if (typeof phone === 'string') profilesUpdate.phone = phone.replace(/\D/g, '') || null;
+    if (typeof avatarUrl === 'string' && avatarUrl.trim()) profilesUpdate.avatar_url = avatarUrl.trim();
+    if (Object.keys(profilesUpdate).length > 0) {
+      const { error: pe } = await adminClient.from('profiles').update(profilesUpdate).eq('id', req.user.userId);
+      if (pe && (pe as { code?: string }).code === '23505') {
+        res.status(400).json({ message: 'Username already taken' }); return;
+      }
     }
     if (bio !== undefined) update.bio = bio;
     if (city) update.city = city;
@@ -254,7 +266,7 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
 
     const { data } = await adminClient
       .from('influencer_profiles')
-      .select('*, profiles(name, avatar_url), influencer_pricing(platform, content_type, price)')
+      .select('*, profiles(name, username, phone, avatar_url), influencer_pricing(platform, content_type, price)')
       .eq('id', req.user.userId)
       .single();
 

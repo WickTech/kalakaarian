@@ -105,8 +105,10 @@ export const completeGoogleOnboarding = async (req: AuthRequest, res: Response):
     if (!req.user) { res.status(401).json({ message: 'Unauthorized' }); return; }
     const userId = req.user.userId;
     const {
-      role, companyName, industry, city, niches,
+      role, companyName, industry, city, state, niches,
       platform, tier, gender, bio, pricing,
+      phone, username, profileImageUrl,
+      instagramHandle, youtubeHandle,
     } = req.body;
 
     if (role !== 'brand' && role !== 'influencer') {
@@ -133,6 +135,19 @@ export const completeGoogleOnboarding = async (req: AuthRequest, res: Response):
       });
     }
 
+    // Persist shared profile fields (phone, username, avatar) for both roles
+    const profileUpdate: Record<string, unknown> = {};
+    if (typeof phone === 'string' && phone.trim()) profileUpdate.phone = phone.trim();
+    if (typeof username === 'string' && username.trim()) profileUpdate.username = username.trim().toLowerCase();
+    if (typeof profileImageUrl === 'string' && profileImageUrl.trim()) profileUpdate.avatar_url = profileImageUrl.trim();
+    if (Object.keys(profileUpdate).length > 0) {
+      const { error: pe } = await adminClient.from('profiles').update(profileUpdate).eq('id', userId);
+      if (pe && (pe as { code?: string }).code === '23505') {
+        res.status(400).json({ message: 'Username already taken' });
+        return;
+      }
+    }
+
     if (role === 'brand') {
       await adminClient.from('brand_profiles').upsert({
         id: userId,
@@ -142,7 +157,7 @@ export const completeGoogleOnboarding = async (req: AuthRequest, res: Response):
     } else {
       const safeTier = VALID_TIERS.includes(tier) ? tier : 'micro';
       const safeGender = ALLOWED_GENDERS.includes(gender) ? gender : null;
-      await adminClient.from('influencer_profiles').upsert({
+      const influencerRow: Record<string, unknown> = {
         id: userId,
         bio: bio || '',
         city: city || '',
@@ -150,7 +165,11 @@ export const completeGoogleOnboarding = async (req: AuthRequest, res: Response):
         platforms: Array.isArray(platform) ? platform : [],
         tier: safeTier,
         gender: safeGender,
-      });
+      };
+      if (typeof state === 'string' && state.trim()) influencerRow.state = state.trim();
+      if (typeof instagramHandle === 'string') influencerRow.instagram_handle = instagramHandle.replace(/^@/, '').trim() || null;
+      if (typeof youtubeHandle === 'string') influencerRow.youtube_handle = youtubeHandle.replace(/^@/, '').trim() || null;
+      await adminClient.from('influencer_profiles').upsert(influencerRow);
 
       const p = pricing || {};
       const pricingRows = [

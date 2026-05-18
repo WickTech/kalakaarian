@@ -7,6 +7,7 @@ import {
   getPreferences,
   updatePreferences,
   requestDataExport,
+  updateAvatar,
 } from '../controllers/accountController';
 
 const router = Router();
@@ -23,5 +24,6 @@ router.post('/sign-out-all', auth, signOutAll as unknown as RequestHandler);
 router.get('/preferences', auth, getPreferences as unknown as RequestHandler);
 router.put('/preferences', auth, updatePreferences as unknown as RequestHandler);
 router.post('/data-export', auth, exportLimiter, requestDataExport as unknown as RequestHandler);
+router.post('/avatar', auth, updateAvatar as unknown as RequestHandler);
 
 export default router;

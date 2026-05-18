@@ -112,6 +112,8 @@ export interface InfluencerProfile {
   _id?: string;
   id?: string;
   name?: string;
+  username?: string;
+  phone?: string;
   bio?: string;
   niches?: string[];
   city?: string;
@@ -140,6 +142,10 @@ export interface InfluencerProfile {
 
 export interface UpdateInfluencerProfileData {
   name?: string;
+  username?: string;
+  phone?: string;
+  avatarUrl?: string;
+  gender?: string;
   bio?: string;
   city?: string;
   state?: string;
@@ -507,6 +513,13 @@ export const api = {
     });
   },
 
+  updateAvatar: async (imageBase64: string, mimeType: string): Promise<{ avatarUrl: string }> => {
+    return request<{ avatarUrl: string }>("/api/account/avatar", {
+      method: "POST",
+      body: JSON.stringify({ imageBase64, mimeType }),
+    });
+  },
+
   updateBrandProfile: async (data: UpdateBrandProfileData): Promise<BrandProfile> => {
     return request<BrandProfile>("/api/auth/profile", {
       method: "PUT",
@@ -540,11 +553,17 @@ export const api = {
     companyName?: string;
     industry?: string;
     city?: string;
+    state?: string;
     niches?: string[];
     platform?: string[];
     tier?: string;
     gender?: string;
     bio?: string;
+    phone?: string;
+    username?: string;
+    profileImageUrl?: string;
+    instagramHandle?: string;
+    youtubeHandle?: string;
     pricing?: Record<string, number>;
   }): Promise<{ message: string; user: User }> => {
     return request<{ message: string; user: User }>("/api/auth/complete-onboarding", {

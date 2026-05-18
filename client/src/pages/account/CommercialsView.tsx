@@ -42,7 +42,7 @@ export function CommercialsView({ profile, commercialsLocked }: Props) {
         </div>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="flex justify-between rounded-md bg-white/5 px-3 py-2">
-            <span className="text-chalk-dim">Reel (short video)</span>
+            <span className="text-chalk-dim">Reels</span>
             <span className="text-chalk font-semibold">{fmt(p.reel)}</span>
           </div>
           <div className="flex justify-between rounded-md bg-white/5 px-3 py-2">
@@ -60,7 +60,7 @@ export function CommercialsView({ profile, commercialsLocked }: Props) {
         </div>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="flex justify-between rounded-md bg-white/5 px-3 py-2">
-            <span className="text-chalk-dim">Long Video</span>
+            <span className="text-chalk-dim">Video</span>
             <span className="text-chalk font-semibold">{fmt(p.video)}</span>
           </div>
           <div className="flex justify-between rounded-md bg-white/5 px-3 py-2">

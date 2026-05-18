@@ -63,7 +63,7 @@ export function CommercialsPricingSection({ pricing, onChange, locked, unlockDat
           <h3 className="text-sm font-semibold text-chalk">YouTube</h3>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <PriceInput label="Long Video" fieldKey="video" value={pricing.video ?? 0} onChange={onChange} disabled={locked} />
+          <PriceInput label="Video" fieldKey="video" value={pricing.video ?? 0} onChange={onChange} disabled={locked} />
           <PriceInput label="Shorts" fieldKey="shorts" value={pricing.shorts ?? 0} onChange={onChange} disabled={locked} />
         </div>
       </div>

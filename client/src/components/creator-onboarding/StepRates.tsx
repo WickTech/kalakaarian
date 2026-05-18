@@ -20,7 +20,7 @@ export default function StepRates({ form, onInput }: Props) {
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-chalk-dim mb-1.5">Reel (₹)</label>
+              <label className="block text-xs text-chalk-dim mb-1.5">Reels (₹)</label>
               <input type="number" value={form.reelRate} onChange={onInput('reelRate')}
                 className="dark-input w-full px-3 py-2.5 text-sm" placeholder="15000" />
             </div>
@@ -40,7 +40,7 @@ export default function StepRates({ form, onInput }: Props) {
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-chalk-dim mb-1.5">Long Video (₹)</label>
+              <label className="block text-xs text-chalk-dim mb-1.5">Video (₹)</label>
               <input type="number" value={form.longVideoRate} onChange={onInput('longVideoRate')}
                 className="dark-input w-full px-3 py-2.5 text-sm" placeholder="25000" />
             </div>

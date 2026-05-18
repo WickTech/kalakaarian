@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Session 12: Complete Account Deletion + Cascade Fixes (2026-05-18)
+
+### Fixed
+- **Account deletion leaves orphaned data** — audited all 25 FK constraints across the schema; fixed 3 tables with `NO ACTION` rules that either blocked deletion or left orphaned rows; added explicit conversation cleanup for the array-based `participant_ids` column that can't use DB cascades
+- **`ratings` FK blocked deletion** — `ratings.rater_id` + `ratings.ratee_id` were `NO ACTION`; deleting any creator who had given or received ratings threw a FK violation and aborted the entire deletion; changed to `CASCADE` so ratings are removed with the user
+- **`admin_audit_logs` + `feature_flags` orphaned rows** — `admin_id` and `updated_by` were `NO ACTION`; changed to `SET NULL` to preserve records while nullifying the deleted actor reference
+- **Conversations never deleted** — `conversations.participant_ids` is a UUID array (no FK constraint possible); controller now explicitly fetches all conversations the user participated in, deletes their messages, then deletes the conversations before profile deletion
+- **Phone-only OTP account purged** — deleted orphaned `auth.users` row for `9876543210` (OTP auth with no completed profile row)
+
+### Schema
+- **Migration `029_fix_delete_cascade.sql`** — repairs FK delete rules on `ratings`, `admin_audit_logs`, `feature_flags`
+
+### Full deletion chain (post-fix)
+`influencer_profiles` (→ analytics, pricing) → `ratings` → `memberships` → `proposals` → `campaigns` → `transactions` → `notifications` → `messages` → `conversations` → `profiles` → `auth.users`
+
+### Commits
+- `5c1a47c` — fix: complete account deletion — cascade rules + conversation cleanup
+
+---
+
 ## [Unreleased] — Session 11: Delete Account Route Fix + Password Feedback (2026-05-18)
 
 ### Fixed

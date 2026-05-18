@@ -220,6 +220,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Creator state field (migration 026) — `state TEXT` column on `influencer_profiles`
 - Invoice numbering + live post URLs (migration 027) — `transactions.invoice_number` (`INV-YYYY-NNNNN` sequence trigger, backfilled); `campaign_videos.live_post_url` + `live_post_platform`; brand-date index on transactions
 - Account preferences (migration 028) — privacy flags (`is_discoverable`, `marketplace_visible`, `presence_visible`, `profile_visibility`) on `influencer_profiles` + `brand_profiles`; `notification_prefs jsonb` on `profiles`; `data_export_requests` table; all default `true` so existing rows unaffected
+- Cascade cleanup (migration 029) — `ratings.rater_id/ratee_id` changed from `NO ACTION` to `CASCADE`; `admin_audit_logs.admin_id` and `feature_flags.updated_by` changed to `SET NULL`; ensures complete account deletion with no orphaned rows
 - 5% platform margin applied server-side on all brand-facing reads (`applyPlatformMargin()`)
 - Rate limits: auth 20/15 min, OTP 5/hr by phone, campaign create 10/hr, contact POST 5/hr by IP
 - CORS allowlist (hardcoded production + `CORS_ORIGINS` env var + Vercel preview pattern)
@@ -394,6 +395,7 @@ supabase/migrations/025_super_admin.sql              # is_super_admin/is_suspend
 supabase/migrations/026_creator_state.sql            # state TEXT column on influencer_profiles
 supabase/migrations/027_invoices_and_post_urls.sql   # invoice_number on transactions (sequence trigger) + live_post_url on campaign_videos
 supabase/migrations/028_account_preferences.sql      # privacy flags, notification_prefs jsonb, data_export_requests table
+supabase/migrations/029_fix_delete_cascade.sql       # ratings CASCADE, admin_audit_logs/feature_flags SET NULL on user delete
 ```
 
 > Migration 022 (drop legacy IG columns) is intentionally skipped — run it manually after `021` has been on prod for ~1 week and code no longer references the old `influencer_profiles.instagram_*` columns.

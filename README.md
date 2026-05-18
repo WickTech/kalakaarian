@@ -135,7 +135,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - **Google Account–style settings** — unified hub replacing scattered `/profile/edit`, `InfluencerDashboard?tab=settings`, and brand settings pages
 - **Sidebar navigation** — Home, Personal Info, Security, Connected Apps (creator only), Data & Privacy, Payments & Subscriptions; sticky on `md+`, collapsible drawer on mobile
 - **Personal Info** — creator: name, bio, city/state, IG/YT handles, 25 niches, commercials pricing (6-month lock enforced); brand: name, email, phone, industry
-- **Security** — password change, sign-out-all sessions (Supabase global signout), danger zone with account deletion
+- **Security** — password change, sign-out-all sessions (Supabase global signout), danger zone with account deletion (requires current password + typing `delete`; password verified server-side via `signInWithPassword` before deletion; Google-only accounts skip password check)
 - **Connected Apps** (creator only) — `PlatformConnectCard` for Instagram + YouTube; Razorpay read-only linked row
 - **Data & Privacy** — marketplace visibility, discoverability, presence visibility, profile visibility toggles; notification preference toggles (campaigns, proposals, messages, payments, marketing); data export request
 - **Payments** — creator: `WalletTab` + `MembershipTab`; brand: `BrandTransactionsPanel`
@@ -238,7 +238,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 | **WhatsApp OTP** | Conditional | Route and handler exist. Requires `WHATSAPP_PHONE_NUMBER_ID` + `WHATSAPP_ACCESS_TOKEN` env vars. Falls back to mock response without them. |
 | **Instagram / YouTube analytics** | Conditional | API wired up with mock fallback. Requires `INSTAGRAM_ACCESS_TOKEN` + `YOUTUBE_API_KEY`. Without keys, mock data is returned. |
 | **Real-time messaging** | Poll-based | Messages page polls the API. Supabase Realtime / WebSocket not yet wired. |
-| **Creator online status in marketplace** | 60s poll | Marketplace auto-refetches every 60s (`refetchInterval: 60_000`). For true real-time, wire Supabase Realtime on `influencer_profiles.is_online`. |
+| **Creator online status in marketplace** | 60s poll | Marketplace auto-refetches every 60s (`refetchInterval: 60_000`). Deletions reflect on next page refresh (`no-store` cache). For true real-time presence, wire Supabase Realtime on `influencer_profiles.is_online`. |
 | **Influencer withdrawal payouts** | Admin-notified only | `POST /api/wallet/withdraw` inserts a `withdrawal_requests` row and emails admin. Actual Razorpay Payouts API not wired — requires manual admin action. |
 | **Similar influencers endpoint** | Server wired, needs verification | `GET /api/influencers/:id/similar` exists; confirm Supabase query returns correct tier-matched results in production. |
 | **Platform `platforms` column sync** | Partial | Client `connectedPlatforms` is built from `social_handles` (reliable). Server platform filter uses `platforms` array column — can diverge if a creator set handles without setting the column. Client-side fallback filter compensates. |

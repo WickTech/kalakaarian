@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Session 10: Delete Account + Marketplace Fixes (2026-05-18)
+
+### Fixed
+- **Marketplace empty after migration 028** — migration 028 added `marketplace_visible` + `is_discoverable` columns to `influencer_profiles` but was never applied to prod; server query filtered on non-existent columns → PostgREST error → 500 → brand saw empty marketplace; applied migration 028 to production DB
+- **Deleted creator persists in marketplace** — `GET /api/influencers` had `Cache-Control: public, max-age=60, stale-while-revalidate=300`; Vercel edge served stale list for up to 6 minutes after deletion; changed to `no-store` so every brand page refresh hits the DB directly
+- **Delete account cascade reliability** — server now explicitly deletes `influencer_profiles` / `brand_profiles` / `profiles` rows before calling `adminClient.auth.admin.deleteUser()` (belt-and-suspenders on top of ON DELETE CASCADE)
+
+### Changed
+- **Delete account — password verification** — server now fetches user's identities via `adminClient.auth.admin.getUserById()`; if user has email/password provider, verifies current password via `signInWithPassword` before deletion; Google-only accounts skip the password check
+- **Delete account — confirmation word** — changed from `DELETE` (uppercase) to `delete` (lowercase) on both client and server
+- **DeleteAccountModal** — new password field with show/hide toggle; confirmation input placeholder updated to `delete`; button disabled until `confirmation === "delete"`
+
+### Data
+- **Removed 40 mock creator accounts** — deleted all seeded test accounts (`@kalakaarian.in` — 9 Instagram mock creators, `@kalakaarian.test` — 31 YouTube mock creators) from production `auth.users` (cascaded to profiles + influencer_profiles); 3 real creator accounts preserved
+
+### Commits
+- `2f7d24e` — fix: delete account — password verify, marketplace cache, confirm word
+
+---
+
 ## [Unreleased] — Session 9: Account Hub + Profile Fixes (2026-05-18)
 
 ### Added

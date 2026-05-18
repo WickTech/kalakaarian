@@ -100,7 +100,9 @@ export default function InfluencerRegisterPage() {
         },
         termsAccepted: true,
       });
-      navigate("/influencer/dashboard");
+      const stored = localStorage.getItem("kalakariaan_user");
+      const u = stored ? JSON.parse(stored) : null;
+      navigate(u?.id ? `/influencer/${u.id}` : "/influencer/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed.");
     } finally {
@@ -113,7 +115,9 @@ export default function InfluencerRegisterPage() {
     setLoading(true);
     try {
       await loginWithGoogle(cr.credential, "influencer");
-      navigate("/influencer/dashboard");
+      const stored = localStorage.getItem("kalakariaan_user");
+      const u = stored ? JSON.parse(stored) : null;
+      navigate(u?.id ? `/influencer/${u.id}` : "/influencer/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google sign-in failed.");
     } finally {

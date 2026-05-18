@@ -27,7 +27,7 @@ function daysAge(iso?: string | null) {
 }
 
 export default function PersonalInfo() {
-  const { user, isSuperAdmin, viewAs } = useAuth();
+  const { user, isSuperAdmin, viewAs, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
   const role = isSuperAdmin ? (viewAs ?? user?.role) : user?.role;
@@ -54,6 +54,8 @@ export default function PersonalInfo() {
 
   useEffect(() => {
     document.title = 'Personal Info — Kalakaarian';
+    if (authLoading) return;
+    setLoading(true);
     if (isCreator) {
       api.getInfluencerProfile().then((p: InfluencerProfile) => {
         setName(p.name ?? ''); setBio(p.bio ?? '');
@@ -75,7 +77,7 @@ export default function PersonalInfo() {
       }).catch(() => toast({ title: 'Failed to load profile', variant: 'destructive' }))
         .finally(() => setLoading(false));
     }
-  }, [isCreator, toast]);
+  }, [authLoading, isCreator, toast]);
 
   const daysCount = useMemo(() => daysAge(createdAt), [createdAt]);
   const commercialsLocked = (daysCount ?? 0) < 180;

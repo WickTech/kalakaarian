@@ -27,8 +27,9 @@ export default function LoginPage() {
   const showGoogle =
     GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "your-google-client-id.apps.googleusercontent.com";
 
-  const redirectAfterLogin = (userRole: string) => {
-    if (userRole === "brand") navigate("/brand/welcome");
+  const redirectAfterLogin = (u: { role?: string; id?: string } | null) => {
+    if (u?.role === "brand") navigate("/brand/welcome");
+    else if (u?.role === "influencer" && u?.id) navigate(`/influencer/${u.id}`);
     else navigate("/influencer/dashboard");
   };
 
@@ -39,10 +40,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      // role comes from stored user after login
       const stored = localStorage.getItem("kalakariaan_user");
       const u = stored ? JSON.parse(stored) : null;
-      redirectAfterLogin(u?.role ?? "influencer");
+      redirectAfterLogin(u);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed. Please try again.");
     } finally {
@@ -61,7 +61,7 @@ export default function LoginPage() {
       if (result.isNewUser && u?.role === "brand") {
         setShowCompletion(true);
       } else {
-        redirectAfterLogin(u?.role ?? "influencer");
+        redirectAfterLogin(u);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google login failed.");

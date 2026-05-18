@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Session 11: Delete Account Route Fix + Password Feedback (2026-05-18)
+
+### Fixed
+- **CRITICAL: Delete account silently blocked** — route-level validator checked `confirmation === 'DELETE'` (uppercase) but controller + client were updated to lowercase `'delete'`; `validate` middleware rejected every request before reaching the handler, so no account could be deleted; fixed route validator to `confirmation.equals('delete')` and added optional `password` field
+- **No feedback on wrong password** — incorrect password only showed a generic toast; now shows inline error under the password field with red border so user knows exactly what failed
+- **Techno Alcoholic mock account removed** — deleted `technoholic07@gmail.com` from `auth.users` (cascaded to profiles + influencer_profiles)
+
+### Changed
+- `server/src/routes/auth.ts` `DELETE /account` — validator updated: `confirmation.equals('delete')` + `body('password').optional()`
+- `DeleteAccountModal` — password field clears its inline error on keystroke; wrong-password response surfaces as field-level error, not toast
+
+### Commits
+- `74867be` — fix: delete account blocked by route validator + inline password error
+
+---
+
 ## [Unreleased] — Session 10: Delete Account + Marketplace Fixes (2026-05-18)
 
 ### Fixed

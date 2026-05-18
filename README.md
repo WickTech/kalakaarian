@@ -135,7 +135,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - **Google Account–style settings** — unified hub replacing scattered `/profile/edit`, `InfluencerDashboard?tab=settings`, and brand settings pages
 - **Sidebar navigation** — Home, Personal Info, Security, Connected Apps (creator only), Data & Privacy, Payments & Subscriptions; sticky on `md+`, collapsible drawer on mobile
 - **Personal Info** — creator: name, bio, city/state, IG/YT handles, 25 niches, commercials pricing (6-month lock enforced); brand: name, email, phone, industry
-- **Security** — password change, sign-out-all sessions (Supabase global signout), danger zone with account deletion (requires current password + typing `delete`; password verified server-side via `signInWithPassword` before deletion; Google-only accounts skip password check)
+- **Security** — password change, sign-out-all sessions (Supabase global signout), danger zone with account deletion (requires current password + typing `delete`; password verified server-side via `signInWithPassword` before deletion; wrong password shown inline under the field with red highlight; Google-only accounts skip password check)
 - **Connected Apps** (creator only) — `PlatformConnectCard` for Instagram + YouTube; Razorpay read-only linked row
 - **Data & Privacy** — marketplace visibility, discoverability, presence visibility, profile visibility toggles; notification preference toggles (campaigns, proposals, messages, payments, marketing); data export request
 - **Payments** — creator: `WalletTab` + `MembershipTab`; brand: `BrandTransactionsPanel`

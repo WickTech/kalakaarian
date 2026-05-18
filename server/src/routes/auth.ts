@@ -94,7 +94,10 @@ router.put(
 router.delete(
   '/account',
   auth,
-  [body('confirmation').equals('DELETE').withMessage('Type DELETE to confirm')],
+  [
+    body('confirmation').equals('delete').withMessage('Type delete to confirm'),
+    body('password').optional({ nullable: true }).isString(),
+  ],
   validate,
   deleteAccount as unknown as import('express').RequestHandler
 );

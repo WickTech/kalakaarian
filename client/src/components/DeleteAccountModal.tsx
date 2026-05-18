@@ -17,6 +17,7 @@ export function DeleteAccountModal({ open, onClose }: Props) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [confirmation, setConfirmation] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(false);
 
   if (!open) return null;
@@ -27,23 +28,25 @@ export function DeleteAccountModal({ open, onClose }: Props) {
     if (!canSubmit) {
       toast({ title: 'Type "delete" to confirm', variant: "destructive" }); return;
     }
+    setPasswordError("");
     setLoading(true);
     try {
       await api.deleteAccount(password || undefined);
       logout();
       navigate("/");
     } catch (err) {
-      toast({
-        title: "Deletion failed",
-        description: (err as Error)?.message ?? "Server error. Please try again.",
-        variant: "destructive",
-      });
+      const msg = (err as Error)?.message ?? "Server error. Please try again.";
+      if (msg.toLowerCase().includes("password") || msg.toLowerCase().includes("incorrect")) {
+        setPasswordError(msg);
+      } else {
+        toast({ title: "Deletion failed", description: msg, variant: "destructive" });
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClose = () => { setPassword(""); setConfirmation(""); onClose(); };
+  const handleClose = () => { setPassword(""); setConfirmation(""); setPasswordError(""); onClose(); };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
@@ -71,9 +74,9 @@ export function DeleteAccountModal({ open, onClose }: Props) {
             <input
               type={showPassword ? "text" : "password"}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setPasswordError(""); }}
               placeholder="Your current password"
-              className="dark-input w-full px-4 py-2.5 text-sm pr-10"
+              className={`dark-input w-full px-4 py-2.5 text-sm pr-10 ${passwordError ? "border-red-500/60" : ""}`}
               autoComplete="current-password"
             />
             <button
@@ -84,6 +87,9 @@ export function DeleteAccountModal({ open, onClose }: Props) {
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
+          {passwordError && (
+            <p className="mt-1.5 text-xs text-red-400">{passwordError}</p>
+          )}
         </div>
 
         <div>

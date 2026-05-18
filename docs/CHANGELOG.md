@@ -5,6 +5,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Session 13: Google OAuth Gate + Full Creator Onboarding + Pricing Fixes (2026-05-18)
+
+### Added
+- **Google OAuth onboarding gate** — `profiles.onboarding_completed` flag blocks new Google users from the app until they complete role-specific registration. New page `/register/complete` (`GoogleOnboarding.tsx`) hosts the completion flow. Existing email-registered users unaffected (default TRUE)
+- **`POST /api/auth/complete-onboarding`** (auth-required) — server-validated role + field persistence. Creates `brand_profiles` / `influencer_profiles` row and flips `onboarding_completed=true`. Catches Postgres `23505` for username collisions
+- **Full 6-step creator Google onboarding** — Google creators now go through the same 5-step UI as email registration PLUS a new Profile step (username + avatar). Split into shared step components under `client/src/components/creator-onboarding/` so each file stays small
+- **Account Settings pencil-per-field inline edit** — `InlineEditField` generic component (text/textarea/select/multiselect/image) with toast feedback. Every save invalidates `['influencer-profile-own']`, `['influencer-profile', id]`, `['influencers']` for instant sync across profile + marketplace + brand-side views
+- **`POST /api/account/avatar`** — base64 image upload, 2MB cap, PNG/JPEG/WebP whitelist, uploads to Supabase Storage `avatars/profile/<userId>/<ts>.<ext>`, writes `profiles.avatar_url`
+- **Generic gender avatars** — 4 inline SVGs at `client/public/avatars/{male,female,non-binary,prefer-not-to-say}.svg` replace DiceBear external dependency
+- **Username as public display name** — `influencerMappers.toInfluencer` + `InfluencerProfile.tsx` + `SocialPlatformPanel` all use `username || name`. Brands see and search creators by their chosen handle. Amber gradient callout above the username input in onboarding + Account Settings hint explains the impact
+- **`CommercialsView` component** — per-platform pricing display in `/account/personal` (Instagram: Reels + Story, YouTube: Video + Shorts). Lock badge with unlock date when applicable, values remain visible when locked
+- **`/profile/edit` restored** — was a `<Navigate>` stub; now mounts `EditInfluencerProfile` with the full pricing editor so creators can actually set their rates
+
+### Fixed
+- **CRITICAL: Onboarding pricing silently dropped** — `influencer_pricing` had no UNIQUE constraint matching the `onConflict: 'influencer_id,platform,content_type'` upsert spec, so PostgREST rejected every insert without surfacing the error. First test creator (rishi) lost all rates entered during signup. **Migration 031** adds `influencer_pricing_unique_combo UNIQUE (influencer_id, platform, content_type)`. Both controllers now also log upsert errors
+- **CRITICAL: `applyPlatformMargin` stripped `shorts` price** — utility only whitelisted story/reel/video/post in its output object. Every brand-facing read silently dropped the shorts key, so YouTube Shorts price never reached the client. Added `shorts: markup(pricing.shorts)` to the returned object
+- **6-month commercials lock blocked initial setup** — `updateInfluencerProfile` rejected any pricing update inside the 180-day window, including first-time entry for creators whose onboarding rates were lost to the upsert bug above. Now bypasses lock when no pricing rows exist; lock activates only after rates have been set once
+- **Locked pricing hidden from creator** — `CommercialsPricingSection` used a `backdrop-blur` overlay that covered the values during the 6-month window. Replaced with an amber lock-banner above the section; rates stay visible read-only
+- **Pricing labels inconsistent** — onboarding, Account Settings view, and profile editor used a mix of "Reel"/"Reel (short video)"/"Long Video". Standardised on: Instagram = `Reels` + `Story`, YouTube = `Video` + `Shorts`
+- **Stale auth users cleaned up** — purged 4 orphan `auth.users` rows (Google signups that never finished profile creation) before the gate landed
+
+### Schema
+- **Migration `030_onboarding_completed.sql`** — `ALTER TABLE profiles ADD COLUMN onboarding_completed BOOLEAN NOT NULL DEFAULT TRUE`. Default TRUE preserves existing users; new Google users inserted with FALSE
+- **Migration `031_influencer_pricing_unique.sql`** — `ALTER TABLE influencer_pricing ADD CONSTRAINT influencer_pricing_unique_combo UNIQUE (influencer_id, platform, content_type)`
+
+### Server contract changes
+- `googleAuthController.completeGoogleOnboarding` accepts `phone`, `username`, `profileImageUrl`, `instagramHandle`, `youtubeHandle`, `state` in addition to original onboarding fields
+- `influencerController.updateInfluencerProfile` accepts `username`, `phone`, `avatarUrl` (writes to `profiles` table). Catches `23505` for username collisions
+- `formatInfluencer` + all `influencer_profiles` select joins now include `profiles(username, phone)` for downstream display
+- `accountController.updateAvatar` + `POST /api/account/avatar` route
+- `applyPlatformMargin` now passes through `shorts`
+
+### Client architecture
+- `client/src/components/creator-onboarding/` — 11 shared step files (StepperNav, StepBasicInfo, StepUsernameAvatar, StepGenre, StepPlatforms, StepRates, StepLocation, useCreatorForm hook, types, handles helpers, genericAvatars)
+- `client/src/components/account/InlineEditField.tsx` — generic pencil-edit primitive
+- `client/src/pages/account/CommercialsView.tsx` + `BrandPersonalInfo.tsx` + `personalInfoFields.ts` — keep `PersonalInfo.tsx` under the 200-line repo budget
+- `InfluencerRegisterPage` 393 → 180 lines; `PersonalInfo` 214 → 127 lines
+
+### Commits
+- `1ef6164` — fix: gate app access behind completed Google OAuth onboarding
+- `f63212a` — feat: full creator onboarding + Account Settings inline edit
+- `b590a0d` — feat: display username as profile name + bright username notice
+- `fc86776` — fix: pricing now persists during onboarding + visible when locked
+- `6d99941` — feat: split pricing display by platform + restore /profile/edit
+- `c55a01b` — fix: pricing labels — Reels/Story (IG), Video/Shorts (YT)
+- `ed5ab5f` — fix: applyPlatformMargin now passes through shorts price
+
+---
+
 ## [Unreleased] — Session 12: Complete Account Deletion + Cascade Fixes (2026-05-18)
 
 ### Fixed

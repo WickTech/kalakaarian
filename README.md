@@ -49,13 +49,17 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 
 ### Authentication & Onboarding
 - Email + password login with role detection (brand / creator)
-- Google OAuth login
+- Google OAuth login — **new users blocked from the app until role-specific registration is complete** (`profiles.onboarding_completed` flag enforced by `ProtectedRoute` + `BrandRoute` + `InfluencerRoute`)
+- `POST /api/auth/complete-onboarding` — server-validated role + field persistence, catches Postgres `23505` for username collisions
 - WhatsApp OTP (send + verify; requires WhatsApp Business API keys)
 - Role toggle on login page (Creator / Brand tabs)
 - Password visibility toggle (eye icon)
 - Back-to-home button on login
 - Brand registration — company name, industry, Indian state, confirm password, T&C modal
-- Influencer registration — 5-step wizard: basic info → genre → platforms → rates → location; T&C modal with age + terms checkboxes before final submit
+- **Influencer registration — 6-step wizard:** basic info → profile (username + avatar upload) → genre → platforms → rates → location; T&C modal with age + terms checkboxes before final submit
+- **Shared step components** (`client/src/components/creator-onboarding/`) drive both `/influencer-register` (email path) and `/register/complete` (Google path) — Google mode skips email/password steps and pre-fills name from the Google profile
+- **Generic gender avatars** (4 inline SVGs at `client/public/avatars/`) replace external DiceBear dependency
+- **Username as public identity** — `username || name` drives the display name on marketplace cards, public profile, and brand-side viewer. Amber gradient callout in registration explains brands search by this handle
 - Social handle verify buttons (Instagram / YouTube — opens public profile in new tab for manual verification)
 
 ### Landing Page
@@ -134,7 +138,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 ### Account Hub (`/account/*`)
 - **Google Account–style settings** — unified hub replacing scattered `/profile/edit`, `InfluencerDashboard?tab=settings`, and brand settings pages
 - **Sidebar navigation** — Home, Personal Info, Security, Connected Apps (creator only), Data & Privacy, Payments & Subscriptions; sticky on `md+`, collapsible drawer on mobile
-- **Personal Info** — creator: name, bio, city/state, IG/YT handles, 25 niches, commercials pricing (6-month lock enforced); brand: name, email, phone, industry
+- **Personal Info** — **pencil-per-field inline edit** (`InlineEditField` generic component: text / textarea / select / multiselect / image). Creator fields: profile image upload, name, username, phone, gender, bio, city, state, IG/YT handles, 25 niches. Each save invalidates `['influencer-profile-own']`, `['influencer-profile', id]`, `['influencers']` for instant cross-page sync. Brand path uses a separate `BrandPersonalInfo` form (name, email, phone, industry). Bottom **Commercials view** shows per-platform pricing (Instagram: Reels + Story; YouTube: Video + Shorts) — values stay visible during 6-month lock; lock badge shows the unlock date
 - **Security** — password change, sign-out-all sessions (Supabase global signout), danger zone with account deletion (requires current password + typing `delete`; password verified server-side via `signInWithPassword` before deletion; wrong password shown inline under the field with red highlight; Google-only accounts skip password check)
 - **Connected Apps** (creator only) — `PlatformConnectCard` for Instagram + YouTube; Razorpay read-only linked row
 - **Data & Privacy** — marketplace visibility, discoverability, presence visibility, profile visibility toggles; notification preference toggles (campaigns, proposals, messages, payments, marketing); data export request
@@ -153,8 +157,10 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
   - **Wallet modal** (own profile only) — current balance, total earnings, link to transactions
   - **OwnerActionsBar** (own profile only) — online presence toggle (Active / "Offline Xm ago" ticking); Edit profile link; Settings link; Wallet button; Analytics scroll button
 - Edit Kalakaar profile (`/profile/edit`) — dark obsidian theme; days-as-Kalakaar counter badge (🔥); email display (read-only); city + state grid; @-handle UI with @ prefix label; 25 niche options; **Commercials** section (IG reel/story + YT video/shorts with ₹ prefix); **profile changes reflect immediately on the public profile page** (query cache invalidated on save)
-- **Commercials pricing lock** — pricing inputs are locked (with overlay + unlock date) for the first 6 months from registration; both client and server enforce the 6-month rule (`403` with `unlockAt` from server)
-- **Commercials pricing** — `pricing` object with keys `reel | story | video | post | shorts`; 5% platform margin applied on brand-facing reads
+- **Commercials pricing lock** — pricing inputs are locked for the first 6 months from registration; **first-time setup bypasses the lock** so creators can always enter their initial rates (the lock activates only once rows exist). Values remain **visible** during the lock window (amber banner above the section instead of a blur overlay)
+- **Commercials pricing** — `pricing` object with keys `reel | story | video | post | shorts`; 5% platform margin applied on brand-facing reads via `applyPlatformMargin` (passes through all 5 keys including `shorts`)
+- **`POST /api/account/avatar`** — base64 image upload, 2MB cap, PNG/JPEG/WebP whitelist → Supabase Storage `avatars/profile/<userId>/<ts>.<ext>` → writes `profiles.avatar_url`
+- **DB migration 031** — `influencer_pricing_unique_combo UNIQUE (influencer_id, platform, content_type)` so pricing upserts (`ON CONFLICT`) actually persist
 - **DB migration 026** — `state TEXT` column on `influencer_profiles`
 - **Brand account settings** (`/profile/edit`) — premium obsidian-themed settings page with profile image upload, name, work email, phone, brand category; separate secure password change section
 - My profile page — conditional render (brand view / Kalakaar view)

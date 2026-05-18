@@ -265,7 +265,7 @@ function AppContent() {
         />
         <Route
           path="/profile/edit"
-          element={<Navigate to="/account/personal" replace />}
+          element={<ProtectedRoute><EditProfileWrapper /></ProtectedRoute>}
         />
 
         {/* Account Hub */}

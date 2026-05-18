@@ -115,7 +115,7 @@ export const getInfluencers = async (req: Request, res: Response): Promise<void>
     const { data, count, error } = await query;
     if (error) throw error;
 
-    res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.set('Cache-Control', 'no-store');
     res.json({
       influencers: (data ?? []).map(formatInfluencer),
       pagination: { page: Number(page), limit: clampedLimit, total: count ?? 0, pages: Math.ceil((count ?? 0) / clampedLimit) },

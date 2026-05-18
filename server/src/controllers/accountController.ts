@@ -7,10 +7,42 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
   try {
     if (!req.user) { res.status(401).json({ message: 'Unauthorized' }); return; }
 
-    const { confirmation } = req.body;
-    if (confirmation !== 'DELETE') {
-      res.status(400).json({ message: 'Type DELETE to confirm account deletion' }); return;
+    const { confirmation, password } = req.body;
+    if (confirmation !== 'delete') {
+      res.status(400).json({ message: 'Type delete to confirm account deletion' }); return;
     }
+
+    // Check if user has email/password provider — if so, require password verification
+    const { data: authUserData } = await adminClient.auth.admin.getUserById(req.user.userId);
+    const hasEmailProvider = authUserData?.user?.identities?.some(
+      (i: { provider: string }) => i.provider === 'email'
+    );
+
+    if (hasEmailProvider) {
+      if (!password || typeof password !== 'string') {
+        res.status(400).json({ message: 'Password is required to delete your account' }); return;
+      }
+      const { data: profileRow } = await adminClient
+        .from('profiles').select('email').eq('id', req.user.userId).single();
+      if (!profileRow?.email) {
+        res.status(400).json({ message: 'Cannot verify identity — no email on account' }); return;
+      }
+      const { error: verifyError } = await adminClient.auth.signInWithPassword({
+        email: profileRow.email,
+        password,
+      });
+      if (verifyError) { res.status(401).json({ message: 'Incorrect password' }); return; }
+    }
+
+    // Explicitly delete influencer/brand profile rows before auth deletion
+    // (belt-and-suspenders on top of ON DELETE CASCADE)
+    const role = req.user.role;
+    if (role === 'influencer') {
+      await adminClient.from('influencer_profiles').delete().eq('id', req.user.userId);
+    } else if (role === 'brand') {
+      await adminClient.from('brand_profiles').delete().eq('id', req.user.userId);
+    }
+    await adminClient.from('profiles').delete().eq('id', req.user.userId);
 
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(req.user.userId);
     if (deleteError) throw deleteError;

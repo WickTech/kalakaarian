@@ -51,6 +51,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       username: username || null,
       terms_accepted: true,
       terms_accepted_at: new Date().toISOString(),
+      onboarding_completed: true,
     });
 
     if (role === 'brand') {
@@ -172,83 +173,3 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const googleLogin = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { token: idToken, role, companyName, industry, city, genre, platform, tier } = req.body;
-    if (!idToken) { res.status(400).json({ message: 'Google ID token is required' }); return; }
-
-    const { data, error } = await adminClient.auth.signInWithIdToken({
-      provider: 'google',
-      token: idToken,
-    });
-    if (error || !data.session || !data.user) {
-      res.status(400).json({ message: error?.message ?? 'Google login failed' }); return;
-    }
-
-    const userId = data.user.id;
-
-    // Create profile rows if first login
-    const { data: existing } = await adminClient.from('profiles').select('id').eq('id', userId).single();
-    const isNewUser = !existing;
-    if (isNewUser) {
-      const userRole = role || 'brand';
-      const googleEmail = data.user.email ?? '';
-      const googleName = data.user.user_metadata?.full_name ?? data.user.user_metadata?.name ?? '';
-
-      await adminClient.from('profiles').insert({
-        id: userId,
-        role: userRole,
-        name: googleName,
-        email: googleEmail,
-        avatar_url: data.user.user_metadata?.avatar_url ?? null,
-      });
-      await adminClient.auth.admin.updateUserById(userId, {
-        user_metadata: { role: userRole, name: googleName, is_admin: false },
-      });
-
-      if (userRole === 'brand') {
-        await adminClient.from('brand_profiles').insert({
-          id: userId,
-          company_name: companyName || googleName,
-          industry: industry || '',
-        });
-      } else {
-        await adminClient.from('influencer_profiles').insert({
-          id: userId,
-          bio: '',
-          city: city || '',
-          niches: genre || [],
-          platforms: platform || [],
-          tier: tier || 'micro',
-        });
-      }
-    }
-
-    const { data: profile } = await adminClient
-      .from('profiles')
-      .select('id, email, name, role, is_super_admin')
-      .eq('id', userId)
-      .single();
-
-    const isSuperAdmin = profile?.is_super_admin ?? false;
-    if (isSuperAdmin !== (data.user.user_metadata?.is_super_admin ?? false)) {
-      await adminClient.auth.admin.updateUserById(userId, {
-        user_metadata: { ...data.user.user_metadata, is_super_admin: isSuperAdmin },
-      });
-    }
-
-    res.json({
-      message: 'Google login successful',
-      user: {
-        ...profile,
-        isAdmin: isSuperAdmin || (data.user.user_metadata?.is_admin ?? false),
-        isSuperAdmin,
-      },
-      token: data.session.access_token,
-      isNewUser,
-    });
-  } catch (error) {
-    console.error('Google login error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};

@@ -71,7 +71,11 @@ export default function BrandRegisterPage() {
     if (!cr.credential) return;
     setLoading(true);
     try {
-      await loginWithGoogle(cr.credential, "brand");
+      const result = await loginWithGoogle(cr.credential, "brand");
+      if (result.needsOnboarding) {
+        navigate("/register/complete");
+        return;
+      }
       navigate("/brand/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google sign-in failed.");

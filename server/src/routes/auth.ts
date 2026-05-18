@@ -1,7 +1,8 @@
 import { Router, RequestHandler } from 'express';
 import { body } from 'express-validator';
 import rateLimit from 'express-rate-limit';
-import { register, login, googleLogin } from '../controllers/authController';
+import { register, login } from '../controllers/authController';
+import { googleLogin, completeGoogleOnboarding } from '../controllers/googleAuthController';
 import { sendOTP, verifyOTP } from '../controllers/otpController';
 import { getProfile, updateProfile, changePassword } from '../controllers/profileController';
 import { deleteAccount } from '../controllers/accountController';
@@ -74,6 +75,14 @@ router.post(
   ],
   validate,
   googleLogin
+);
+
+router.post(
+  '/complete-onboarding',
+  auth,
+  [body('role').isIn(['brand', 'influencer']).withMessage('Role must be brand or influencer')],
+  validate,
+  completeGoogleOnboarding as unknown as import('express').RequestHandler
 );
 
 router.get('/profile', auth, getProfile);

@@ -47,6 +47,7 @@ const AccountSecurity = lazy(() => import("./pages/account/Security"));
 const AccountIntegrations = lazy(() => import("./pages/account/Integrations"));
 const AccountPrivacy = lazy(() => import("./pages/account/Privacy"));
 const AccountPayments = lazy(() => import("./pages/account/Payments"));
+const GoogleOnboarding = lazy(() => import("./pages/GoogleOnboarding"));
 
 function PageLoader() {
   return (
@@ -75,6 +76,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
+  if (user.onboardingCompleted === false) {
+    return <Navigate to="/register/complete" replace />;
+  }
+
   return <>{children}</>;
 }
 
@@ -82,6 +87,7 @@ function BrandRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isSuperAdmin, viewAs } = useAuth();
   if (loading) return <div className="flex min-h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700" /></div>;
   if (!user) return <Navigate to="/login" replace />;
+  if (user.onboardingCompleted === false) return <Navigate to="/register/complete" replace />;
   if (isSuperAdmin && viewAs === "brand") return <>{children}</>;
   if (user.role !== "brand") return <Navigate to="/" replace />;
   return <>{children}</>;
@@ -91,6 +97,7 @@ function InfluencerRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isSuperAdmin, viewAs } = useAuth();
   if (loading) return <div className="flex min-h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700" /></div>;
   if (!user) return <Navigate to="/login" replace />;
+  if (user.onboardingCompleted === false) return <Navigate to="/register/complete" replace />;
   if (isSuperAdmin && viewAs === "creator") return <>{children}</>;
   if (user.role !== "influencer") return <Navigate to="/" replace />;
   return <>{children}</>;
@@ -184,6 +191,7 @@ function AppContent() {
           }
         />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register/complete" element={<GoogleOnboarding />} />
         <Route path="/role-select" element={<Navigate to="/" replace />} />
         <Route path="/start-brand" element={<Navigate to="/brand-register" replace />} />
         <Route path="/start-influencer" element={<Navigate to="/influencer-register" replace />} />

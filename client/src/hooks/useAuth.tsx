@@ -12,7 +12,7 @@ interface AuthContextType {
   viewAs: ViewAs;
   setViewAs: (v: ViewAs) => void;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (googleToken: string, role?: string) => Promise<{ isNewUser?: boolean }>;
+  loginWithGoogle: (googleToken: string, role?: string) => Promise<{ isNewUser?: boolean; needsOnboarding?: boolean }>;
   logout: () => void;
   register: (data: RegisterData) => Promise<void>;
 }
@@ -121,14 +121,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async (googleToken: string, role?: string): Promise<{ isNewUser?: boolean }> => {
+  const loginWithGoogle = async (googleToken: string, role?: string): Promise<{ isNewUser?: boolean; needsOnboarding?: boolean }> => {
     setLoading(true);
     setError(null);
     try {
       const response: LoginResponse = await api.googleLogin(googleToken, role);
       if (!response.user.id) throw new Error("Server response missing user id");
       persistAuth(response);
-      return { isNewUser: response.isNewUser };
+      return { isNewUser: response.isNewUser, needsOnboarding: response.needsOnboarding };
     } catch (err) {
       console.error('Google login API error:', err);
       const message = err instanceof ApiError ? err.message : "Google login failed";

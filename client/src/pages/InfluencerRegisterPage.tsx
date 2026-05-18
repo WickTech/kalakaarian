@@ -114,7 +114,11 @@ export default function InfluencerRegisterPage() {
     if (!cr.credential) return;
     setLoading(true);
     try {
-      await loginWithGoogle(cr.credential, "influencer");
+      const result = await loginWithGoogle(cr.credential, "influencer");
+      if (result.needsOnboarding) {
+        navigate("/register/complete");
+        return;
+      }
       const stored = localStorage.getItem("kalakariaan_user");
       const u = stored ? JSON.parse(stored) : null;
       navigate(u?.id ? `/influencer/${u.id}` : "/influencer/dashboard");

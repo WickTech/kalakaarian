@@ -4,7 +4,6 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import { ArrowLeft, Eye, EyeOff, MessageCircle } from "lucide-react";
-import { BrandCompletionModal } from "@/components/BrandCompletionModal";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -20,8 +19,6 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [role, setRole] = useState<"creator" | "brand">("creator");
   const [tab, setTab] = useState<"email" | "whatsapp">("email");
-  const [showCompletion, setShowCompletion] = useState(false);
-  const [googleEmail, setGoogleEmail] = useState<string | undefined>();
 
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
   const showGoogle =
@@ -55,14 +52,13 @@ export default function LoginPage() {
       setError("");
       setLoading(true);
       const result = await loginWithGoogle(cr.credential, role === "creator" ? "influencer" : "brand");
+      if (result.needsOnboarding) {
+        navigate("/register/complete");
+        return;
+      }
       const stored = localStorage.getItem("kalakariaan_user");
       const u = stored ? JSON.parse(stored) : null;
-      setGoogleEmail(u?.email);
-      if (result.isNewUser && u?.role === "brand") {
-        setShowCompletion(true);
-      } else {
-        redirectAfterLogin(u);
-      }
+      redirectAfterLogin(u);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google login failed.");
     } finally {
@@ -100,15 +96,6 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
-  if (showCompletion) {
-    return (
-      <BrandCompletionModal
-        email={googleEmail}
-        onComplete={() => redirectAfterLogin("brand")}
-      />
-    );
-  }
 
   return (
     <main className="relative flex min-h-screen items-center justify-center bg-obsidian overflow-hidden p-4">

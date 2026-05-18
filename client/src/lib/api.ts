@@ -11,6 +11,7 @@ export interface User {
   brandName?: string;
   isAdmin?: boolean;
   isSuperAdmin?: boolean;
+  onboardingCompleted?: boolean;
 }
 
 export type PlatformKind = 'instagram' | 'youtube';
@@ -360,6 +361,7 @@ export interface LoginResponse {
   user: User;
   token: string;
   isNewUser?: boolean;
+  needsOnboarding?: boolean;
 }
 
 class ApiError extends Error {
@@ -530,6 +532,24 @@ export const api = {
     return request<LoginResponse>("/api/auth/google", {
       method: "POST",
       body: JSON.stringify({ token: googleToken, ...(role ? { role } : {}) }),
+    });
+  },
+
+  completeGoogleOnboarding: async (data: {
+    role: string;
+    companyName?: string;
+    industry?: string;
+    city?: string;
+    niches?: string[];
+    platform?: string[];
+    tier?: string;
+    gender?: string;
+    bio?: string;
+    pricing?: Record<string, number>;
+  }): Promise<{ message: string; user: User }> => {
+    return request<{ message: string; user: User }>("/api/auth/complete-onboarding", {
+      method: "POST",
+      body: JSON.stringify(data),
     });
   },
 

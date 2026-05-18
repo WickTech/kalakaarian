@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Creator UX Polish + Presence Fix (2026-05-18)
+
+### Added
+- **Gallery carousel controls** — radio-dot indicators on Kalakaar Portfolio carousel; owner-only Replace (swap image at selected index via new `replaceRef`) and Remove buttons below selected image; removes per-card trash overlay
+- **Real-time profile sync** — `EditInfluencerProfile` invalidates `["influencer-profile", userId]` and `["influencer-profile-own"]` after save; profile page shows updated data immediately without reload
+- **Commercials pricing lock** — pricing section locked for first 6 months from registration; client shows lock overlay with unlock date; server returns `403` with `unlockAt` if pricing update is attempted within 6-month window
+
+### Changed
+- **Marketplace access** — `/marketplace` moved from `BlockCreatorRoute` (anonymous pass-through) to `BrandRoute`; anonymous users and creators redirect to `/login` and `/` respectively; removed from default (logged-out) nav
+- **Creator header dropdown** — removed "My Campaigns" entry; renamed "Earnings" → "Wallet" (links to `/influencer/dashboard?tab=wallet`); both desktop DropdownMenu and mobile Sheet updated
+- **Influencer Dashboard cleanup** — removed Active toggle, Edit Profile button, Settings button from dashboard (these live on creator's own profile page `OwnerActionsBar`, not duplicated in dashboard)
+- **Membership tab** — Silver/Gold plans with 1-month / 6-month / 12-month duration tabs; Silver: ₹119/99/79, Gold: ₹199/149/99 per duration
+
+### Fixed
+- **CRITICAL: Presence toggle reset on navigation** — `OwnerActionsBar` used local `useState` seeded from props; navigating away unmounted component and discarded state; on return, stale query cache re-initialized to old `isOnline`; fixed by calling `qc.setQueryData` on both `['influencer-profile', userId]` and `['influencer-profile-own']` after successful `api.updatePresence()` so the cache reflects the new state immediately
+- **Presence sync from prop** — added `useEffect` to sync local `isOnline` state when the parent profile query refreshes (e.g. after cache invalidation from another tab)
+- **CRITICAL: Proposal field name mismatch** — `proposals` Supabase table returns snake_case (`id`, `campaign_id`, `bid_amount`) but client `Proposal` interface expects camelCase (`_id`, `campaignId`, `bidAmount`); added `formatProposal()` transformer in `proposalController.ts` applied to `getProposals`, `getMyProposals`, `getProposalById`; fixes `campaignId=undefined` in video upload modal and `bidAmount=undefined` in campaign tracker
+- **OAuth redirect params lost** — when `InfluencerAnalyticsPanel` had IG/YT platform subtabs removed, the `useEffect` handling `?ig_connected`, `?yt_connected`, `?ig_error`, `?yt_error` params was removed with it; restored in `InfluencerDashboard.tsx`
+
+### Infrastructure
+- **Marketplace `refetchInterval: 60_000`** — marketplace auto-refetches creator list (including `isOnline`) every 60s; brands see presence status changes within ~1 minute
+
+### Commits
+- `6640e98` — fix: persist presence toggle state across navigation
+- `59c2b9c` — feat: remove duplicate presence/edit/settings controls from dashboard
+- `1cd5ed0` — feat: creator UX polish — gallery carousel controls, profile sync, marketplace brand-only
+- `f20d6f0` — feat: creator profile polish, upload modal, commercials lock, membership refresh
+- `c4e4c8f` — feat: unify creator profile with marketplace view, remove proposals, move uploads to per-campaign
+- `329fbaf` — fix: Active toggle optimistic update + delete account works for all auth types
+- `3a2918e` — feat: campaign brief guidelines, acknowledgment checkbox, remove landing tier section
+
+---
+
 ## [Unreleased] — Phases 2–11 + P0 Security Fixes (2026-05-07)
 
 ### Added

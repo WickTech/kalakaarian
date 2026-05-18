@@ -40,7 +40,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Logo, nav links (Home / Marketplace / Campaigns / Contact)
 - Auth-aware: notification bell + cart icon + avatar dropdown for logged-in users; Login / Get Started for guests
 - **Role-aware nav** — brands: Home / Marketplace / Campaigns / Contact; Kalakaars: Home / Dashboard / Campaigns / Contact
-- **Role-aware header icon** — Kalakaars see gold Wallet icon (→ earnings); brands see Shopping Cart (→ `/cart`)
+- **Role-aware header icon** — Kalakaars see gold Wallet icon (→ `/influencer/dashboard?tab=wallet`); brands see Shopping Cart (→ `/cart`)
 - Role-aware dashboard link (brand → `/brand/dashboard`, influencer → `/influencer/dashboard`)
 - **Role-aware "Campaigns" nav link** — brands go to `/brand/dashboard?tab=campaigns`; Kalakaars go to `/campaigns`
 - Mobile hamburger Sheet menu
@@ -68,6 +68,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Dark obsidian theme throughout — charcoal tier cards, chalk text, obsidian footer
 
 ### Marketplace
+- **Brand-login-only** — `/marketplace` requires brand authentication (`BrandRoute`); anonymous users and creators are redirected; not linked from the landing page nav
 - 4-column Kalakaar grid (responsive: 2 → 3 → 4 columns)
 - Rising Stars carousel — top Kalakaars by follower count
 - Search bar ("Search Kalakaars…"), debounced 350 ms
@@ -108,14 +109,13 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Brand public profile page (`/brand/:id`) — logo, industry, description, open campaign count (no auth required)
 
 ### Influencer Dashboard
-- Active proposals list with status
-- Analytics cards: engagement rate, avg views, CPV, fake follower %
-- **Monthly earnings bar chart** — last 6 months of accepted proposals (recharts via shadcn ChartContainer)
+- **Dashboard = private management only** — presence toggle, edit, settings live on the creator's own profile page (`OwnerActionsBar`); dashboard scoped to analytics overview, wallet, membership, settings tabs only
+- Analytics overview: earnings total, pending payouts; **Monthly earnings bar chart** — last 6 months of accepted proposals (recharts via shadcn ChartContainer)
 - **Wallet tab** — earnings balance, withdraw drawer (UPI ID input → admin-notified), transaction history table
-- Membership tier badge (Silver / Gold)
-- Browse open campaigns — filter by genre and platform
+- **Membership tab** — Silver / Gold tiers with 1-month / 6-month / 12-month duration pricing; Razorpay payment flow; Silver: ₹119/99/79 per month equivalent; Gold: ₹199/149/99 per month equivalent
+- Browse open campaigns (`/campaigns`) — filter by genre and platform; linked from creator nav
 - Campaign details + proposal submission (bid amount, message, deliverables)
-- Online presence toggle shows "active since HH:MM" timestamp when live
+- **OAuth platform connection toasts** — `?ig_connected=1` / `?yt_connected=1` / `?ig_error` / `?yt_error` redirect params handled in dashboard, fires toasts, invalidates `connected-platforms` cache
 
 ### Super Admin System (`/admin`, founder-only)
 - **Founder badge** — gold "Founder" chip displayed on GlobalHeader dropdown and Admin Dashboard for super admin accounts
@@ -134,13 +134,15 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 ### Profile System — Kalakaar
 - Public Kalakaar profile (`/influencer/:id`) — full-page with:
   - **Profile header** — pencil (→ `/profile/edit`) + settings icons visible on own profile; orange rating box; `city, state`; social handles as `@username`
-  - **Kalakaar Portfolio** — snap-scroll carousel, multi-file upload (max 12), prev/next arrows, dot indicators, image count overlay
+  - **Kalakaar Portfolio** — snap-scroll carousel, multi-file upload (max 12), prev/next arrows, radio-dot indicators, image count overlay; owner-only **Replace** (single image swap at selected index) and **Remove** controls below the selected image
   - **Social Media section** — per-platform IG/YT cards (followers, ER%, price); compact "Select Kalakaar" CTA row
   - **"Select Kalakaar — Choose Platforms"** CTA for brand view (non-celeb only) — scrolls to Social Media section
   - **Analytics section** — engagement rate, avg views, reach estimate, authenticity score
   - **Creator Campaigns** (own profile only) — running vs previous proposals with status badges + invoice placeholder
   - **Wallet modal** (own profile only) — current balance, total earnings, link to transactions
-- Edit Kalakaar profile (`/profile/edit`) — dark obsidian theme; days-as-Kalakaar counter badge (🔥); email display (read-only); city + state grid; @-handle UI with @ prefix label; 25 niche options; **Commercials** section (IG reel/story + YT video/shorts with ₹ prefix)
+  - **OwnerActionsBar** (own profile only) — online presence toggle (Active / "Offline Xm ago" ticking); Edit profile link; Settings link; Wallet button; Analytics scroll button
+- Edit Kalakaar profile (`/profile/edit`) — dark obsidian theme; days-as-Kalakaar counter badge (🔥); email display (read-only); city + state grid; @-handle UI with @ prefix label; 25 niche options; **Commercials** section (IG reel/story + YT video/shorts with ₹ prefix); **profile changes reflect immediately on the public profile page** (query cache invalidated on save)
+- **Commercials pricing lock** — pricing inputs are locked (with overlay + unlock date) for the first 6 months from registration; both client and server enforce the 6-month rule (`403` with `unlockAt` from server)
 - **Commercials pricing** — `pricing` object with keys `reel | story | video | post | shorts`; 5% platform margin applied on brand-facing reads
 - **DB migration 026** — `state TEXT` column on `influencer_profiles`
 - **Brand account settings** (`/profile/edit`) — premium obsidian-themed settings page with profile image upload, name, work email, phone, brand category; separate secure password change section
@@ -224,6 +226,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 | **WhatsApp OTP** | Conditional | Route and handler exist. Requires `WHATSAPP_PHONE_NUMBER_ID` + `WHATSAPP_ACCESS_TOKEN` env vars. Falls back to mock response without them. |
 | **Instagram / YouTube analytics** | Conditional | API wired up with mock fallback. Requires `INSTAGRAM_ACCESS_TOKEN` + `YOUTUBE_API_KEY`. Without keys, mock data is returned. |
 | **Real-time messaging** | Poll-based | Messages page polls the API. Supabase Realtime / WebSocket not yet wired. |
+| **Creator online status in marketplace** | 60s poll | Marketplace auto-refetches every 60s (`refetchInterval: 60_000`). For true real-time, wire Supabase Realtime on `influencer_profiles.is_online`. |
 | **Influencer withdrawal payouts** | Admin-notified only | `POST /api/wallet/withdraw` inserts a `withdrawal_requests` row and emails admin. Actual Razorpay Payouts API not wired — requires manual admin action. |
 | **Similar influencers endpoint** | Server wired, needs verification | `GET /api/influencers/:id/similar` exists; confirm Supabase query returns correct tier-matched results in production. |
 | **Platform `platforms` column sync** | Partial | Client `connectedPlatforms` is built from `social_handles` (reliable). Server platform filter uses `platforms` array column — can diverge if a creator set handles without setting the column. Client-side fallback filter compensates. |

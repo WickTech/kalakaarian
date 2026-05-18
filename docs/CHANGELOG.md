@@ -5,27 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — Account Hub (2026-05-18)
+## [Unreleased] — Session 9: Account Hub + Profile Fixes (2026-05-18)
 
 ### Added
-- New `/account/*` hub with Google Account–style sidebar navigation (Home, Personal Info, Security, Connected Apps, Data & Privacy, Payments & Subscriptions)
-- Role-aware sections: Creator sees Connected Apps (IG/YT OAuth) + creator wallet/membership; Brand sees brand transactions
-- Super Admin `viewAs` respected throughout account hub
-- Migration `028_account_preferences.sql`: privacy flags (`is_discoverable`, `marketplace_visible`, `presence_visible`, `profile_visibility`) on `influencer_profiles` + `brand_profiles`; `notification_prefs jsonb` on `profiles`; `data_export_requests` table
-- New `/api/account/*` endpoints: `POST /sign-out-all`, `GET /preferences`, `PUT /preferences`, `POST /data-export`
-- Influencer marketplace list query honours `marketplace_visible` + `is_discoverable` flags
-- Mobile collapsible sidebar drawer for `<md` breakpoint
-- `sendAdminAlertEmail()` helper in `emailService.ts`
+- **Account Hub** — new `/account/*` hub with Google Account–style sidebar navigation (Home, Personal Info, Security, Connected Apps, Data & Privacy, Payments & Subscriptions); 6 section files under `client/src/pages/account/`
+- **Role-aware sections** — Creator sees Connected Apps (IG/YT OAuth) + creator wallet/membership; Brand sees brand transactions; Super Admin `viewAs` respected throughout
+- **Migration `028_account_preferences.sql`** — privacy flags (`is_discoverable`, `marketplace_visible`, `presence_visible`, `profile_visibility`) on `influencer_profiles` + `brand_profiles`; `notification_prefs jsonb` on `profiles`; `data_export_requests` table; all flags default `true` so existing rows unaffected
+- **`/api/account/*` endpoints** — `POST /sign-out-all` (Supabase global signout), `GET /preferences`, `PUT /preferences` (whitelist-validated), `POST /data-export` (rate-limited, admin email alert)
+- **Mobile sidebar drawer** — collapsible left-drawer for `<md` breakpoint in Account Hub
+- **`sendAdminAlertEmail(subject, body)`** helper added to `emailService.ts`
 
 ### Changed
-- Header "Settings" → "Account" link now points to `/account`; Wallet link → `/account/payments`
-- `OwnerActionsBar` Edit → `/account/personal`; Settings → `/account`
+- **Creator login redirect** — `SmartHome` now sends authenticated creators to `/influencer/:id` (their own public profile page) instead of dashboard
+- **Name persistence fix** — `updateInfluencerProfile` now writes `name` field to both `profiles` table and Supabase Auth user metadata; previously name was silently dropped, causing display names to show email-account names instead of registration names
+- **ProfileHeader** — always renders Instagram + YouTube rows below the profile name; shows `@handle` in platform colour when connected, italic "not connected" when absent; location (city + state) moved to its own row below social handles
+- **Marketplace visibility filter** — `buildInfluencerQuery` now adds `.eq('marketplace_visible', true).eq('is_discoverable', true)` so privacy flags are enforced on all brand-facing creator listings
+- **Header** — "Settings" → "Account" (→ `/account`); Wallet → `/account/payments`
+- **`OwnerActionsBar`** — Edit link → `/account/personal`; Settings link → `/account`
+- **`MyProfile`** — Settings button → `/account`; Edit Profile button → `/account/personal`
 - `/profile/edit` redirects to `/account/personal`
 - `?tab=settings` removed from `InfluencerDashboard`; settings moved fully to hub
 
 ### Removed
 - `SettingsTab` (stub) from `InfluencerDashboardPanels.tsx`
-- `SocialConnect.tsx` (dead legacy component, superseded by `PlatformConnectCard`)
+- `SocialConnect.tsx` — dead legacy component, superseded by `PlatformConnectCard` (zero callers confirmed before deletion)
+
+### Commits
+- `0fc75d7` — feat: account hub — Google-style /account/* settings with sidebar nav
+- `91edfc0` — fix: creator login → own profile, name persistence, ProfileHeader social+location
 
 ---
 

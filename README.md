@@ -131,9 +131,20 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - **Seeded founders** — `masteranhad@gmail.com` + `rishabhverma707@gmail.com` are seeded as super admins via migration 025
 - **DB schema** (migration 025): `is_super_admin` + `is_suspended` on `profiles`; `is_verified` on `influencer_profiles`; `admin_audit_logs` table; `feature_flags` table with 5 default rows
 
+### Account Hub (`/account/*`)
+- **Google Account–style settings** — unified hub replacing scattered `/profile/edit`, `InfluencerDashboard?tab=settings`, and brand settings pages
+- **Sidebar navigation** — Home, Personal Info, Security, Connected Apps (creator only), Data & Privacy, Payments & Subscriptions; sticky on `md+`, collapsible drawer on mobile
+- **Personal Info** — creator: name, bio, city/state, IG/YT handles, 25 niches, commercials pricing (6-month lock enforced); brand: name, email, phone, industry
+- **Security** — password change, sign-out-all sessions (Supabase global signout), danger zone with account deletion
+- **Connected Apps** (creator only) — `PlatformConnectCard` for Instagram + YouTube; Razorpay read-only linked row
+- **Data & Privacy** — marketplace visibility, discoverability, presence visibility, profile visibility toggles; notification preference toggles (campaigns, proposals, messages, payments, marketing); data export request
+- **Payments** — creator: `WalletTab` + `MembershipTab`; brand: `BrandTransactionsPanel`
+- **Role-aware** — brand and creator see different sections; Super Admin `viewAs` respected throughout
+- **Name persistence fix** — profile save now writes name to both `profiles` table and Supabase Auth user metadata, so display name matches registration name (not email-account name)
+
 ### Profile System — Kalakaar
 - Public Kalakaar profile (`/influencer/:id`) — full-page with:
-  - **Profile header** — pencil (→ `/profile/edit`) + settings icons visible on own profile; orange rating box; `city, state`; social handles as `@username`
+  - **Profile header** — pencil (→ `/account/personal`) + settings icons visible on own profile; orange rating box; Instagram + YouTube handles always shown (italic "not connected" if absent); `city, state` on own row below social handles
   - **Kalakaar Portfolio** — snap-scroll carousel, multi-file upload (max 12), prev/next arrows, radio-dot indicators, image count overlay; owner-only **Replace** (single image swap at selected index) and **Remove** controls below the selected image
   - **Social Media section** — per-platform IG/YT cards (followers, ER%, price); compact "Select Kalakaar" CTA row
   - **"Select Kalakaar — Choose Platforms"** CTA for brand view (non-celeb only) — scrolls to Social Media section
@@ -208,6 +219,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Super admin RBAC (migration 025) — `is_super_admin`, `is_suspended`, `is_verified` columns; `admin_audit_logs` + `feature_flags` tables; 5 default flags seeded
 - Creator state field (migration 026) — `state TEXT` column on `influencer_profiles`
 - Invoice numbering + live post URLs (migration 027) — `transactions.invoice_number` (`INV-YYYY-NNNNN` sequence trigger, backfilled); `campaign_videos.live_post_url` + `live_post_platform`; brand-date index on transactions
+- Account preferences (migration 028) — privacy flags (`is_discoverable`, `marketplace_visible`, `presence_visible`, `profile_visibility`) on `influencer_profiles` + `brand_profiles`; `notification_prefs jsonb` on `profiles`; `data_export_requests` table; all default `true` so existing rows unaffected
 - 5% platform margin applied server-side on all brand-facing reads (`applyPlatformMargin()`)
 - Rate limits: auth 20/15 min, OTP 5/hr by phone, campaign create 10/hr, contact POST 5/hr by IP
 - CORS allowlist (hardcoded production + `CORS_ORIGINS` env var + Vercel preview pattern)
@@ -274,14 +286,15 @@ kalakaarian/
 │       ├── contexts/        # CartContext (shared cart state across pages)
 │       ├── hooks/           # useAuth, useCart, useTheme
 │       ├── lib/             # api.ts (typed API client), constants.ts, store.ts
-│       └── pages/           # 27 pages, one default export each
+│       ├── pages/           # 30+ pages, one default export each
+│       │   └── account/     # Account Hub — 6 section pages + Layout + shared components (Sidebar, MobileSidebarDrawer, SectionHeader, PreferenceToggle)
 │
 ├── server/
 │   └── src/                 # ✅ ONLY this folder is deployed to Vercel
 │       ├── config/          # Supabase adminClient (service role, bypasses RLS)
-│       ├── controllers/     # 13 controller files, ≤200 lines each (brandTransactionsController, invoiceController added)
+│       ├── controllers/     # 14 controller files, ≤200 lines each (accountController added)
 │       ├── middleware/       # auth.ts, requireAdmin.ts, validate.ts
-│       ├── routes/          # 19 route files (invoices.ts added)
+│       ├── routes/          # 20 route files (account.ts added)
 │       ├── services/        # Instagram, YouTube, Razorpay, Resend, social media
 │       ├── types/           # TypeScript interfaces (AuthRequest, etc.)
 │       ├── utils/           # pricing.ts (PLATFORM_MARGIN_RATE, PLATFORM_FEE_RATE)
@@ -380,6 +393,7 @@ supabase/migrations/023_pgcron_sync_platforms.sql    # daily analytics sync (edi
 supabase/migrations/025_super_admin.sql              # is_super_admin/is_suspended on profiles, feature_flags, admin_audit_logs
 supabase/migrations/026_creator_state.sql            # state TEXT column on influencer_profiles
 supabase/migrations/027_invoices_and_post_urls.sql   # invoice_number on transactions (sequence trigger) + live_post_url on campaign_videos
+supabase/migrations/028_account_preferences.sql      # privacy flags, notification_prefs jsonb, data_export_requests table
 ```
 
 > Migration 022 (drop legacy IG columns) is intentionally skipped — run it manually after `021` has been on prod for ~1 week and code no longer references the old `influencer_profiles.instagram_*` columns.
@@ -466,6 +480,11 @@ See [docs/API.md](./docs/API.md) for the full endpoint list.
   - `GET /api/admin/flags`, `PUT /api/admin/flags/:key` — feature flag read + toggle
   - `GET /api/admin/audit-logs` — full audit trail
 - **Audit logging** — `logAdminAction(adminId, action, targetType, targetId, details, ip)` writes to `admin_audit_logs` on every admin mutation; includes admin email join via `profiles`
+- **Account API** — all `/api/account/*` routes require auth JWT:
+  - `POST /api/account/sign-out-all` — invalidates all sessions for the current user via Supabase global signout
+  - `GET /api/account/preferences` — returns notification prefs + privacy flags from `profiles` / `influencer_profiles`
+  - `PUT /api/account/preferences` — updates prefs (keys validated against `ALLOWED_NOTIF_KEYS` + `ALLOWED_VISIBILITY` whitelists)
+  - `POST /api/account/data-export` — inserts `data_export_requests` row (rate-limited: one pending request at a time) + emails admin alert
 
 ---
 

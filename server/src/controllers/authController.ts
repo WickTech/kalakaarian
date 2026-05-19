@@ -49,7 +49,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       ? profileImage.trim()
       : null;
 
-    await adminClient.from('profiles').insert({
+    const rollback = async (stage: string, err: unknown) => {
+      console.error(`Register insert failed at ${stage}:`, err);
+      await adminClient.auth.admin.deleteUser(userId).catch(e => console.error('Rollback deleteUser failed:', e));
+    };
+
+    const { error: profileErr } = await adminClient.from('profiles').insert({
       id: userId,
       role,
       name,
@@ -61,18 +66,28 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       terms_accepted_at: new Date().toISOString(),
       onboarding_completed: true,
     });
+    if (profileErr) {
+      await rollback('profiles', profileErr);
+      const code = (profileErr as { code?: string }).code;
+      const msg = code === '23505' ? 'Username or email already taken' : 'Failed to create profile';
+      res.status(400).json({ message: msg }); return;
+    }
 
     if (role === 'brand') {
-      await adminClient.from('brand_profiles').insert({
+      const { error: bErr } = await adminClient.from('brand_profiles').insert({
         id: userId,
         company_name: companyName || name,
         industry: industry || '',
       });
+      if (bErr) {
+        await rollback('brand_profiles', bErr);
+        res.status(400).json({ message: 'Failed to create brand profile' }); return;
+      }
     } else if (role === 'influencer') {
       const ALLOWED_GENDERS = ['male', 'female', 'non_binary', 'prefer_not_to_say'];
       const igHandle = typeof socialHandles?.instagram === 'string' ? socialHandles.instagram.trim() : '';
       const ytHandle = typeof socialHandles?.youtube === 'string' ? socialHandles.youtube.trim() : '';
-      await adminClient.from('influencer_profiles').insert({
+      const { error: iErr } = await adminClient.from('influencer_profiles').insert({
         id: userId,
         bio: bio || '',
         city: city || '',
@@ -84,6 +99,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         instagram_handle: igHandle || null,
         youtube_handle: ytHandle || null,
       });
+      if (iErr) {
+        await rollback('influencer_profiles', iErr);
+        res.status(400).json({ message: 'Failed to create influencer profile' }); return;
+      }
 
       const p = pricing || {};
       const pricingRows = [
@@ -95,9 +114,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
        .map(r => ({ ...r, price: Number(r.price) }));
 
       if (pricingRows.length > 0) {
-        await adminClient.from('influencer_pricing').insert(
+        const { error: pErr } = await adminClient.from('influencer_pricing').insert(
           pricingRows.map(r => ({ influencer_id: userId, platform: 'general', ...r }))
         );
+        if (pErr) console.error('Pricing insert failed (non-fatal):', pErr);
       }
     }
 

@@ -98,6 +98,88 @@ export const updateCartItem = async (req: AuthRequest, res: Response): Promise<v
   }
 };
 
+type CartSnapshotItem = { influencer_id: string; price: number };
+
+/**
+ * Post-payment finalize: persist transactions, attach creators to the campaign
+ * workflow, transition any matching proposals, and clear the cart. Called from
+ * the Razorpay webhook AND from the checkout bypass branch when Razorpay is
+ * not configured (createOrder → null), so the brand still sees creators on
+ * their campaign after the local "free checkout" path.
+ */
+async function finalizeCartPayment(
+  brandId: string,
+  campaignId: string | null,
+  snapshot: CartSnapshotItem[],
+  paymentRef: string,
+  razorpayOrderId: string | null,
+): Promise<void> {
+  for (const item of snapshot) {
+    const { error: txErr } = await adminClient.from('transactions').insert({
+      brand_id: brandId,
+      influencer_id: item.influencer_id,
+      campaign_id: campaignId,
+      amount: item.price,
+      status: 'completed',
+      payment_method: 'razorpay',
+      transaction_id: paymentRef,
+    });
+    if (txErr) console.error('finalizeCartPayment transaction insert failed:', txErr);
+
+    if (campaignId) {
+      const { data: proposal } = await adminClient.from('proposals')
+        .select('id, workflow_stage')
+        .eq('influencer_id', item.influencer_id)
+        .eq('campaign_id', campaignId)
+        .in('workflow_stage', ['approved', 'payment_pending'])
+        .order('created_at', { ascending: false })
+        .limit(1).maybeSingle();
+
+      if (proposal) {
+        const rpcBase = {
+          p_proposal_id: proposal.id,
+          p_actor_id: null as unknown as string,
+          p_actor_role: 'system',
+          p_details: { transaction_ref: paymentRef, razorpay_order_id: razorpayOrderId } as Record<string, unknown>,
+          p_auto_approve_hours: 72,
+        };
+        if (proposal.workflow_stage === 'approved') {
+          await adminClient.rpc('transition_workflow_stage', {
+            ...rpcBase, p_expected_stage: 'approved', p_to_stage: 'payment_pending', p_action: 'mark_payment_pending',
+          });
+        }
+        await adminClient.rpc('transition_workflow_stage', {
+          ...rpcBase, p_expected_stage: 'payment_pending', p_to_stage: 'payment_released', p_action: 'release_payment',
+        });
+      }
+    }
+  }
+
+  // Attach creators to the campaign workflow so the brand UI lists them.
+  if (campaignId) {
+    const newIds = Array.from(new Set(snapshot.map(s => s.influencer_id)));
+    const { data: wf } = await adminClient
+      .from('campaign_workflow')
+      .select('id, selected_creators')
+      .eq('campaign_id', campaignId)
+      .maybeSingle();
+
+    if (wf) {
+      const merged = Array.from(new Set([...(wf.selected_creators ?? []), ...newIds]));
+      await adminClient.from('campaign_workflow').update({ selected_creators: merged }).eq('id', wf.id);
+    } else {
+      await adminClient.from('campaign_workflow').insert({
+        campaign_id: campaignId,
+        selected_creators: newIds,
+      });
+    }
+  }
+
+  // Clear the cart for this brand (scoped to campaign when present).
+  const del = adminClient.from('cart_items').delete().eq('brand_id', brandId);
+  await (campaignId ? del.eq('campaign_id', campaignId) : del);
+}
+
 export const checkout = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user) { res.status(401).json({ message: 'Unauthorized' }); return; }
@@ -114,6 +196,11 @@ export const checkout = async (req: AuthRequest, res: Response): Promise<void> =
     const items = data ?? [];
     if (items.length === 0) { res.status(400).json({ message: 'Cart is empty' }); return; }
 
+    const snapshot: CartSnapshotItem[] = items.map((item: any) => ({
+      influencer_id: item.influencer_id,
+      price: item.price,
+    }));
+
     const subtotalRupees = items.reduce((sum: number, item: any) => sum + (item.price || 0), 0);
     const feeRupees = Math.round(subtotalRupees * PLATFORM_FEE_RATE);
     const totalPaise = Math.round((subtotalRupees + feeRupees) * 100);
@@ -123,15 +210,14 @@ export const checkout = async (req: AuthRequest, res: Response): Promise<void> =
       campaignId: campaignId || '',
     });
     if (!order) {
+      // Razorpay not configured: finalize directly so the campaign still gets
+      // its creators attached. paymentRef tagged as 'free' for audit.
+      await finalizeCartPayment(req.user.userId, campaignId || null, snapshot, `free-${Date.now()}`, null);
       res.json({ orderId: null, amount: totalPaise, currency: 'INR', keyId: null });
       return;
     }
 
     // Persist cart snapshot so the webhook can process it without re-querying the cart
-    const snapshot = items.map((item: any) => ({
-      influencer_id: item.influencer_id,
-      price: item.price,
-    }));
     await adminClient.from('cart_orders').insert({
       brand_id: req.user.userId,
       razorpay_order_id: order.id,
@@ -175,54 +261,19 @@ export const handleCartWebhook = async (req: Request, res: Response): Promise<vo
     res.json({ received: true }); return; // idempotent
   }
 
-  const snapshot: Array<{ influencer_id: string; price: number }> = cartOrder.cart_snapshot ?? [];
+  const snapshot: CartSnapshotItem[] = cartOrder.cart_snapshot ?? [];
 
-  for (const item of snapshot) {
-    await adminClient.from('transactions').insert({
-      brand_id: cartOrder.brand_id,
-      influencer_id: item.influencer_id,
-      campaign_id: cartOrder.campaign_id,
-      amount: item.price,
-      status: 'completed',
-      payment_method: 'razorpay',
-      transaction_id: paymentId,
-    });
-
-    if (cartOrder.campaign_id) {
-      const { data: proposal } = await adminClient.from('proposals')
-        .select('id, workflow_stage')
-        .eq('influencer_id', item.influencer_id)
-        .eq('campaign_id', cartOrder.campaign_id)
-        .in('workflow_stage', ['approved', 'payment_pending'])
-        .order('created_at', { ascending: false })
-        .limit(1).maybeSingle();
-
-      if (proposal) {
-        const rpcBase = {
-          p_proposal_id: proposal.id,
-          p_actor_id: null as unknown as string,
-          p_actor_role: 'system',
-          p_details: { transaction_ref: paymentId, razorpay_order_id: razorpayOrderId } as Record<string, unknown>,
-          p_auto_approve_hours: 72,
-        };
-        if (proposal.workflow_stage === 'approved') {
-          await adminClient.rpc('transition_workflow_stage', {
-            ...rpcBase, p_expected_stage: 'approved', p_to_stage: 'payment_pending', p_action: 'mark_payment_pending',
-          });
-        }
-        await adminClient.rpc('transition_workflow_stage', {
-          ...rpcBase, p_expected_stage: 'payment_pending', p_to_stage: 'payment_released', p_action: 'release_payment',
-        });
-      }
-    }
-  }
+  await finalizeCartPayment(
+    cartOrder.brand_id,
+    cartOrder.campaign_id ?? null,
+    snapshot,
+    paymentId,
+    razorpayOrderId,
+  );
 
   await adminClient.from('cart_orders').update({
     status: 'paid', razorpay_payment_id: paymentId, updated_at: new Date().toISOString(),
   }).eq('id', cartOrder.id);
-
-  const cartDelete = adminClient.from('cart_items').delete().eq('brand_id', cartOrder.brand_id);
-  await (cartOrder.campaign_id ? cartDelete.eq('campaign_id', cartOrder.campaign_id) : cartDelete);
 
   res.json({ received: true });
 };

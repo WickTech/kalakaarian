@@ -59,9 +59,10 @@ export default function StepRates({ form, onInput }: Props) {
 
       <div>
         <label className="block text-sm text-chalk-dim mb-1.5">Bio (optional)</label>
-        <textarea value={form.bio} onChange={onInput('bio')} rows={3} maxLength={300}
+        <textarea value={form.bio} onChange={onInput('bio')} rows={3} maxLength={150}
           className="dark-input w-full px-4 py-3 text-sm resize-none"
           placeholder="Tell brands about your content style..." />
+        <p className="text-xs text-chalk-dim mt-1 text-right">{form.bio.length}/150</p>
       </div>
     </div>
   );

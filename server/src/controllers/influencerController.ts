@@ -6,7 +6,7 @@ import { syncInstagramAvatar } from '../services/instagramAvatarService';
 
 const ALLOWED_GENDERS = ['male', 'female', 'non_binary', 'prefer_not_to_say'] as const;
 
-export const formatInfluencer = (row: any) => {
+export const formatInfluencer = (row: any, opts: { rawPricing?: boolean } = {}) => {
   const pricingObj = (row.influencer_pricing ?? []).reduce(
     (acc: Record<string, number>, r: any) => { acc[r.content_type] = r.price; return acc; },
     {}
@@ -36,7 +36,7 @@ export const formatInfluencer = (row: any) => {
       instagram: row.instagram_handle ?? undefined,
       youtube: row.youtube_handle ?? undefined,
     },
-    pricing: applyPlatformMargin(pricingObj),
+    pricing: opts.rawPricing ? pricingObj : applyPlatformMargin(pricingObj),
     avgRating: row.avg_rating != null ? Number(row.avg_rating) : null,
     ratingCount: row.rating_count ?? 0,
     createdAt: row.created_at ?? null,
@@ -170,7 +170,7 @@ export const getInfluencerById = async (req: Request, res: Response): Promise<vo
     }
 
     res.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=120');
-    res.json({ influencer: formatInfluencer(data) });
+    res.json({ influencer: formatInfluencer(data, { rawPricing: viewerId === data.id }) });
   } catch (error) {
     console.error('Get influencer error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -188,7 +188,7 @@ export const getOwnProfile = async (req: AuthRequest, res: Response): Promise<vo
       .eq('id', req.user.userId)
       .single();
     if (error || !data) { res.status(404).json({ message: 'Influencer profile not found' }); return; }
-    res.json({ influencer: formatInfluencer(data) });
+    res.json({ influencer: formatInfluencer(data, { rawPricing: true }) });
   } catch (error) {
     console.error('Get own profile error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -280,7 +280,7 @@ export const updateInfluencerProfile = async (req: AuthRequest, res: Response): 
       .eq('id', req.user.userId)
       .single();
 
-    res.json({ profile: data ? formatInfluencer(data) : null });
+    res.json({ profile: data ? formatInfluencer(data, { rawPricing: true }) : null });
   } catch (error) {
     console.error('Update influencer profile error:', error);
     res.status(500).json({ message: 'Server error' });

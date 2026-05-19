@@ -31,8 +31,12 @@ export const STEPS = [
 ] as const;
 
 export const GENRES = [
-  'Food', 'Tech', 'Fashion', 'Travel', 'Fitness', 'Beauty',
-  'Gaming', 'Lifestyle', 'Finance', 'Education', 'Comedy', 'Music',
+  'Fashion', 'Lifestyle', 'Gaming', 'Tech', 'Fitness', 'Food',
+  'Travel', 'Comedy', 'Education', 'Finance', 'Beauty', 'Automotive',
+  'Music', 'Art', 'Sports', 'Dance', 'Acting', 'Singing',
+  'Product Review', 'Photography & Videography', 'Art & Creativity',
+  'Automobile & Mobility', 'Spiritual & Motivation', 'Regional & Cultural',
+  'Pets & Animals', 'Kids & Family', 'Relationship Advisor',
 ];
 
 export const initialForm: CreatorFormState = {

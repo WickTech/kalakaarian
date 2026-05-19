@@ -89,7 +89,7 @@ export default function PersonalInfo() {
           display={v => genderLabel(String(v))}
           onSave={async (v) => save({ gender: String(v) })} />
 
-        <InlineEditField label="Bio" type="textarea" value={profile.bio ?? ''} maxLength={300}
+        <InlineEditField label="Bio" type="textarea" value={profile.bio ?? ''} maxLength={150}
           placeholder="Tell brands about your content style"
           onSave={async (v) => save({ bio: String(v) })} />
 

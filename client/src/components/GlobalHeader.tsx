@@ -7,6 +7,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useCartContext } from "@/contexts/CartContext";
 import { NotificationBell } from "@/components/NotificationBell";
+import { WalletModal } from "@/components/WalletModal";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -42,6 +43,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [walletOpen, setWalletOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -112,10 +114,10 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
 
               {user?.role === "influencer" ? (
                 <button
-                  onClick={() => navigate("/influencer/dashboard")}
-                  aria-label="Earnings & transactions"
+                  onClick={() => setWalletOpen(true)}
+                  aria-label="Open wallet"
                   className="p-2 rounded-md border border-white/10 hover:bg-white/5 transition-colors"
-                  title="Earnings & Transactions"
+                  title="Wallet"
                 >
                   <Wallet className="w-4 h-4 text-gold" />
                 </button>
@@ -342,6 +344,10 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
           </Sheet>
         </div>
       </div>
+
+      {user?.role === "influencer" && (
+        <WalletModal open={walletOpen} onClose={() => setWalletOpen(false)} />
+      )}
     </header>
   );
 }

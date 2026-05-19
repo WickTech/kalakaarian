@@ -14,7 +14,6 @@ import { SocialPlatformPanel } from '@/components/profile/SocialPlatformPanel';
 import { AnalyticsSection } from '@/components/profile/AnalyticsSection';
 import { ProfileGallery } from '@/components/profile/ProfileGallery';
 import { OwnerActionsBar } from '@/components/profile/OwnerActionsBar';
-import { WalletModal } from '@/components/WalletModal';
 import { Influencer } from '@/lib/store';
 
 export default function InfluencerProfile() {
@@ -30,7 +29,6 @@ export default function InfluencerProfile() {
   const isCreator = user?.role === 'influencer';
   const isBrand = user?.role === 'brand';
   const [showCelebModal, setShowCelebModal] = useState(false);
-  const [showWallet, setShowWallet] = useState(false);
   const [gallery, setGallery] = useState<string[]>([]);
   const highlightSocial = hash === '#social';
 
@@ -130,7 +128,6 @@ export default function InfluencerProfile() {
               isOnline={!!profile.isOnline}
               onlineSince={profile.onlineSince}
               lastSeenAt={profile.lastSeenAt}
-              onOpenWallet={() => setShowWallet(true)}
               onScrollAnalytics={() => analyticsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
             />
           )}
@@ -223,8 +220,6 @@ export default function InfluencerProfile() {
       {showCelebModal && profile && (
         <CelebCallbackModal influencerId={id!} influencerName={profile.name || 'this Kalakaar'} onClose={() => setShowCelebModal(false)} />
       )}
-
-      <WalletModal open={showWallet} onClose={() => setShowWallet(false)} />
     </>
   );
 }

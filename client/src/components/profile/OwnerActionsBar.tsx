@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Pencil, Settings, Wallet, BarChart2 } from "lucide-react";
+import { Pencil, Settings, BarChart2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,7 +10,6 @@ interface Props {
   isOnline: boolean;
   onlineSince?: string | null;
   lastSeenAt?: string | null;
-  onOpenWallet: () => void;
   onScrollAnalytics: () => void;
 }
 
@@ -33,7 +32,6 @@ export function OwnerActionsBar({
   isOnline: initialOnline,
   onlineSince: initialOnlineSince,
   lastSeenAt: initialLastSeenAt,
-  onOpenWallet,
   onScrollAnalytics,
 }: Props) {
   const { toast } = useToast();
@@ -118,13 +116,6 @@ export function OwnerActionsBar({
         >
           <Settings className="w-3.5 h-3.5" /> Account
         </Link>
-        <button
-          onClick={onOpenWallet}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 text-xs text-chalk-dim hover:text-chalk hover:border-white/20 transition-all"
-          title="Wallet"
-        >
-          <Wallet className="w-3.5 h-3.5 text-gold" /> Wallet
-        </button>
         <button
           onClick={onScrollAnalytics}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 text-xs text-chalk-dim hover:text-chalk hover:border-white/20 transition-all"

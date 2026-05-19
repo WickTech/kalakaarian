@@ -1,9 +1,12 @@
 import { useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, RefreshCw, Trash2, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw, Trash2, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { UploadProgressUploader } from '@/components/upload';
 
 const MAX_GALLERY = 12;
+const GALLERY_ACCEPT = ['image/jpeg', 'image/png', 'image/webp'];
+const GALLERY_MAX_BYTES = 10 * 1024 * 1024;
 
 interface Props {
   images: string[];
@@ -13,10 +16,10 @@ interface Props {
 
 export function ProfileGallery({ images, isOwnProfile, onChange }: Props) {
   const { toast } = useToast();
-  const addRef = useRef<HTMLInputElement>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const [busy, setBusy] = useState(false);
+  const [replacing, setReplacing] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const list = images ?? [];
 
@@ -37,30 +40,17 @@ export function ProfileGallery({ images, isOwnProfile, onChange }: Props) {
     }
   };
 
-  const handleAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    e.target.value = '';
-    if (!files || files.length === 0) return;
-    const remaining = MAX_GALLERY - list.length;
-    if (remaining <= 0) { toast({ title: 'Gallery full', description: `Max ${MAX_GALLERY} images`, variant: 'destructive' }); return; }
-    const toUpload = Array.from(files).slice(0, remaining);
-    setBusy(true);
+  const handleAddSuccess = async (url: string) => {
+    if (list.length >= MAX_GALLERY) {
+      toast({ title: 'Gallery full', description: `Max ${MAX_GALLERY} images`, variant: 'destructive' });
+      return;
+    }
+    const next = [...list, url];
     try {
-      const urls: string[] = [];
-      for (const file of toUpload) {
-        const { uploadUrl, fileUrl } = await api.getUploadUrl(file.name, file.type, 'profile');
-        const put = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
-        if (!put.ok) throw new Error('upload failed');
-        urls.push(fileUrl);
-      }
-      const next = [...list, ...urls];
       await persist(next);
       setActiveIdx(next.length - 1);
-      toast({ title: `${urls.length} image${urls.length > 1 ? 's' : ''} added` });
     } catch {
-      toast({ title: 'Upload failed', variant: 'destructive' });
-    } finally {
-      setBusy(false);
+      toast({ title: 'Failed to save image', variant: 'destructive' });
     }
   };
 
@@ -68,9 +58,9 @@ export function ProfileGallery({ images, isOwnProfile, onChange }: Props) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    setBusy(true);
+    setReplacing(true);
     try {
-      const { uploadUrl, fileUrl } = await api.getUploadUrl(file.name, file.type, 'profile');
+      const { uploadUrl, fileUrl } = await api.getUploadUrl(file.name, file.type, 'gallery');
       const put = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
       if (!put.ok) throw new Error('upload failed');
       const next = list.map((u, i) => (i === activeIdx ? fileUrl : u));
@@ -79,12 +69,12 @@ export function ProfileGallery({ images, isOwnProfile, onChange }: Props) {
     } catch {
       toast({ title: 'Replace failed', variant: 'destructive' });
     } finally {
-      setBusy(false);
+      setReplacing(false);
     }
   };
 
   const handleRemove = async () => {
-    setBusy(true);
+    setRemoving(true);
     try {
       const next = list.filter((_, i) => i !== activeIdx);
       await persist(next);
@@ -92,9 +82,11 @@ export function ProfileGallery({ images, isOwnProfile, onChange }: Props) {
     } catch {
       toast({ title: 'Failed to remove', variant: 'destructive' });
     } finally {
-      setBusy(false);
+      setRemoving(false);
     }
   };
+
+  const canAddMore = list.length < MAX_GALLERY;
 
   return (
     <div className="space-y-3">
@@ -105,7 +97,6 @@ export function ProfileGallery({ images, isOwnProfile, onChange }: Props) {
 
       {list.length > 0 && (
         <div className="space-y-2">
-          {/* Carousel */}
           <div className="relative group">
             <div
               ref={trackRef}
@@ -151,7 +142,6 @@ export function ProfileGallery({ images, isOwnProfile, onChange }: Props) {
             )}
           </div>
 
-          {/* Radio-dot indicators */}
           {list.length > 1 && (
             <div className="flex justify-center gap-2 py-1">
               {list.map((_, i) => (
@@ -169,7 +159,6 @@ export function ProfileGallery({ images, isOwnProfile, onChange }: Props) {
             </div>
           )}
 
-          {/* Owner actions for selected image */}
           {isOwnProfile && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-chalk-faint flex-1">
@@ -177,15 +166,15 @@ export function ProfileGallery({ images, isOwnProfile, onChange }: Props) {
               </span>
               <button
                 onClick={() => replaceRef.current?.click()}
-                disabled={busy}
+                disabled={replacing || removing}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/15 text-xs text-chalk-dim hover:text-chalk hover:border-white/30 transition-all disabled:opacity-50"
               >
-                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                {replacing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                 Replace
               </button>
               <button
                 onClick={handleRemove}
-                disabled={busy}
+                disabled={replacing || removing}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/30 text-xs text-red-400 hover:bg-red-500/10 hover:border-red-500/50 transition-all disabled:opacity-50"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -196,20 +185,26 @@ export function ProfileGallery({ images, isOwnProfile, onChange }: Props) {
         </div>
       )}
 
-      {isOwnProfile && list.length < MAX_GALLERY && (
-        <button
-          onClick={() => addRef.current?.click()}
-          disabled={busy}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-white/20 text-sm text-chalk-dim hover:border-white/40 hover:text-chalk transition-all disabled:opacity-50"
-        >
-          {busy
-            ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
-            : <><Plus className="w-4 h-4" /> Add Images</>}
-        </button>
+      {isOwnProfile && canAddMore && (
+        <UploadProgressUploader
+          purpose="gallery"
+          accept={GALLERY_ACCEPT}
+          maxBytes={GALLERY_MAX_BYTES}
+          multiple
+          compressImages
+          onItemSuccess={handleAddSuccess}
+          label={list.length === 0 ? 'Drop images or tap to add to your portfolio' : 'Add more images'}
+          hint={`JPG · PNG · WEBP · up to ${MAX_GALLERY - list.length} more`}
+        />
       )}
 
-      <input ref={addRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={handleAdd} />
-      <input ref={replaceRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleReplace} />
+      <input
+        ref={replaceRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={handleReplace}
+      />
     </div>
   );
 }

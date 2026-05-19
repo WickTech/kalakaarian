@@ -1,4 +1,5 @@
-import { Router, Response } from 'express';
+import { Router, Response, RequestHandler } from 'express';
+import rateLimit from 'express-rate-limit';
 import { auth, AuthRequest } from '../middleware/auth';
 import { getPresignedUploadUrl } from '../services/storageService';
 import crypto from 'crypto';
@@ -6,16 +7,23 @@ import crypto from 'crypto';
 const router = Router();
 
 const ALLOWED_TYPES: Record<string, string[]> = {
-  'image/jpeg': ['profile', 'campaign'],
-  'image/png': ['profile', 'campaign'],
-  'image/webp': ['profile', 'campaign'],
+  'image/jpeg': ['profile', 'campaign', 'gallery', 'video'],
+  'image/png':  ['profile', 'campaign', 'gallery', 'video'],
+  'image/webp': ['profile', 'campaign', 'gallery', 'video'],
   'application/pdf': ['campaign'],
-  'video/mp4': ['video'],
+  'video/mp4':       ['video'],
   'video/quicktime': ['video'],
-  'video/webm': ['video'],
+  'video/webm':      ['video'],
 };
 
-router.post('/presign', auth, async (req: AuthRequest, res: Response) => {
+const presignLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+}) as unknown as RequestHandler;
+
+router.post('/presign', presignLimiter, auth, async (req: AuthRequest, res: Response) => {
   try {
     const { fileName, contentType, purpose = 'campaign' } = req.body;
     if (!fileName || !contentType) {

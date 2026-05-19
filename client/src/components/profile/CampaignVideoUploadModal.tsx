@@ -1,11 +1,18 @@
-import { useRef, useState } from "react";
-import { Instagram, Youtube, Upload as UploadIcon, X, FileVideo, Link2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Instagram, Youtube, Upload as UploadIcon, Link2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { UploadDropzone } from "@/components/upload/UploadDropzone";
+import { UploadQueue } from "@/components/upload/UploadQueue";
+import { useUploader } from "@/hooks/useUploader";
+import { useOnlineResume } from "@/hooks/useOnlineResume";
 
 type Platform = "instagram" | "youtube";
+
+const VIDEO_ACCEPT = ["video/mp4", "video/quicktime", "video/webm"];
+const VIDEO_MAX_BYTES = 500 * 1024 * 1024;
 
 interface Props {
   open: boolean;
@@ -16,40 +23,47 @@ interface Props {
 
 export function CampaignVideoUploadModal({ open, campaignId, onClose, onUploaded }: Props) {
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [platform, setPlatform] = useState<Platform>("instagram");
-  const [files, setFiles] = useState<File[]>([]);
   const [driveLink, setDriveLink] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const reset = () => {
-    setFiles([]);
-    setDriveLink("");
-    setConfirmed(false);
-    setPlatform("instagram");
-  };
+  const { items, enqueue, cancel, retry, remove, clear } = useUploader({
+    purpose: "video",
+    accept: VIDEO_ACCEPT,
+    maxBytes: VIDEO_MAX_BYTES,
+    multiple: true,
+    generateVideoThumbnail: true,
+  });
+  useOnlineResume(retry);
+
+  useEffect(() => {
+    if (!open) {
+      clear();
+      setPlatform("instagram");
+      setDriveLink("");
+      setConfirmed(false);
+    }
+  }, [open, clear]);
+
+  const successItems = items.filter((i) => i.status === "success" && i.finalUrl);
+  const anyInFlight = items.some(
+    (i) => i.status === "uploading" || i.status === "compressing" || i.status === "queued",
+  );
+  const submittableCount = successItems.length + (driveLink.trim() ? 1 : 0);
 
   const handleClose = () => {
     if (submitting) return;
-    reset();
     onClose();
   };
 
-  const handlePick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const picked = Array.from(e.target.files ?? []);
-    if (picked.length === 0) return;
-    setFiles((prev) => [...prev, ...picked]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const removeFile = (idx: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== idx));
-  };
-
   const handleSubmit = async () => {
-    if (files.length === 0 && !driveLink.trim()) {
+    if (submittableCount === 0) {
       toast({ title: "Add at least one file or a drive link", variant: "destructive" });
+      return;
+    }
+    if (anyInFlight) {
+      toast({ title: "Wait for uploads to finish", variant: "destructive" });
       return;
     }
     if (!confirmed) {
@@ -58,19 +72,15 @@ export function CampaignVideoUploadModal({ open, campaignId, onClose, onUploaded
     }
     setSubmitting(true);
     try {
-      for (const f of files) {
-        const { uploadUrl, fileUrl } = await api.getUploadUrl(f.name, f.type || "video/mp4", "video");
-        await fetch(uploadUrl, { method: "PUT", body: f, headers: { "Content-Type": f.type || "video/mp4" } });
-        await api.uploadVideo(fileUrl, platform, campaignId);
+      for (const it of successItems) {
+        if (it.finalUrl) await api.uploadVideo(it.finalUrl, platform, campaignId);
       }
-      if (driveLink.trim()) {
-        await api.uploadVideo(driveLink.trim(), platform, campaignId);
-      }
+      if (driveLink.trim()) await api.uploadVideo(driveLink.trim(), platform, campaignId);
       toast({ title: "Uploaded", description: "Content sent for brand review." });
-      reset();
+      clear();
       onUploaded?.();
     } catch {
-      toast({ title: "Upload failed", description: "Try again", variant: "destructive" });
+      toast({ title: "Submit failed", description: "Try again", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -86,7 +96,6 @@ export function CampaignVideoUploadModal({ open, campaignId, onClose, onUploaded
         </DialogHeader>
 
         <div className="space-y-5 pt-2">
-          {/* Platform toggle */}
           <div>
             <p className="text-xs font-semibold text-chalk-dim uppercase tracking-wide mb-2">Platform</p>
             <div className="grid grid-cols-2 gap-2">
@@ -115,49 +124,18 @@ export function CampaignVideoUploadModal({ open, campaignId, onClose, onUploaded
             </div>
           </div>
 
-          {/* File upload */}
-          <div>
-            <p className="text-xs font-semibold text-chalk-dim uppercase tracking-wide mb-2">Upload Files</p>
-            <input
-              ref={fileInputRef}
-              type="file"
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-chalk-dim uppercase tracking-wide">Upload Files</p>
+            <UploadDropzone
+              accept={VIDEO_ACCEPT}
               multiple
-              accept="video/*"
-              className="hidden"
-              onChange={handlePick}
+              onFiles={enqueue}
+              label="Drop videos or tap to choose"
+              hint="MP4 · MOV · WebM · up to 500 MB each"
             />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full flex flex-col items-center justify-center gap-2 py-8 rounded-xl border-2 border-dashed border-white/15 bg-white/[0.02] hover:border-purple-500/40 hover:bg-white/[0.04] transition-all"
-            >
-              <UploadIcon className="w-6 h-6 text-chalk-faint" />
-              <p className="text-sm text-chalk-dim">Click to add video files</p>
-              <p className="text-[10px] text-chalk-faint">MP4, MOV, WebM — pick multiple</p>
-            </button>
-            {files.length > 0 && (
-              <ul className="mt-3 space-y-2">
-                {files.map((f, i) => (
-                  <li key={`${f.name}-${i}`} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/10">
-                    <FileVideo className="w-4 h-4 text-chalk-faint shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-chalk truncate">{f.name}</p>
-                      <p className="text-[10px] text-chalk-faint">{(f.size / 1024 / 1024).toFixed(1)} MB</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(i)}
-                      className="text-chalk-faint hover:text-red-400 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <UploadQueue items={items} onCancel={cancel} onRetry={retry} onRemove={remove} />
           </div>
 
-          {/* Drive link */}
           <div>
             <p className="text-xs font-semibold text-chalk-dim uppercase tracking-wide mb-2">Or Drive Link</p>
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/10">
@@ -171,7 +149,6 @@ export function CampaignVideoUploadModal({ open, campaignId, onClose, onUploaded
             </div>
           </div>
 
-          {/* Confirmation + submit */}
           <label className="flex items-start gap-2 cursor-pointer text-xs text-chalk-dim">
             <input
               type="checkbox"
@@ -184,10 +161,14 @@ export function CampaignVideoUploadModal({ open, campaignId, onClose, onUploaded
 
           <Button
             onClick={handleSubmit}
-            disabled={submitting || !confirmed || (files.length === 0 && !driveLink.trim())}
+            disabled={submitting || anyInFlight || !confirmed || submittableCount === 0}
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 py-6 text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {submitting ? "Uploading…" : `Submit ${files.length + (driveLink.trim() ? 1 : 0)} item(s)`}
+            {submitting
+              ? "Submitting…"
+              : anyInFlight
+                ? "Uploading…"
+                : `Submit ${submittableCount} item${submittableCount === 1 ? "" : "s"}`}
           </Button>
         </div>
       </DialogContent>

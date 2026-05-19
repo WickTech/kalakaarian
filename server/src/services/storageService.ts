@@ -4,7 +4,8 @@ import { adminClient } from '../config/supabase';
 const BUCKET_MAP: Record<string, string> = {
   profile: 'avatars',
   campaign: 'campaign-files',
-  video: 'campaign-files',
+  video: 'media',
+  gallery: 'media',
 };
 
 export const getPresignedUploadUrl = async (

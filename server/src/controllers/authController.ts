@@ -7,8 +7,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
       email, username, phone, password, name, role,
-      companyName, industry, city, niches, platform, tier, bio, pricing,
-      gender, termsAccepted,
+      companyName, industry, city, state, niches, platform, tier, bio, pricing,
+      gender, termsAccepted, socialHandles, profileImage,
     } = req.body;
 
     if (!email && !phone) {
@@ -42,13 +42,21 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const userId = authData.user.id;
 
+    const normalizedUsername = typeof username === 'string' && username.trim()
+      ? username.trim().toLowerCase()
+      : null;
+    const avatarUrlForProfile = typeof profileImage === 'string' && profileImage.trim() && !profileImage.startsWith('data:')
+      ? profileImage.trim()
+      : null;
+
     await adminClient.from('profiles').insert({
       id: userId,
       role,
       name,
       email: email || null,
       phone: normalizedPhone || null,
-      username: username || null,
+      username: normalizedUsername,
+      avatar_url: avatarUrlForProfile,
       terms_accepted: true,
       terms_accepted_at: new Date().toISOString(),
       onboarding_completed: true,
@@ -62,23 +70,29 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       });
     } else if (role === 'influencer') {
       const ALLOWED_GENDERS = ['male', 'female', 'non_binary', 'prefer_not_to_say'];
+      const igHandle = typeof socialHandles?.instagram === 'string' ? socialHandles.instagram.trim() : '';
+      const ytHandle = typeof socialHandles?.youtube === 'string' ? socialHandles.youtube.trim() : '';
       await adminClient.from('influencer_profiles').insert({
         id: userId,
         bio: bio || '',
         city: city || '',
+        state: state || '',
         niches: niches || [],
         platforms: platform || [],
         tier: tier || 'micro',
         gender: ALLOWED_GENDERS.includes(gender) ? gender : null,
+        instagram_handle: igHandle || null,
+        youtube_handle: ytHandle || null,
       });
 
       const p = pricing || {};
       const pricingRows = [
-        { content_type: 'reel',  price: p.reel  ?? p.reelRate },
-        { content_type: 'story', price: p.story ?? p.storyRate },
-        { content_type: 'video', price: p.video ?? p.longVideoRate },
-        { content_type: 'post',  price: p.post  ?? p.shortsRate },
-      ].filter(r => r.price != null);
+        { content_type: 'reel',   price: p.reel   ?? p.reelRate },
+        { content_type: 'story',  price: p.story  ?? p.storyRate },
+        { content_type: 'video',  price: p.video  ?? p.longVideoRate },
+        { content_type: 'shorts', price: p.shorts ?? p.shortsRate },
+      ].filter(r => r.price != null && Number(r.price) > 0)
+       .map(r => ({ ...r, price: Number(r.price) }));
 
       if (pricingRows.length > 0) {
         await adminClient.from('influencer_pricing').insert(

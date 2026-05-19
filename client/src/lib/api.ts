@@ -527,6 +527,26 @@ export const api = {
     });
   },
 
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    return request<{ message: string }>("/api/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  validateResetToken: async (token: string): Promise<{ valid: boolean; reason?: 'expired' | 'used' | 'invalid' }> => {
+    return request<{ valid: boolean; reason?: 'expired' | 'used' | 'invalid' }>(
+      `/api/auth/validate-reset-token?token=${encodeURIComponent(token)}`
+    );
+  },
+
+  resetPassword: async (token: string, password: string): Promise<{ message: string }> => {
+    return request<{ message: string }>("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, password }),
+    });
+  },
+
   changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
     return request<void>("/api/auth/password", {
       method: "PUT",

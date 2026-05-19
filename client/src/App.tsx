@@ -16,6 +16,8 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { FloatingContactButton } from "@/components/FloatingContactButton";
 
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 const InfluencerRegisterPage = lazy(() => import("./pages/InfluencerRegisterPage"));
 const BrandRegisterPage = lazy(() => import("./pages/BrandRegisterPage"));
@@ -191,6 +193,8 @@ function AppContent() {
           }
         />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/register/complete" element={<GoogleOnboarding />} />
         <Route path="/role-select" element={<Navigate to="/" replace />} />
         <Route path="/start-brand" element={<Navigate to="/brand-register" replace />} />

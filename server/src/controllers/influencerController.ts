@@ -119,7 +119,7 @@ export const getInfluencers = async (req: Request, res: Response): Promise<void>
 
     res.set('Cache-Control', 'no-store');
     res.json({
-      influencers: (data ?? []).map(formatInfluencer),
+      influencers: (data ?? []).map((r: any) => formatInfluencer(r)),
       pagination: { page: Number(page), limit: clampedLimit, total: count ?? 0, pages: Math.ceil((count ?? 0) / clampedLimit) },
     });
   } catch (error) {
@@ -144,7 +144,7 @@ export const searchInfluencers = async (req: Request, res: Response): Promise<vo
     if (error) throw error;
 
     res.json({
-      influencers: (data ?? []).map(formatInfluencer),
+      influencers: (data ?? []).map((r: any) => formatInfluencer(r)),
       pagination: { page: Number(page), limit: clampedLimit, total: count ?? 0, pages: Math.ceil((count ?? 0) / clampedLimit) },
     });
   } catch (error) {

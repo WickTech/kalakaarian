@@ -6,6 +6,11 @@ import { googleLogin, completeGoogleOnboarding } from '../controllers/googleAuth
 import { sendOTP, verifyOTP } from '../controllers/otpController';
 import { getProfile, updateProfile, changePassword } from '../controllers/profileController';
 import { deleteAccount } from '../controllers/accountController';
+import {
+  forgotPassword,
+  validateResetToken,
+  resetPassword,
+} from '../controllers/passwordResetController';
 import { auth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
@@ -13,6 +18,9 @@ const router = Router();
 
 // Cast needed due to @types/express-serve-static-core version mismatch between root and server node_modules
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 }) as unknown as RequestHandler;
+const forgotLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 10 }) as unknown as RequestHandler;
+const validateTokenLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 30 }) as unknown as RequestHandler;
+const resetLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 10 }) as unknown as RequestHandler;
 const otpLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
@@ -98,6 +106,31 @@ router.put(
   ],
   validate,
   changePassword
+);
+
+router.post(
+  '/forgot-password',
+  forgotLimiter,
+  [body('email').isEmail().withMessage('Valid email required')],
+  validate,
+  forgotPassword
+);
+
+router.get(
+  '/validate-reset-token',
+  validateTokenLimiter,
+  validateResetToken
+);
+
+router.post(
+  '/reset-password',
+  resetLimiter,
+  [
+    body('token').isString().isLength({ min: 64, max: 64 }).withMessage('Invalid token'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+  ],
+  validate,
+  resetPassword
 );
 
 router.delete(

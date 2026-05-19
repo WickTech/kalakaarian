@@ -603,6 +603,34 @@ All routes require `Authorization: Bearer <token>`.
 Allowed notification keys: `campaigns | proposals | messages | payments | marketing`.
 Allowed `profile_visibility` for influencer: `public | brands_only | private`. For brand: `public | private`.
 
+### POST /api/auth/forgot-password
+**Public. Rate-limited (10/hr/IP + 5/hr/email).** Always responds 200 with the same body to prevent user enumeration. If email matches an account, a 32-byte random hex token is generated, hashed `SHA-256(token || RESET_TOKEN_PEPPER)`, stored, and a reset email is sent via Resend. Prior unused tokens for the user are invalidated.
+```json
+// body
+{ "email": "you@example.com" }
+// → 200 (identical for found + not-found)
+{ "message": "If an account exists, we sent a password reset link." }
+```
+
+### GET /api/auth/validate-reset-token?token=...
+**Public. Rate-limited (30/hr/IP).** Validates a token without consuming it. Drives the reset page's form-vs-error rendering.
+```json
+// → 200
+{ "valid": true }
+// or
+{ "valid": false, "reason": "expired" | "used" | "invalid" }
+```
+
+### POST /api/auth/reset-password
+**Public. Rate-limited (10/hr/IP).** Single-use. Enforces strong-password rule (≥8 chars, upper, lower, digit, special). Atomically marks the token used, calls `auth.admin.updateUserById({password})` (Supabase invalidates all refresh tokens server-side on password change), then emails a "password changed" notification with IP and User-Agent.
+```json
+// body
+{ "token": "<64-char hex>", "password": "Str0ng#Pass" }
+// → 200
+{ "message": "Password updated. Please log in." }
+// → 400 on bad token, weak password, or replay attempt
+```
+
 ### POST /api/account/data-export
 **Auth required. Rate-limited to 1 per 24 hours.** Logs a data export request and notifies admin.
 ```json

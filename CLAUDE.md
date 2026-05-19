@@ -54,6 +54,7 @@ npm run test:e2e     # client playwright suite
 - **Platform sync**: per-platform sync services live in `services/instagramSyncService.ts` and `services/youtubeSyncService.ts`. They write metrics via `platformMetricsService.writeMetrics()` and `appendHistory()`. Always call `markSyncResult()` in the catch path so the UI can show `token_expired` / `failed` states.
 - **YouTube token refresh**: `refreshAccessTokenIfNeeded()` in `youtubeSyncService.ts` auto-refreshes when <5min remaining and persists via `updateAccessToken()`. Instagram tokens never refresh — if Graph API returns error code 190 / OAuthException, mark `last_sync_status='token_expired'` so user sees Reconnect CTA.
 - **Cron secret**: `process.env.CRON_SECRET` must be a long random hex string. `/api/internal/cron/*` routes return **404** (not 401) on missing/wrong header to avoid signaling endpoint existence.
+- **Password reset tokens**: `password_reset_tokens` table stores only `SHA-256(token || RESET_TOKEN_PEPPER)` — never plaintext. 20-minute expiry, single-use (`used_at` set atomically). `/api/auth/forgot-password` returns the same generic 200 body for both found and unknown emails (with timing jitter on the miss path). `RESET_TOKEN_PEPPER` must be ≥32 chars; `CLIENT_URL` is used to build the reset link. Password rotation via `auth.admin.updateUserById({password})` — Supabase invalidates all refresh tokens server-side on password change.
 
 ## Controller / Service Split Map
 | File | Responsibility |

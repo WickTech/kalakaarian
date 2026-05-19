@@ -32,7 +32,7 @@ export async function recommendCreators(req: AuthRequest, res: Response): Promis
     const { data, error } = await q;
     if (error) { res.status(500).json({ message: error.message }); return; }
 
-    res.json((data || []).map(formatInfluencer));
+    res.json((data || []).map((r: any) => formatInfluencer(r)));
   } catch (err) {
     console.error('Recommend creators error:', err);
     res.status(500).json({ message: 'Server error' });

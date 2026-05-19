@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Session 14: Forgot/Reset Password (2026-05-19)
+
+### Added
+- **`POST /api/auth/forgot-password`** — accepts an email, always returns the same generic 200 body to prevent user enumeration. Per-IP rate limit 10/hr; per-email DB-count rate limit 5/hr; 100-250ms jitter on the not-found path to defeat timing attacks. Prior unused tokens for the user are invalidated on each new request.
+- **`GET /api/auth/validate-reset-token?token=...`** — non-consuming token check. Returns `{ valid, reason }` for `expired | used | invalid`. Per-IP 30/hr.
+- **`POST /api/auth/reset-password`** — single-use. Enforces strong password (≥8 chars, upper/lower/digit/special). Atomically marks token consumed, calls `auth.admin.updateUserById({password})` (Supabase invalidates all refresh tokens on password rotation), sends a "password changed" email with IP + UA. Per-IP 10/hr.
+- **Migration 032** — `password_reset_tokens` table: `id, user_id, token_hash UNIQUE, expires_at, used_at, ip_address, user_agent, created_at`. Indexes on `user_id` + `expires_at`. RLS deny-all (service-role only).
+- **`utils/passwordResetTokens.ts`** — `generateToken()` (32-byte hex), `hashToken()` (SHA-256 + `RESET_TOKEN_PEPPER`), `STRONG_PASSWORD_RE`, `safeEqualHex()`. Pepper required (≥32 chars) — throws on missing.
+- **Resend templates** — `sendPasswordResetEmail` (branded obsidian-themed HTML + plain-text fallback, 20-min expiry copy, CTA button) and `sendPasswordChangedEmail` (with IP + UA).
+- **Client pages** — `/forgot-password` (`ForgotPasswordPage.tsx`) with 60s resend cooldown and generic-success card; `/reset-password` (`ResetPasswordPage.tsx`) with token pre-validation, show/hide toggle, 4-bar strength meter, expired/used/invalid error states, and 3s post-success redirect to `/login`. Routes lazy-loaded in `App.tsx`. "Forgot password?" link added below the password field on `LoginPage`.
+- **`api.forgotPassword`, `api.validateResetToken`, `api.resetPassword`** in `client/src/lib/api.ts`.
+- **Env vars** — `RESET_TOKEN_PEPPER` (required, ≥32-char hex) + `CLIENT_URL` added to `.env.example`. `RESEND_FROM` documented.
+- **Tests** — `server/src/utils/__tests__/passwordResetTokens.test.ts` covers token shape, determinism, pepper sensitivity, missing-pepper guard, strong-password regex, TTL constant, constant-time hex compare (10 tests, all passing).
+
+### Security
+- Reset tokens are never stored in plaintext — only `SHA-256(token || pepper)`.
+- 20-minute expiry + single-use flag + atomic `used_at` write + DB `UNIQUE(token_hash)` index defeat replay.
+- `crypto.timingSafeEqual` used for hex comparison; jitter on unknown-email path defeats user enumeration via response timing.
+- Reset URL only carries plaintext token in the email body — never logged server-side.
+- No CSRF middleware required (Bearer auth in headers; unauthed reset endpoints rely on single-use signed-hash tokens).
+- Google-only accounts can use this flow to set a password without losing OAuth (`auth.admin.updateUserById` adds a password to the auth.users row; OAuth provider link remains).
+
 ## [Unreleased] — Session 13: Google OAuth Gate + Full Creator Onboarding + Pricing Fixes (2026-05-18)
 
 ### Added

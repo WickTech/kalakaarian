@@ -1,5 +1,5 @@
 import { Response, Request } from 'express';
-import { adminClient } from '../config/supabase';
+import { adminClient, createAuthClient } from '../config/supabase';
 import { AuthRequest } from '../middleware/auth';
 
 export const getProfile = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -98,7 +98,7 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
     if (!profileRow?.email) {
       res.status(400).json({ message: 'Cannot update password — no email on account' }); return;
     }
-    const { error: verifyError } = await adminClient.auth.signInWithPassword({
+    const { error: verifyError } = await createAuthClient().auth.signInWithPassword({
       email: profileRow.email,
       password: currentPassword,
     });

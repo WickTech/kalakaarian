@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { adminClient } from '../config/supabase';
+import { adminClient, createAuthClient } from '../config/supabase';
 import { AuthRequest } from '../middleware/auth';
 import { sendAdminAlertEmail } from '../services/emailService';
 
@@ -27,7 +27,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
       if (!profileRow?.email) {
         res.status(400).json({ message: 'Cannot verify identity — no email on account' }); return;
       }
-      const { error: verifyError } = await adminClient.auth.signInWithPassword({
+      const { error: verifyError } = await createAuthClient().auth.signInWithPassword({
         email: profileRow.email,
         password,
       });

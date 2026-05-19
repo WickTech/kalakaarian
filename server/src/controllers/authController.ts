@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { adminClient } from '../config/supabase';
+import { adminClient, createAuthClient } from '../config/supabase';
 import { sendLoginOTP } from './otpController';
 import { sendWelcomeEmail } from '../services/emailService';
 
@@ -123,7 +123,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     let token = '';
     if (email) {
-      const { data: signIn } = await adminClient.auth.signInWithPassword({ email, password });
+      // Ephemeral client — keeps adminClient session clean across warm lambdas.
+      const { data: signIn } = await createAuthClient().auth.signInWithPassword({ email, password });
       token = signIn?.session?.access_token ?? '';
     }
 
@@ -173,7 +174,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       loginEmail = row.email;
     }
 
-    const { data, error } = await adminClient.auth.signInWithPassword({ email: loginEmail, password });
+    const { data, error } = await createAuthClient().auth.signInWithPassword({ email: loginEmail, password });
     if (error || !data.session) {
       res.status(400).json({ message: 'Invalid credentials' }); return;
     }

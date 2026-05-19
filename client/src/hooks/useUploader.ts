@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useUploadStore, UploadItem, UploadPurpose, selectItems } from '@/stores/uploadStore';
 import { uploadFile, UploadError } from '@/lib/upload/uploadFile';
 import { compressImage } from '@/lib/upload/compressImage';
@@ -36,7 +37,7 @@ export function useUploader(opts: UseUploaderOptions) {
   const patch = useUploadStore((s) => s.patch);
   const remove = useUploadStore((s) => s.remove);
   const clear = useUploadStore((s) => s.clear);
-  const items = useUploadStore(selectItems);
+  const items = useUploadStore(useShallow(selectItems));
 
   const ownItems = useMemo(
     () => items.filter((i) => i.purpose === opts.purpose),

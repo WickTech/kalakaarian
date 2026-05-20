@@ -81,7 +81,9 @@ Schema lives in `supabase/migrations/`. Rules:
 - Document any backfill in `docs/CHANGELOG.md`.
 
 ## Testing
-No server test suite yet. When adding one, use Vitest + a dedicated Supabase test project (not a mock). Keep tests in `server/src/__tests__/`.
+Runner is the built-in `node:test` (`npm test` → `node -r ts-node/register --test 'src/**/*.test.ts'`).
+- **Unit tests** — co-located in `__tests__/` dirs (e.g. `utils/__tests__/`, `modules/campaigns/__tests__/`).
+- **Integration tests** — `src/__tests__/integration/`. Real HTTP against the real app + a real Supabase project. Opt-in: skipped unless `SUPABASE_TEST_URL` + `SUPABASE_TEST_SERVICE_ROLE_KEY` are set. See `src/__tests__/integration/README.md`. Never point them at production.
 
 ## Common mistakes to avoid
 - ❌ Calling `app.listen` in `app.ts` — Vercel will fail to bundle.

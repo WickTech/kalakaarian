@@ -16,16 +16,25 @@ import { validate } from '../middleware/validate';
 
 const router = Router();
 
-// Cast needed due to @types/express-serve-static-core version mismatch between root and server node_modules
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20 }) as unknown as RequestHandler;
-const forgotLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 10 }) as unknown as RequestHandler;
-const validateTokenLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 30 }) as unknown as RequestHandler;
-const resetLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 10 }) as unknown as RequestHandler;
-const otpLimiter = rateLimit({
+// Rate limiters are disabled only under NODE_ENV=test so the integration suite
+// can exercise these endpoints without tripping production throttles. They are
+// always active outside test. The `as unknown as RequestHandler` cast works
+// around an @types/express-serve-static-core version mismatch between the root
+// and server node_modules.
+const testMode = process.env.NODE_ENV === 'test';
+const passthrough: RequestHandler = (_req, _res, next) => next();
+const limiter = (opts: Parameters<typeof rateLimit>[0]): RequestHandler =>
+  testMode ? passthrough : (rateLimit(opts) as unknown as RequestHandler);
+
+const authLimiter = limiter({ windowMs: 15 * 60 * 1000, max: 20 });
+const forgotLimiter = limiter({ windowMs: 60 * 60 * 1000, max: 10 });
+const validateTokenLimiter = limiter({ windowMs: 60 * 60 * 1000, max: 30 });
+const resetLimiter = limiter({ windowMs: 60 * 60 * 1000, max: 10 });
+const otpLimiter = limiter({
   windowMs: 60 * 60 * 1000,
   max: 5,
   keyGenerator: (r: any) => (r.body?.phone as string) || r.ip || 'unknown',
-}) as unknown as RequestHandler;
+});
 
 router.post(
   '/register',

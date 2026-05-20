@@ -1,73 +1,87 @@
-# Welcome to your Lovable project
+# Kalakaarian — Client
 
-## Project info
+React 18 + Vite 5 + TypeScript frontend for the Kalakaarian creator-brand marketplace.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Stack
 
-## How can I edit this code?
+| Tool | Purpose |
+|---|---|
+| React 18 + TypeScript | UI framework |
+| Vite 5 | Build + dev server |
+| Tailwind CSS 3 + shadcn/ui | Design system |
+| TanStack Query v5 | Server state, caching, refetch |
+| React Router DOM v6 | Client-side routing |
+| React Hook Form + Zod | Forms + validation |
+| Vitest | Unit tests |
+| Playwright | E2E tests |
 
-There are several ways of editing your application.
+## Dev
 
-**Use Lovable**
+```bash
+# From repo root
+npm run client       # Vite dev server at http://localhost:5173
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Or point at a deployed API
+VITE_API_URL=https://kalakaarian-server.vercel.app/api npm run client
 ```
 
-**Edit a file directly in GitHub**
+For a full local stack (client + serverless API together):
+```bash
+vercel dev           # from repo root — reads vercel.json
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Build
 
-**Use GitHub Codespaces**
+```bash
+cd client && npm run build    # outputs to client/dist/
+cd client && npm run lint
+cd client && npm run test
+cd client && npm run test:e2e
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Key Conventions
 
-## What technologies are used for this project?
+- **Never call fetch/axios directly** — use `src/lib/api.ts` (auto-attaches JWT, 401 → `/login`)
+- **Auth token key**: `kalakariaan_token` in localStorage (preserve the typo — renaming logs everyone out)
+- **Never re-apply the 5% platform margin** — server already includes it in all brand-facing reads
+- **Never hand-edit `src/components/ui/`** — those are shadcn primitives, regenerate via CLI
+- **200-line file limit** — split pages by section when approaching the limit
 
-This project is built with:
+## Folder Structure
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+src/
+├── api/              # axios instance with JWT + 401 handling
+├── components/       # shared UI components
+│   ├── account/      # InlineEditField and account-page components
+│   ├── creator-onboarding/  # 11 wizard step components (shared across email + Google paths)
+│   ├── marketplace/  # MarketplaceToolbar, etc.
+│   ├── profile/      # ProfileGallery, OwnerActionsBar, CommercialsPricingSection
+│   └── ui/           # shadcn primitives — do not hand-edit
+├── hooks/            # useAuth, useCart, useRealtimeCampaignCreator
+├── lib/              # api.ts (typed client), queryKeys.ts, influencerMappers.ts
+├── pages/            # one default export per page
+│   ├── account/      # /account/* — Personal Info, Security, Connected Apps, etc.
+│   └── ...
+└── styles/           # globals.css, design tokens
+```
 
-## How can I deploy this project?
+## Auth Flow
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+1. Login → `kalakariaan_token` (Supabase access JWT, 1hr TTL) + `kalakariaan_user` stored in localStorage
+2. `api.ts` attaches `Authorization: Bearer <token>` to every request
+3. On 401 → localStorage cleared → redirect to `/login`
+4. `useAuth` hook reads from localStorage + exposes `user`, `isSuperAdmin`, `viewAs`
+5. `ProtectedRoute`, `BrandRoute`, `InfluencerRoute` guard pages by role + `onboarding_completed` flag
 
-## Can I connect a custom domain to my Lovable project?
+## Business Rules (don't break these)
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+| Rule | Where enforced |
+|---|---|
+| 5% platform margin already in API response | `applyPlatformMargin()` runs server-side — display as-is |
+| 8% platform fee at checkout | Server-only, in Razorpay order creation |
+| Tier enum: `nano/micro/macro/celeb` | No `mid`, no `mega` |
+| Gender enum: `male/female/non_binary/prefer_not_to_say` | Exact values only for `?gender=` |
+| Max 3 niches per creator | Enforced in registration wizard, Google onboarding, and account settings |
+| Gallery max 6 images | `MAX_GALLERY = 6` in `ProfileGallery.tsx` |
+| Commercials locked 6 months | First-time setup bypasses lock; lock activates once rows exist |

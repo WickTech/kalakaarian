@@ -85,6 +85,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Kalakaar count display ("X Kalakaars")
 - **Creator profile 404 fix** — Kalakaars who never toggled presence (new accounts) are now accessible from marketplace cards
 - **Genre filter fix** — multi-niche Kalakaars correctly appear when filtering by any of their niches (not just the first)
+- **Search covers username / location / genre** — text search bar finds creators by Kalakaarian username, city, or genre/niche name; fixes a PostgREST embedded-join bug that returned all cards as "Unknown" on username search (two-step ID lookup now used server-side)
 
 ### Cart & Checkout
 - Cart context shared across app (single state instance)
@@ -138,7 +139,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 ### Account Hub (`/account/*`)
 - **Google Account–style settings** — unified hub replacing scattered `/profile/edit`, `InfluencerDashboard?tab=settings`, and brand settings pages
 - **Sidebar navigation** — Home, Personal Info, Security, Connected Apps (creator only), Data & Privacy, Payments & Subscriptions; sticky on `md+`, collapsible drawer on mobile
-- **Personal Info** — **pencil-per-field inline edit** (`InlineEditField` generic component: text / textarea / select / multiselect / image). Creator fields: profile image upload, name, username, phone, gender, bio, city, state, IG/YT handles, 25 niches. Each save invalidates `['influencer-profile-own']`, `['influencer-profile', id]`, `['influencers']` for instant cross-page sync. Brand path uses a separate `BrandPersonalInfo` form (name, email, phone, industry). Bottom **Commercials view** shows per-platform pricing (Instagram: Reels + Story; YouTube: Video + Shorts) — values stay visible during 6-month lock; lock badge shows the unlock date
+- **Personal Info** — **pencil-per-field inline edit** (`InlineEditField` generic component: text / textarea / select / multiselect / image). Creator fields: profile image upload, name, username, phone, gender, bio, city, state, IG/YT handles, up to 3 niches (out of 25 options — cap enforced in registration, onboarding, and account settings). Each save invalidates `['influencer-profile-own']`, `['influencer-profile', id]`, `['influencers']` for instant cross-page sync. Brand path uses a separate `BrandPersonalInfo` form (name, email, phone, industry). Bottom **Commercials view** shows per-platform pricing (Instagram: Reels + Story; YouTube: Video + Shorts) — values stay visible during 6-month lock; lock badge shows the unlock date
 - **Security** — password change, sign-out-all sessions (Supabase global signout), danger zone with account deletion (requires current password + typing `delete`; password verified server-side via `signInWithPassword` before deletion; wrong password shown inline under the field with red highlight; Google-only accounts skip password check)
 - **Connected Apps** (creator only) — `PlatformConnectCard` for Instagram + YouTube; Razorpay read-only linked row
 - **Data & Privacy** — marketplace visibility, discoverability, presence visibility, profile visibility toggles; notification preference toggles (campaigns, proposals, messages, payments, marketing); data export request
@@ -149,14 +150,15 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 ### Profile System — Kalakaar
 - Public Kalakaar profile (`/influencer/:id`) — full-page with:
   - **Profile header** — pencil (→ `/account/personal`) + settings icons visible on own profile; orange rating box; Instagram + YouTube handles always shown (italic "not connected" if absent); `city, state` on own row below social handles
-  - **Kalakaar Portfolio** — snap-scroll carousel, multi-file upload (max 12), prev/next arrows, radio-dot indicators, image count overlay; owner-only **Replace** (single image swap at selected index) and **Remove** controls below the selected image
+  - **Kalakaar Portfolio** — snap-scroll carousel, multi-file upload (max 6), prev/next arrows, radio-dot indicators, image count overlay; owner-only **Replace** (single image swap at selected index) and **Remove** controls below the selected image; concurrent multi-select uploads batch correctly via debounced flush (no race condition)
   - **Social Media section** — per-platform IG/YT cards (followers, ER%, price); compact "Select Kalakaar" CTA row
   - **"Select Kalakaar — Choose Platforms"** CTA for brand view (non-celeb only) — scrolls to Social Media section
   - **Analytics section** — engagement rate, avg views, reach estimate, authenticity score
   - **Creator Campaigns** (own profile only) — running vs previous proposals with status badges + invoice placeholder
   - **Wallet modal** (own profile only) — current balance, total earnings, link to transactions
-  - **OwnerActionsBar** (own profile only) — online presence toggle (Active / "Offline Xm ago" ticking); Edit profile link; Settings link; Wallet button; Analytics scroll button
-- Edit Kalakaar profile (`/profile/edit`) — dark obsidian theme; days-as-Kalakaar counter badge (🔥); email display (read-only); city + state grid; @-handle UI with @ prefix label; 25 niche options; **Commercials** section (IG reel/story + YT video/shorts with ₹ prefix); **profile changes reflect immediately on the public profile page** (query cache invalidated on save)
+  - **OwnerActionsBar** (own profile only) — online presence toggle (Active / "Offline Xm ago" ticking with bright red timestamp); Edit profile link; Settings link; Wallet button; Analytics scroll button
+  - **Reload auth fix** — expired Supabase tokens (1-hour TTL) now trigger a clean 401 redirect to `/login` instead of leaving creators stuck at "Complete your profile" spinner; `authLoading` guard prevents "Creator not found" flash during initial auth resolve
+- Edit Kalakaar profile (`/profile/edit`) — dark obsidian theme; days-as-Kalakaar counter badge (🔥); email display (read-only); city + state grid; @-handle UI with @ prefix label; 25 niche options (max 3 selectable); **Commercials** section (IG reel/story + YT video/shorts with ₹ prefix); **profile changes reflect immediately on the public profile page** (query cache invalidated on save)
 - **Commercials pricing lock** — pricing inputs are locked for the first 6 months from registration; **first-time setup bypasses the lock** so creators can always enter their initial rates (the lock activates only once rows exist). Values remain **visible** during the lock window (amber banner above the section instead of a blur overlay)
 - **Commercials pricing** — `pricing` object with keys `reel | story | video | post | shorts`; 5% platform margin applied on brand-facing reads via `applyPlatformMargin` (passes through all 5 keys including `shorts`)
 - **`POST /api/account/avatar`** — base64 image upload, 2MB cap, PNG/JPEG/WebP whitelist → Supabase Storage `avatars/profile/<userId>/<ts>.<ext>` → writes `profiles.avatar_url`

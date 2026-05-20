@@ -12,7 +12,7 @@
 | 2 | Backend modularization | 🟢 ~95% — all 9 modules done; 2 cross-cutting items left |
 | 3 | Event system + jobs (pg_cron queue) | 🟡 Infra done — handler migration ongoing |
 | 4 | Realtime platform | 🟢 ~90% — messaging/notifications/presence/campaign live |
-| 5 | Scale + performance | ⬜ Not started |
+| 5 | Scale + performance | 🟢 ~80% — base schema already indexed; verified |
 | 6 | Security hardening | 🟡 Webhook replay + rate-limit + timing-safe done |
 | 7 | Advanced marketplace systems | ⬜ Not started |
 
@@ -145,12 +145,32 @@ still load once per mount). Lower value — defer or wire on demand.
 
 ---
 
-## Phase 5 — Scale + performance ⬜
-- DB indexes audit (FTS, tier/city filters, `campaign_creators` joins)
-- Pagination on every list endpoint (most done; audit admin lists)
-- HTTP caching headers (some present on influencer reads)
-- Media: CDN-ready Supabase image transforms, responsive variants
-- Prep `pgvector` for semantic creator search (Phase 7 dependency)
+## Phase 5 — Scale + performance 🟢 ~80%
+
+Audited the live DB (`pg_indexes`): the base v2 schema is **already
+thoroughly indexed** — 40+ indexes covering every marketplace filter
+(tier / city / gender / niches GIN / platforms GIN / min_price), both FTS
+columns (GIN on `influencer_profiles.fts` + `campaigns.fts`), every FK, and
+the hot transaction / notification / message paths. No redundant indexes
+were added.
+
+Done:
+- **Migration `038_perf_indexes.sql`** — the one genuinely missing index:
+  a partial index on `campaign_creators(auto_approve_at)
+  WHERE workflow_stage = 'under_review'` for the auto-approve cron. Also
+  enables the `vector` extension (pgvector prep for Phase 7).
+- Pagination — already present on every list endpoint (campaigns +
+  influencers paginate with clamped limits; admin / wallet / notifications
+  cap their result sets).
+- Search indexing — FTS GIN indexes already exist; the two-step ID-lookup
+  search optimisation shipped earlier (commit `ef9065d`).
+- HTTP cache headers already on the influencer reads + tier-counts.
+
+Remaining:
+- CDN-ready image transforms (Supabase render endpoint) — needs a project
+  plan check (image transformation is a Pro-plan feature); deferred to avoid
+  shipping broken image URLs on the free tier.
+- Responsive image variants — pairs with the above.
 
 ## Phase 6 — Security hardening 🟡
 

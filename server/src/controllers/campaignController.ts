@@ -5,22 +5,22 @@ import { formatInfluencer } from './influencerController';
 
 const CAMPAIGN_SELECT = '*, profiles!campaigns_brand_id_fkey(name, email)';
 
+// Brands list their own campaigns. Creators have no open-campaign browse;
+// they only see campaigns brands have attached them to (via campaign_creators).
 export const getCampaigns = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user) { res.status(401).json({ message: 'Unauthorized' }); return; }
+    if (req.user.role !== 'brand') {
+      res.status(403).json({ message: 'Brands only' }); return;
+    }
     const { status, genre, platform, page = 1, limit = 20 } = req.query;
     const clampedLimit = Math.min(Number(limit) || 20, 100);
     const from = (Number(page) - 1) * clampedLimit;
     const to = from + clampedLimit - 1;
 
-    let q = adminClient.from('campaigns').select(CAMPAIGN_SELECT, { count: 'exact' });
-
-    if (req.user.role === 'brand') {
-      q = q.eq('brand_id', req.user.userId);
-      if (status) q = q.eq('status', status as string);
-    } else {
-      q = q.eq('status', 'open');
-    }
+    let q = adminClient.from('campaigns').select(CAMPAIGN_SELECT, { count: 'exact' })
+      .eq('brand_id', req.user.userId);
+    if (status) q = q.eq('status', status as string);
     if (genre) q = q.overlaps('niches', Array.isArray(genre) ? genre : [genre]);
     if (platform) q = q.overlaps('platforms', Array.isArray(platform) ? platform : [platform]);
 
@@ -33,32 +33,6 @@ export const getCampaigns = async (req: AuthRequest, res: Response): Promise<voi
     });
   } catch (error) {
     console.error('Get campaigns error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-export const getOpenCampaigns = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const { genre, platform, budgetMin, budgetMax, page = 1, limit = 20 } = req.query;
-    const clampedLimit = Math.min(Number(limit) || 20, 100);
-    const from = (Number(page) - 1) * clampedLimit;
-    const to = from + clampedLimit - 1;
-
-    let q = adminClient.from('campaigns').select(CAMPAIGN_SELECT, { count: 'exact' }).eq('status', 'open');
-    if (genre) q = q.overlaps('niches', Array.isArray(genre) ? genre : [genre]);
-    if (platform) q = q.overlaps('platforms', Array.isArray(platform) ? platform : [platform]);
-    if (budgetMin) q = q.gte('budget', Number(budgetMin));
-    if (budgetMax) q = q.lte('budget', Number(budgetMax));
-
-    const { data, count, error } = await q.order('created_at', { ascending: false }).range(from, to);
-    if (error) throw error;
-
-    res.json({
-      campaigns: data ?? [],
-      pagination: { page: Number(page), limit: clampedLimit, total: count ?? 0, pages: Math.ceil((count ?? 0) / clampedLimit) },
-    });
-  } catch (error) {
-    console.error('Get open campaigns error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

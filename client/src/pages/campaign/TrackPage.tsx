@@ -33,7 +33,7 @@ export default function CampaignTrackPage() {
 
   const { data: proposals = [], isLoading, dataUpdatedAt, refetch } = useQuery<Proposal[]>({
     queryKey: ['campaignProposals', id],
-    queryFn: () => api.getProposalsForCampaign(id!),
+    queryFn: () => api.getCampaignCreatorsForCampaign(id!),
     enabled: !!id,
     refetchInterval: 15_000,
   });
@@ -102,7 +102,7 @@ export default function CampaignTrackPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-chalk truncate">{p.influencerName}</p>
-                      <p className="text-xs text-chalk-dim">₹{p.bidAmount?.toLocaleString('en-IN')}</p>
+                      <p className="text-xs text-chalk-dim">₹{p.agreedPrice?.toLocaleString('en-IN')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

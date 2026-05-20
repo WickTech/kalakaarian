@@ -30,7 +30,7 @@ function CampaignTrackCard({ campaign }: { campaign: Campaign }) {
 
   const { data: proposals = [] } = useQuery<Proposal[]>({
     queryKey: ["campaign-proposals-track", campaign.id],
-    queryFn: () => api.getProposalsForCampaign(campaign.id),
+    queryFn: () => api.getCampaignCreatorsForCampaign(campaign.id),
     enabled: open,
     staleTime: 60_000,
     refetchInterval: open ? 30_000 : false,
@@ -102,7 +102,7 @@ function CampaignTrackCard({ campaign }: { campaign: Campaign }) {
                     }`}>
                       {STAGE_SHORT[p.workflow_stage ?? ""] ?? "—"}
                     </span>
-                    <span className="text-xs text-chalk-dim shrink-0">₹{p.bidAmount?.toLocaleString("en-IN")}</span>
+                    <span className="text-xs text-chalk-dim shrink-0">₹{p.agreedPrice?.toLocaleString("en-IN")}</span>
                   </div>
                 ))}
               </div>

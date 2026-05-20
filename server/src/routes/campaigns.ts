@@ -5,8 +5,7 @@ import {
   getCampaigns, getCampaignById, createCampaign, updateCampaign, deleteCampaign,
   getCampaignInfluencers,
 } from '../controllers/campaignController';
-import { getProposals } from '../controllers/proposalController';
-import { updateProposalStatus } from '../controllers/proposalActions';
+import { getCampaignCreators } from '../controllers/campaignCreatorController';
 import { auth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
@@ -29,14 +28,13 @@ router.post(
     body('description').notEmpty().withMessage('Description is required'),
   ],
   validate,
-  createCampaign
+  createCampaign,
 );
 
 router.get('/:id/influencers', auth, getCampaignInfluencers);
 router.put('/:id', auth, updateCampaign);
 router.delete('/:id', auth, deleteCampaign);
 
-router.get('/:id/proposals', auth, getProposals);
-router.put('/proposals/:proposalId/status', auth, updateProposalStatus);
+router.get('/:id/creators', auth, getCampaignCreators);
 
 export default router;

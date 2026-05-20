@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { Search, FileText, Users, BarChart2, Wallet } from "lucide-react";
+import { Search, Users, BarChart2, Wallet } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { api, Campaign, Proposal } from "@/lib/api";
-import { BrandProposalsModal } from "@/components/BrandProposalsModal";
+import { api, Campaign } from "@/lib/api";
 import { CampaignInfluencersPanel } from "@/components/CampaignInfluencersPanel";
 import { RecommendedCreators } from "@/components/RecommendedCreators";
 import { BrandAnalyticsPanel } from "@/components/BrandAnalyticsPanel";
@@ -35,7 +34,6 @@ export default function BrandDashboard() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [tab, setTab] = useState<Tab>(normalizeTab(searchParams.get("tab")));
-  const [viewingCampaignId, setViewingCampaignId] = useState<string | null>(null);
   const [viewingInfluencersCampaign, setViewingInfluencersCampaign] = useState<Campaign | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const popoverAnchor = useRef<HTMLButtonElement>(null);
@@ -53,12 +51,6 @@ export default function BrandDashboard() {
   const { data: analytics } = useQuery({
     queryKey: ["brand-analytics"],
     queryFn: () => api.getBrandAnalytics(),
-  });
-
-  const { data: viewingProposals = [] } = useQuery<Proposal[]>({
-    queryKey: ["campaign-proposals", viewingCampaignId],
-    queryFn: () => api.getProposalsForCampaign(viewingCampaignId!),
-    enabled: !!viewingCampaignId,
   });
 
   const { data: brandProfile } = useQuery({
@@ -183,10 +175,6 @@ export default function BrandDashboard() {
                                       className="text-xs text-purple-400 hover:underline flex items-center gap-1">
                                       <Users className="w-3 h-3" /> Creators
                                     </button>
-                                    <button onClick={() => setViewingCampaignId(c.id)}
-                                      className="text-xs text-gold hover:underline flex items-center gap-1">
-                                      <FileText className="w-3 h-3" /> Proposals
-                                    </button>
                                     <Link to={`/brand/campaigns/${c.id}/track`}
                                       className="text-xs text-chalk-dim hover:text-chalk flex items-center gap-1">
                                       <BarChart2 className="w-3 h-3" /> Track
@@ -221,13 +209,6 @@ export default function BrandDashboard() {
         )}
       </div>
 
-      {viewingCampaignId && (
-        <BrandProposalsModal
-          campaignId={viewingCampaignId}
-          proposals={viewingProposals}
-          onClose={() => setViewingCampaignId(null)}
-        />
-      )}
       {viewingInfluencersCampaign && (
         <CampaignInfluencersPanel
           campaignId={viewingInfluencersCampaign.id}

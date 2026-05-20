@@ -111,12 +111,12 @@ export interface WorkflowSubmission {
   submittedAt: string;
 }
 
-export interface IProposal {
+export interface ICampaignCreator {
   id: string;
   campaign_id: string;
   influencer_id: string;
   message?: string | null;
-  bid_amount?: number | null;
+  agreed_price?: number | null;
   status: 'submitted' | 'accepted' | 'rejected' | 'withdrawn';
   workflow_stage?: WorkflowStage | null;
   workflow_stage_updated_at?: string | null;

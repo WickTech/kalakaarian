@@ -18,12 +18,12 @@ router.get('/brand', auth, async (req: AuthRequest, res: Response): Promise<void
     const campaignIds = (brandCampaignsResult.data ?? []).map((c: { id: string }) => c.id);
 
     const [totalProps, acceptedProps, rejectedProps] = await Promise.all([
-      adminClient.from('proposals').select('id', { count: 'exact', head: true }).in('campaign_id', campaignIds),
-      adminClient.from('proposals').select('bid_amount').in('campaign_id', campaignIds).eq('status', 'accepted'),
-      adminClient.from('proposals').select('id', { count: 'exact', head: true }).in('campaign_id', campaignIds).eq('status', 'rejected'),
+      adminClient.from('campaign_creators').select('id', { count: 'exact', head: true }).in('campaign_id', campaignIds),
+      adminClient.from('campaign_creators').select('agreed_price').in('campaign_id', campaignIds).eq('status', 'accepted'),
+      adminClient.from('campaign_creators').select('id', { count: 'exact', head: true }).in('campaign_id', campaignIds).eq('status', 'rejected'),
     ]);
 
-    const totalSpent = (acceptedProps.data ?? []).reduce((sum: number, p: { bid_amount?: number | null }) => sum + (p.bid_amount ?? 0), 0);
+    const totalSpent = (acceptedProps.data ?? []).reduce((sum: number, p: { agreed_price?: number | null }) => sum + (p.agreed_price ?? 0), 0);
 
     res.json({
       campaigns: { total: total.count ?? 0, open: open.count ?? 0, inProgress: 0, completed: closed.count ?? 0 },
@@ -47,14 +47,14 @@ router.get('/influencer', auth, async (req: AuthRequest, res: Response): Promise
     const userId = req.user!.userId;
 
     const [total, accepted, rejected] = await Promise.all([
-      adminClient.from('proposals').select('id', { count: 'exact', head: true }).eq('influencer_id', userId),
-      adminClient.from('proposals').select('bid_amount').eq('influencer_id', userId).eq('status', 'accepted'),
-      adminClient.from('proposals').select('id', { count: 'exact', head: true }).eq('influencer_id', userId).eq('status', 'rejected'),
+      adminClient.from('campaign_creators').select('id', { count: 'exact', head: true }).eq('influencer_id', userId),
+      adminClient.from('campaign_creators').select('agreed_price').eq('influencer_id', userId).eq('status', 'accepted'),
+      adminClient.from('campaign_creators').select('id', { count: 'exact', head: true }).eq('influencer_id', userId).eq('status', 'rejected'),
     ]);
 
     const totalCount = total.count ?? 0;
     const acceptedCount = (accepted.data ?? []).length;
-    const totalEarnings = (accepted.data ?? []).reduce((sum: number, p: { bid_amount?: number | null }) => sum + (p.bid_amount ?? 0), 0);
+    const totalEarnings = (accepted.data ?? []).reduce((sum: number, p: { agreed_price?: number | null }) => sum + (p.agreed_price ?? 0), 0);
 
     res.json({
       proposals: {
@@ -86,7 +86,7 @@ router.get('/brand/deep', auth, async (req: AuthRequest, res: Response): Promise
     (campaigns || []).forEach((c: any) => { titleMap[c.id] = c.title; });
 
     const { data: proposals } = await adminClient
-      .from('proposals').select('bid_amount, workflow_stage, campaign_id').in('campaign_id', campaignIds);
+      .from('campaign_creators').select('agreed_price, workflow_stage, campaign_id').in('campaign_id', campaignIds);
     const all = proposals || [];
 
     const stageCounts: Record<string, number> = {};
@@ -102,7 +102,7 @@ router.get('/brand/deep', auth, async (req: AuthRequest, res: Response): Promise
 
     const workflowAll = all.filter((p: any) => p.workflow_stage);
     const avgBid = workflowAll.length > 0
-      ? Math.round(workflowAll.reduce((s: number, p: any) => s + (p.bid_amount ?? 0), 0) / workflowAll.length)
+      ? Math.round(workflowAll.reduce((s: number, p: any) => s + (p.agreed_price ?? 0), 0) / workflowAll.length)
       : 0;
 
     res.json({
@@ -123,7 +123,7 @@ router.get('/influencer/deep', auth, async (req: AuthRequest, res: Response): Pr
     const userId = req.user!.userId;
 
     const [proposalsRes, profileRes] = await Promise.all([
-      adminClient.from('proposals').select('workflow_stage, bid_amount').eq('influencer_id', userId),
+      adminClient.from('campaign_creators').select('workflow_stage, agreed_price').eq('influencer_id', userId),
       adminClient.from('influencer_profiles').select('avg_rating, rating_count').eq('id', userId).single(),
     ]);
 
@@ -156,8 +156,8 @@ router.get('/influencer/monthly', auth, async (req: AuthRequest, res: Response):
     const since = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data } = await adminClient
-      .from('proposals')
-      .select('bid_amount, created_at')
+      .from('campaign_creators')
+      .select('agreed_price, created_at')
       .eq('influencer_id', userId)
       .eq('status', 'accepted')
       .gte('created_at', since);
@@ -169,11 +169,11 @@ router.get('/influencer/monthly', auth, async (req: AuthRequest, res: Response):
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       monthMap[key] = { earnings: 0, proposals: 0 };
     }
-    (data || []).forEach((p: { bid_amount?: number | null; created_at: string }) => {
+    (data || []).forEach((p: { agreed_price?: number | null; created_at: string }) => {
       const d = new Date(p.created_at);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       if (monthMap[key]) {
-        monthMap[key].earnings += p.bid_amount ?? 0;
+        monthMap[key].earnings += p.agreed_price ?? 0;
         monthMap[key].proposals++;
       }
     });

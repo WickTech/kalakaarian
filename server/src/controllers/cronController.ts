@@ -16,7 +16,7 @@ export async function autoApproveExpired(req: Request, res: Response): Promise<v
 
   try {
     const { data: candidates, error } = await adminClient
-      .from('proposals')
+      .from('campaign_creators')
       .select('id')
       .eq('workflow_stage', 'under_review')
       .lte('auto_approve_at', new Date().toISOString())
@@ -26,7 +26,7 @@ export async function autoApproveExpired(req: Request, res: Response): Promise<v
 
     for (const row of candidates ?? []) {
       const { error: rpcError } = await adminClient.rpc('transition_workflow_stage', {
-        p_proposal_id: row.id,
+        p_campaign_creator_id: row.id,
         p_actor_id: null,
         p_actor_role: 'system',
         p_expected_stage: 'under_review',

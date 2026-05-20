@@ -35,7 +35,7 @@ router.get('/influencer', auth, async (req: AuthRequest, res: Response): Promise
     const userId = req.user!.userId;
 
     const [proposalsRes, profileRes, ratingsRes] = await Promise.all([
-      adminClient.from('proposals').select('workflow_stage').eq('influencer_id', userId),
+      adminClient.from('campaign_creators').select('workflow_stage').eq('influencer_id', userId),
       adminClient.from('influencer_profiles').select('avg_rating, rating_count').eq('id', userId).single(),
       adminClient.from('ratings').select('score').eq('ratee_id', userId).eq('rater_role', 'brand'),
     ]);
@@ -64,7 +64,7 @@ router.get('/influencer/:id/public', async (req: Request, res: Response): Promis
     const userId = req.params.id;
 
     const [proposalsRes, profileRes] = await Promise.all([
-      adminClient.from('proposals').select('workflow_stage').eq('influencer_id', userId),
+      adminClient.from('campaign_creators').select('workflow_stage').eq('influencer_id', userId),
       adminClient.from('influencer_profiles').select('avg_rating, rating_count').eq('id', userId).maybeSingle(),
     ]);
 

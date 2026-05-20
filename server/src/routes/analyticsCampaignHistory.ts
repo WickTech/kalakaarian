@@ -19,14 +19,14 @@ router.get('/brand/campaigns/history', auth, async (req: AuthRequest, res: Respo
 
     const ids = (campaigns || []).map((c: { id: string }) => c.id);
     const { data: proposals } = ids.length
-      ? await adminClient.from('proposals').select('campaign_id, bid_amount, status, workflow_stage').in('campaign_id', ids)
+      ? await adminClient.from('campaign_creators').select('campaign_id, agreed_price, status, workflow_stage').in('campaign_id', ids)
       : { data: [] };
 
     interface CampaignStats { accepted: number; completed: number; totalSpend: number; }
     const stats: Record<string, CampaignStats> = {};
-    (proposals || []).forEach((p: { campaign_id: string; bid_amount?: number | null; status: string; workflow_stage?: string | null }) => {
+    (proposals || []).forEach((p: { campaign_id: string; agreed_price?: number | null; status: string; workflow_stage?: string | null }) => {
       if (!stats[p.campaign_id]) stats[p.campaign_id] = { accepted: 0, completed: 0, totalSpend: 0 };
-      if (p.status === 'accepted') { stats[p.campaign_id].accepted++; stats[p.campaign_id].totalSpend += p.bid_amount ?? 0; }
+      if (p.status === 'accepted') { stats[p.campaign_id].accepted++; stats[p.campaign_id].totalSpend += p.agreed_price ?? 0; }
       if (p.workflow_stage === 'payment_released') stats[p.campaign_id].completed++;
     });
 

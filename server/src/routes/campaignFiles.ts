@@ -38,7 +38,7 @@ router.get('/:campaignId/files', auth, async (req: AuthRequest, res: Response) =
 
     const isBrand = campaign.brand_id === userId;
     if (!isBrand) {
-      const { data: proposal } = await adminClient.from('proposals')
+      const { data: proposal } = await adminClient.from('campaign_creators')
         .select('id').eq('campaign_id', campaignId).eq('influencer_id', userId).eq('status', 'accepted').single();
       if (!proposal) { res.status(403).json({ message: 'Not authorized' }); return; }
     }

@@ -18,7 +18,7 @@ export const submitRating = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     const { data: proposal, error: propErr } = await adminClient
-      .from('proposals')
+      .from('campaign_creators')
       .select('influencer_id, campaign_id, workflow_stage')
       .eq('id', id)
       .single();
@@ -42,8 +42,8 @@ export const submitRating = async (req: AuthRequest, res: Response): Promise<voi
     const { data: rating, error } = await adminClient
       .from('ratings')
       .upsert(
-        { proposal_id: id, rater_id: req.user.userId, rater_role: raterRole, ratee_id: rateeId, score, review: review ?? null },
-        { onConflict: 'proposal_id,rater_role' },
+        { campaign_creator_id: id, rater_id: req.user.userId, rater_role: raterRole, ratee_id: rateeId, score, review: review ?? null },
+        { onConflict: 'campaign_creator_id,rater_role' },
       )
       .select()
       .single();
@@ -62,7 +62,7 @@ export const getProposalRating = async (req: AuthRequest, res: Response): Promis
     const { data } = await adminClient
       .from('ratings')
       .select('id, score, review, created_at')
-      .eq('proposal_id', req.params.id)
+      .eq('campaign_creator_id', req.params.id)
       .eq('rater_id', req.user.userId)
       .maybeSingle();
     res.json({ rating: data ?? null });

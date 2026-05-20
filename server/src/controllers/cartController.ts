@@ -127,23 +127,42 @@ async function finalizeCartPayment(
     if (txErr) console.error('finalizeCartPayment transaction insert failed:', txErr);
 
     if (campaignId) {
-      const { data: proposal } = await adminClient.from('proposals')
+      // Find existing row, or create one — brand-paid checkout is now the
+      // sole way a campaign_creators row appears (creators no longer bid).
+      // New rows enter at 'approved' so the next transitions are
+      // payment_pending -> payment_released.
+      let { data: ccRow } = await adminClient.from('campaign_creators')
         .select('id, workflow_stage')
         .eq('influencer_id', item.influencer_id)
         .eq('campaign_id', campaignId)
-        .in('workflow_stage', ['approved', 'payment_pending'])
         .order('created_at', { ascending: false })
         .limit(1).maybeSingle();
 
-      if (proposal) {
+      if (!ccRow) {
+        const { data: inserted, error: insertErr } = await adminClient.from('campaign_creators').insert({
+          campaign_id: campaignId,
+          influencer_id: item.influencer_id,
+          agreed_price: item.price,
+          status: 'accepted',
+          workflow_stage: 'approved',
+          workflow_stage_updated_at: new Date().toISOString(),
+        }).select('id, workflow_stage').single();
+        if (insertErr) {
+          console.error('finalizeCartPayment campaign_creators insert failed:', insertErr);
+        } else {
+          ccRow = inserted;
+        }
+      }
+
+      if (ccRow) {
         const rpcBase = {
-          p_proposal_id: proposal.id,
+          p_campaign_creator_id: ccRow.id,
           p_actor_id: null as unknown as string,
           p_actor_role: 'system',
           p_details: { transaction_ref: paymentRef, razorpay_order_id: razorpayOrderId } as Record<string, unknown>,
           p_auto_approve_hours: 72,
         };
-        if (proposal.workflow_stage === 'approved') {
+        if (ccRow.workflow_stage === 'approved') {
           await adminClient.rpc('transition_workflow_stage', {
             ...rpcBase, p_expected_stage: 'approved', p_to_stage: 'payment_pending', p_action: 'mark_payment_pending',
           });

@@ -48,7 +48,7 @@ export function CurrentCampaignPopover({ open, onClose, anchorRef }: Props) {
 
   const { data: proposals = [] } = useQuery<Proposal[]>({
     queryKey: ['campaign-proposals-track', current?.id],
-    queryFn: () => api.getProposalsForCampaign(current!.id),
+    queryFn: () => api.getCampaignCreatorsForCampaign(current!.id),
     enabled: open && !!current,
     staleTime: 30_000,
     refetchInterval: open ? 20_000 : false,

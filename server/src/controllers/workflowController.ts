@@ -4,7 +4,7 @@ import { adminClient } from '../config/supabase';
 
 async function getProposalParties(proposalId: string): Promise<{ influencer_id: string; brand_id: string } | null> {
   const { data } = await adminClient
-    .from('proposals')
+    .from('campaign_creators')
     .select('influencer_id, campaign_id, campaigns(brand_id)')
     .eq('id', proposalId)
     .single();
@@ -24,7 +24,7 @@ export async function getWorkflow(req: AuthRequest, res: Response): Promise<void
   }
 
   const { data, error } = await adminClient
-    .from('proposals')
+    .from('campaign_creators')
     .select('id, status, workflow_stage, workflow_stage_updated_at, auto_approve_at, current_submission, transaction_ref')
     .eq('id', id)
     .single();
@@ -46,9 +46,9 @@ export async function getActivityLog(req: AuthRequest, res: Response): Promise<v
   }
 
   const { data, error } = await adminClient
-    .from('proposal_activity_log')
+    .from('campaign_creator_activity_log')
     .select('id, actor_role, action, from_stage, to_stage, details, created_at')
-    .eq('proposal_id', id)
+    .eq('campaign_creator_id', id)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -61,16 +61,16 @@ export async function getPublicWorkflow(req: Request, res: Response): Promise<vo
   const { id } = req.params;
 
   const { data: proposal } = await adminClient
-    .from('proposals')
+    .from('campaign_creators')
     .select('id, workflow_stage, workflow_stage_updated_at, auto_approve_at')
     .eq('id', id)
     .single();
   if (!proposal) { res.status(404).json({ message: 'Not found' }); return; }
 
   const { data: log } = await adminClient
-    .from('proposal_activity_log')
+    .from('campaign_creator_activity_log')
     .select('id, actor_role, action, from_stage, to_stage, created_at')
-    .eq('proposal_id', id)
+    .eq('campaign_creator_id', id)
     .order('created_at', { ascending: false })
     .limit(50);
 

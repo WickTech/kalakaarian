@@ -30,7 +30,7 @@ async function callRpc(
   autoApproveHours?: number,
 ): Promise<unknown> {
   const { data, error } = await adminClient.rpc('transition_workflow_stage', {
-    p_proposal_id: proposalId,
+    p_campaign_creator_id: proposalId,
     p_actor_id: actorId,
     p_actor_role: actorRole,
     p_expected_stage: expectedStage,
@@ -119,8 +119,8 @@ export async function sendFeedback(req: AuthRequest, res: Response): Promise<voi
     category: string; severity: string; required_changes: string[]; notes?: string;
   };
   // feedback = log only, no stage transition
-  const { error } = await adminClient.from('proposal_activity_log').insert({
-    proposal_id: id,
+  const { error } = await adminClient.from('campaign_creator_activity_log').insert({
+    campaign_creator_id: id,
     actor_id: req.user!.userId,
     actor_role: 'brand',
     action: 'feedback',

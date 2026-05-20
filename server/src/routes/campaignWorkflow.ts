@@ -13,7 +13,7 @@ router.get('/:campaignId/workflow', auth, async (req: AuthRequest, res: Response
       const { data: campaign } = await adminClient.from('campaigns').select('id').eq('id', campaignId).single();
       if (!campaign) { res.status(404).json({ message: 'Campaign not found' }); return; }
 
-      const { data: accepted } = await adminClient.from('proposals')
+      const { data: accepted } = await adminClient.from('campaign_creators')
         .select('influencer_id').eq('campaign_id', campaignId).eq('status', 'accepted');
 
       const { data: created } = await adminClient.from('campaign_workflow').insert({

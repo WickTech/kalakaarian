@@ -172,19 +172,22 @@ export interface UpdateBrandProfileData {
   description?: string;
 }
 
-export interface Proposal {
+export interface CampaignCreator {
   _id: string;
   campaignId: string;
   influencerId: string;
   campaignTitle: string;
   influencerName: string;
   status: "submitted" | "accepted" | "rejected";
-  bidAmount: number;
+  agreedPrice: number;
   message?: string;
   createdAt: string;
   workflow_stage?: string | null;
   workflow_stage_updated_at?: string | null;
 }
+
+// Back-compat alias for older imports. Prefer CampaignCreator in new code.
+export type Proposal = CampaignCreator;
 
 export interface WorkflowSubmission {
   url: string;
@@ -479,9 +482,10 @@ export const api = {
     return response.influencer;
   },
 
-  getProposals: async (): Promise<Proposal[]> => {
-    const res = await request<{ proposals: Proposal[] }>("/api/proposals/my");
-    return res.proposals;
+  // "My campaigns" — campaigns a creator has been attached to by a brand.
+  getMyCampaignCreators: async (): Promise<CampaignCreator[]> => {
+    const res = await request<{ campaignCreators: CampaignCreator[] }>("/api/campaign-creators/my");
+    return res.campaignCreators;
   },
 
   getCampaignById: async (id: string): Promise<Campaign> => {
@@ -494,16 +498,10 @@ export const api = {
     return res.influencers;
   },
 
-  getProposalsForCampaign: async (campaignId: string): Promise<Proposal[]> => {
-    const res = await request<{ proposals: Proposal[] }>(`/api/campaigns/${campaignId}/proposals`);
-    return res.proposals;
-  },
-
-  respondToProposal: async (proposalId: string, status: "accepted" | "rejected"): Promise<Proposal> => {
-    return request<Proposal>(`/api/proposals/${proposalId}/respond`, {
-      method: "POST",
-      body: JSON.stringify({ status }),
-    });
+  // Creators attached to a campaign (brand-side view).
+  getCampaignCreatorsForCampaign: async (campaignId: string): Promise<CampaignCreator[]> => {
+    const res = await request<{ campaignCreators: CampaignCreator[] }>(`/api/campaigns/${campaignId}/creators`);
+    return res.campaignCreators;
   },
 
   updateInfluencerProfile: async (data: UpdateInfluencerProfileData): Promise<InfluencerProfile> => {
@@ -887,10 +885,10 @@ export const api = {
 
   // Ratings
   submitRating: async (proposalId: string, score: number, review?: string): Promise<{ rating: { id: string; score: number; review?: string | null; created_at: string } }> =>
-    request(`/api/proposals/${proposalId}/rate`, { method: 'POST', body: JSON.stringify({ score, review }) }),
+    request(`/api/campaign-creators/${proposalId}/rate`, { method: 'POST', body: JSON.stringify({ score, review }) }),
 
   getProposalRating: async (proposalId: string): Promise<{ rating: { id: string; score: number; review?: string | null; created_at: string } | null }> =>
-    request(`/api/proposals/${proposalId}/rating`),
+    request(`/api/campaign-creators/${proposalId}/rating`),
 
   getInfluencerRatings: async (influencerId: string): Promise<{ ratings: Array<{ id: string; score: number; review?: string | null; created_at: string }>; avg: number | null; count: number }> =>
     request(`/api/influencers/${influencerId}/ratings`),
@@ -1106,12 +1104,12 @@ const ACTION_METHODS: Record<string, string> = {
 };
 
 export async function getWorkflow(proposalId: string): Promise<WorkflowProposal> {
-  const res = await request<{ proposal: WorkflowProposal }>(`/api/proposals/${proposalId}/workflow`);
+  const res = await request<{ proposal: WorkflowProposal }>(`/api/campaign-creators/${proposalId}/workflow`);
   return res.proposal;
 }
 
 export async function getActivityLog(proposalId: string): Promise<ActivityLogEntry[]> {
-  const res = await request<{ log: ActivityLogEntry[] }>(`/api/proposals/${proposalId}/workflow/activity`);
+  const res = await request<{ log: ActivityLogEntry[] }>(`/api/campaign-creators/${proposalId}/workflow/activity`);
   return res.log;
 }
 
@@ -1122,7 +1120,7 @@ export async function workflowAction(
 ): Promise<WorkflowProposal> {
   const path = ACTION_METHODS[action];
   if (!path) throw new Error(`Unknown workflow action: ${action}`);
-  const res = await request<{ proposal: WorkflowProposal }>(`/api/proposals/${proposalId}/workflow/${path}`, {
+  const res = await request<{ proposal: WorkflowProposal }>(`/api/campaign-creators/${proposalId}/workflow/${path}`, {
     method: 'POST',
     body: body ? JSON.stringify(body) : undefined,
   });
@@ -1133,5 +1131,5 @@ export async function getPublicWorkflow(proposalId: string): Promise<{
   proposal: Pick<WorkflowProposal, 'id' | 'workflow_stage' | 'workflow_stage_updated_at' | 'auto_approve_at'>;
   log: Array<Pick<ActivityLogEntry, 'id' | 'actor_role' | 'action' | 'from_stage' | 'to_stage' | 'created_at'>>;
 }> {
-  return request(`/api/proposals/${proposalId}/workflow/public`);
+  return request(`/api/campaign-creators/${proposalId}/workflow/public`);
 }

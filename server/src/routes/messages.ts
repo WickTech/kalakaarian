@@ -21,9 +21,9 @@ router.post('/send', auth, async (req: AuthRequest, res: Response): Promise<void
       .select('id').contains('participant_ids', sorted).maybeSingle();
     if (!existingConv) {
       const [r1, r2] = await Promise.all([
-        adminClient.from('proposals').select('id, campaigns!inner(brand_id)')
+        adminClient.from('campaign_creators').select('id, campaigns!inner(brand_id)')
           .eq('influencer_id', senderId).eq('campaigns.brand_id', receiverId).limit(1),
-        adminClient.from('proposals').select('id, campaigns!inner(brand_id)')
+        adminClient.from('campaign_creators').select('id, campaigns!inner(brand_id)')
           .eq('influencer_id', receiverId).eq('campaigns.brand_id', senderId).limit(1),
       ]);
       if ((r1.data?.length ?? 0) === 0 && (r2.data?.length ?? 0) === 0) {

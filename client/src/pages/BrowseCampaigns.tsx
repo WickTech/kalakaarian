@@ -31,7 +31,7 @@ function CampaignCard({ proposal, onRefresh }: { proposal: Proposal; onRefresh: 
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-chalk truncate">{proposal.campaignTitle || "Campaign"}</h3>
           <p className="text-xs text-chalk-dim mt-0.5">
-            ₹{Number(proposal.bidAmount || 0).toLocaleString("en-IN")}
+            ₹{Number(proposal.agreedPrice || 0).toLocaleString("en-IN")}
           </p>
         </div>
         {canUpload && (
@@ -64,7 +64,7 @@ export default function CreatorCampaigns() {
 
   const { data: campaigns = [], isLoading } = useQuery<Proposal[]>({
     queryKey: ["my-proposals"],
-    queryFn: () => api.getProposals().catch(() => []),
+    queryFn: () => api.getMyCampaignCreators().catch(() => []),
   });
 
   const { running, completed } = useMemo(() => {

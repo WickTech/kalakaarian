@@ -98,7 +98,7 @@ export function OwnerActionsBar({
         <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-400" : "bg-chalk-faint"}`} />
         {isOnline
           ? "Active"
-          : <>Offline <span className="text-[10px] text-chalk-faint">{fmtRelative(lastSeenAt)}</span></>}
+          : <>Offline <span className="text-[10px] text-red-400 font-medium">{fmtRelative(lastSeenAt)}</span></>}
       </button>
 
       <div className="flex items-center gap-2 ml-auto">

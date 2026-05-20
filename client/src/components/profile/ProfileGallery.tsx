@@ -46,18 +46,27 @@ export function ProfileGallery({ images, isOwnProfile, onChange }: Props) {
     }
   };
 
-  const handleAddSuccess = async (url: string) => {
-    if (list.length >= MAX_GALLERY) {
+  const handleAddSuccess = (url: string) => {
+    const projected = listRef.current.length + pendingRef.current.length;
+    if (projected >= MAX_GALLERY) {
       toast({ title: 'Gallery full', description: `Max ${MAX_GALLERY} images`, variant: 'destructive' });
       return;
     }
-    const next = [...list, url];
-    try {
-      await persist(next);
-      setActiveIdx(next.length - 1);
-    } catch {
-      toast({ title: 'Failed to save image', variant: 'destructive' });
-    }
+    pendingRef.current.push(url);
+    if (flushTimer.current) clearTimeout(flushTimer.current);
+    flushTimer.current = setTimeout(async () => {
+      const urls = [...pendingRef.current];
+      pendingRef.current = [];
+      flushTimer.current = null;
+      if (urls.length === 0) return;
+      const next = [...listRef.current, ...urls];
+      try {
+        await persist(next);
+        setActiveIdx(next.length - 1);
+      } catch {
+        toast({ title: 'Failed to save images', variant: 'destructive' });
+      }
+    }, 400);
   };
 
   const handleReplace = async (e: React.ChangeEvent<HTMLInputElement>) => {

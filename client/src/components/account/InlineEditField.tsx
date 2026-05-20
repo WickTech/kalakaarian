@@ -11,6 +11,7 @@ export interface InlineEditFieldProps {
   placeholder?: string;
   options?: { value: string; label: string }[];
   maxLength?: number;
+  max?: number;
   display?: (v: string | string[]) => React.ReactNode;
   onSave: (next: string | string[]) => Promise<void>;
   disabled?: boolean;
@@ -18,7 +19,7 @@ export interface InlineEditFieldProps {
 }
 
 export function InlineEditField(props: InlineEditFieldProps) {
-  const { label, value, type = 'text', placeholder, options, maxLength, display, onSave, disabled, hint } = props;
+  const { label, value, type = 'text', placeholder, options, maxLength, max, display, onSave, disabled, hint } = props;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string | string[]>(value);
   const [saving, setSaving] = useState(false);
@@ -88,18 +89,30 @@ export function InlineEditField(props: InlineEditFieldProps) {
             </select>
           )}
           {type === 'multiselect' && options && (
-            <div className="flex flex-wrap gap-1.5">
-              {options.map(o => {
-                const arr = Array.isArray(draft) ? draft : [];
-                const active = arr.includes(o.value);
-                return (
-                  <button key={o.value} type="button"
-                    onClick={() => setDraft(active ? arr.filter(x => x !== o.value) : [...arr, o.value])}
-                    className={`px-2.5 py-1.5 rounded-full text-xs border transition-colors ${active ? 'border-purple-500/50 bg-purple-500/10 text-chalk' : 'border-white/10 text-chalk-dim hover:border-white/20'}`}>
-                    {o.label}
-                  </button>
-                );
-              })}
+            <div className="space-y-2">
+              {max && (
+                <p className="text-[11px] text-chalk-faint">
+                  Select up to {max}&nbsp;
+                  <span className={(Array.isArray(draft) ? draft : []).length >= max ? 'text-purple-400 font-semibold' : ''}>
+                    ({(Array.isArray(draft) ? draft : []).length}/{max})
+                  </span>
+                </p>
+              )}
+              <div className="flex flex-wrap gap-1.5">
+                {options.map(o => {
+                  const arr = Array.isArray(draft) ? draft : [];
+                  const active = arr.includes(o.value);
+                  const capped = !!max && arr.length >= max && !active;
+                  return (
+                    <button key={o.value} type="button"
+                      disabled={capped}
+                      onClick={() => setDraft(active ? arr.filter(x => x !== o.value) : [...arr, o.value])}
+                      className={`px-2.5 py-1.5 rounded-full text-xs border transition-colors ${active ? 'border-purple-500/50 bg-purple-500/10 text-chalk' : 'border-white/10 text-chalk-dim hover:border-white/20'} ${capped ? 'opacity-30 cursor-not-allowed' : ''}`}>
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
           {type === 'image' && (

@@ -93,13 +93,13 @@ export default function EditInfluencerProfile() {
     return new Date(new Date(createdAt).getTime() + 180 * 86_400_000);
   }, [createdAt]);
 
+  const MAX_NICHES = 3;
   const toggleNiche = (niche: string) => {
-    setForm((prev) => ({
-      ...prev,
-      niches: prev.niches.includes(niche)
-        ? prev.niches.filter((n) => n !== niche)
-        : [...prev.niches, niche],
-    }));
+    setForm((prev) => {
+      if (prev.niches.includes(niche)) return { ...prev, niches: prev.niches.filter((n) => n !== niche) };
+      if (prev.niches.length >= MAX_NICHES) return prev;
+      return { ...prev, niches: [...prev.niches, niche] };
+    });
   };
 
   const handlePricingChange = (key: string, value: number) => {
@@ -274,19 +274,30 @@ export default function EditInfluencerProfile() {
 
               {/* Niche / Category */}
               <section id="niche" className="space-y-3 scroll-mt-20">
-                <h2 className="text-sm font-semibold text-chalk">Niche / Category *</h2>
+                <div className="flex items-baseline gap-2">
+                  <h2 className="text-sm font-semibold text-chalk">Niche / Category *</h2>
+                  <span className={`text-xs ${form.niches.length >= MAX_NICHES ? 'text-purple-400 font-semibold' : 'text-chalk-faint'}`}>
+                    ({form.niches.length}/{MAX_NICHES} max)
+                  </span>
+                </div>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {NICHE_OPTIONS.map((niche) => (
-                    <label key={niche}
-                      className={`flex items-center gap-2 rounded-lg border p-2.5 text-xs cursor-pointer transition-colors ${
-                        form.niches.includes(niche)
-                          ? "border-purple-500/50 bg-purple-500/10 text-chalk"
-                          : "border-white/10 text-chalk-dim hover:border-white/20"
-                      }`}>
-                      <Checkbox checked={form.niches.includes(niche)} onCheckedChange={() => toggleNiche(niche)} />
-                      {niche}
-                    </label>
-                  ))}
+                  {NICHE_OPTIONS.map((niche) => {
+                    const checked = form.niches.includes(niche);
+                    const capped = form.niches.length >= MAX_NICHES && !checked;
+                    return (
+                      <label key={niche}
+                        className={`flex items-center gap-2 rounded-lg border p-2.5 text-xs transition-colors ${
+                          checked
+                            ? "border-purple-500/50 bg-purple-500/10 text-chalk cursor-pointer"
+                            : capped
+                            ? "border-white/5 text-chalk-faint opacity-40 cursor-not-allowed"
+                            : "border-white/10 text-chalk-dim hover:border-white/20 cursor-pointer"
+                        }`}>
+                        <Checkbox checked={checked} disabled={capped} onCheckedChange={() => !capped && toggleNiche(niche)} />
+                        {niche}
+                      </label>
+                    );
+                  })}
                 </div>
                 {errors.niches && <p className="text-xs text-destructive">{errors.niches}</p>}
               </section>

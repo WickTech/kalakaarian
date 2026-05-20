@@ -16,10 +16,11 @@ export function useCreatorForm(seed?: Partial<CreatorFormState>) {
       setForm(prev => ({ ...prev, [key]: e.target.value as FieldVal }));
 
   const toggleGenre = useCallback((g: string) => {
-    setForm(prev => ({
-      ...prev,
-      genres: prev.genres.includes(g) ? prev.genres.filter(x => x !== g) : [...prev.genres, g],
-    }));
+    setForm(prev => {
+      if (prev.genres.includes(g)) return { ...prev, genres: prev.genres.filter(x => x !== g) };
+      if (prev.genres.length >= 3) return prev;
+      return { ...prev, genres: [...prev.genres, g] };
+    });
   }, []);
 
   const validateStep = useCallback(

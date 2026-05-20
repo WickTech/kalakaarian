@@ -115,6 +115,7 @@ export default function PersonalInfo() {
           onSave={async (v) => save({ socialHandles: { instagram: profile.socialHandles?.instagram, youtube: String(v).replace(/^@/, '') } })} />
 
         <InlineEditField label="Niches" type="multiselect" value={profile.niches ?? []} options={NICHE_OPTIONS}
+          max={3} hint="Up to 3 niches shown to brands"
           onSave={async (v) => save({ niches: v as string[] })} />
 
         <CommercialsView profile={profile} commercialsLocked={commercialsLocked} />

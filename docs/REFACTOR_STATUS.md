@@ -9,7 +9,7 @@
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Frontend stabilization | ✅ ~95% — bugs fixed (see below) |
-| 2 | Backend modularization | 🟡 ~65% — 6 of 9 modules done |
+| 2 | Backend modularization | 🟡 ~80% — 7 of 9 modules done |
 | 3 | Event system + jobs (BullMQ/Redis) | ⬜ Not started — needs infra decision |
 | 4 | Realtime platform | 🟡 Partial — campaign/workflow realtime live (Phase 1B/1C) |
 | 5 | Scale + performance | ⬜ Not started |
@@ -43,7 +43,7 @@ Remaining (minor, optional):
 Target: `server/src/modules/<domain>/` each with
 `routes / controller / service / repository / validators / types`.
 
-### Done (6 modules)
+### Done (7 modules)
 | Module | Layers | Notes |
 |---|---|---|
 | `campaigns` | full split + zod | reference implementation |
@@ -51,31 +51,23 @@ Target: `server/src/modules/<domain>/` each with
 | `messaging` | full split + zod | content now strictly validated |
 | `notifications` | full split | |
 | `wallet` | full split + zod | folded in brand-transactions controller |
+| `auth` | split by concern | register/login, OTP, OAuth, password-reset |
 | `creators` | — | satisfied by `influencers` module; rename deferred (low value) |
+
+`auth` module layout: per-concern `repository`/`service`/`controller` trios
+(auth, otp, oauth, passwordReset) under the 200-line limit, plus shared
+`types.ts`, `validators.ts`, `routes.ts`. Behavior-preserving — old route
+paths unchanged, `routes/auth.ts` is now a re-export shim. Integration suite
+(`src/__tests__/integration/`) is the safety net.
 
 Cross-cutting done:
 - `errorHandler` middleware wired in `app.ts` + JSON 404 fallback
-- Dead code removed: `campaignController.ts`, `brandTransactionsController` shim
+- Dead code removed: `campaignController.ts`, `brandTransactionsController`
+  shim, the 4 old auth controllers
 
 ### Remaining Phase 2 work
 
-**1. `auth` module** (highest priority, highest risk)
-Source controllers to fold in: `authController` (register/login),
-`otpController` (sendOTP/verifyOTP/sendLoginOTP), `googleAuthController`
-(googleLogin/completeGoogleOnboarding), `passwordResetController`.
-- ⚠️ Touches Supabase Auth sessions. CRITICAL RULE: must not break auth flows.
-- ⚠️ Preserve `createAuthClient()` usage — never `signInWithPassword` on
-  `adminClient` (warm-lambda session pollution, see commit `31c2342`).
-- **Blocker:** zero integration tests exist for auth. Per the brief
-  ("every phase must include testing"), write a Vitest + dedicated Supabase
-  test-project suite covering register / login / OTP / google / reset
-  *before* the refactor, then refactor against a green suite.
-- Plan: `repository.ts` (profiles/brand_profiles/influencer_profiles/otp_codes/
-  password_reset_tokens DAO), `service.ts` (register/login/otp/oauth/reset
-  logic), controllers split by concern to honour the 200-line limit, zod
-  validators replacing the `express-validator` chains in `routes/auth.ts`.
-
-**2. `payments` module** (high risk — money + webhooks)
+**1. `payments` module** (high risk — money + webhooks)
 Source: `cartController` (298 lines — worst 200-line violator),
 `invoiceController`, `razorpayService`.
 - ⚠️ Razorpay order creation + webhook signature verification + 8% platform
@@ -84,15 +76,15 @@ Source: `cartController` (298 lines — worst 200-line violator),
   (checkout, fee math via `utils/pricing.ts`, webhook handling), `controller.ts`,
   zod validators. Needs a checkout smoke test before merge.
 
-**3. `admin` module** (lower risk)
+**2. `admin` module** (lower risk)
 Source: `adminController`, `adminUsersController`, `adminPlatformController`.
 - Plan: standard full split. Guarded by `auth` + `requireAdmin` — keep guards.
 
-**4. Standardized API responses**
+**3. Standardized API responses**
 - Add `utils/apiResponse.ts` — `ok(res, data)` / `fail(res, status, message)`.
 - Roll out per-module without changing existing JSON shapes (additive).
 
-**5. Module encapsulation cleanup**
+**4. Module encapsulation cleanup**
 - `modules/campaigns/routes.ts` imports legacy `campaignCreatorController`.
   Move `campaignCreatorController` + `workflowController` + `workflowActions`
   into the campaigns module (campaign-creators is part of the campaigns

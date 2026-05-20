@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, Check, MessageSquare, FileText, DollarSign, Info } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
+import { hasRealtime } from '@/lib/supabase';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeMessaging';
 
 interface Notification {
   id: string;
@@ -26,6 +29,7 @@ const typeIcons = {
 };
 
 export function NotificationBell({ className }: NotificationBellProps) {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -34,6 +38,9 @@ export function NotificationBell({ className }: NotificationBellProps) {
     const token = localStorage.getItem('kalakariaan_token');
     if (!token) return;
     fetchNotifications();
+    // Realtime delivers updates instantly — only poll as a fallback when
+    // realtime is unavailable (VITE_SUPABASE_* unset).
+    if (hasRealtime()) return;
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -56,6 +63,9 @@ export function NotificationBell({ className }: NotificationBellProps) {
       console.error('Error fetching unread count:', error);
     }
   };
+
+  // Live notification updates (migration 036). No-ops without realtime.
+  useRealtimeNotifications(user?.id, fetchNotifications);
 
   const markAsRead = async (id: string) => {
     try {

@@ -11,7 +11,7 @@
 | 1 | Frontend stabilization | ✅ ~95% — bugs fixed (see below) |
 | 2 | Backend modularization | 🟢 ~95% — all 9 modules done; 2 cross-cutting items left |
 | 3 | Event system + jobs (pg_cron queue) | 🟡 Infra done — handler migration ongoing |
-| 4 | Realtime platform | 🟡 Partial — campaign/workflow realtime live (Phase 1B/1C) |
+| 4 | Realtime platform | 🟢 ~90% — messaging/notifications/presence/campaign live |
 | 5 | Scale + performance | ⬜ Not started |
 | 6 | Security hardening | ⬜ Not started |
 | 7 | Advanced marketplace systems | ⬜ Not started |
@@ -124,13 +124,24 @@ migration `023`.
 
 ---
 
-## Phase 4 — Realtime platform 🟡
+## Phase 4 — Realtime platform 🟢 ~90%
 
-Done: campaign-creator + workflow realtime subscriptions
-(`useRealtimeCampaignCreator`, `useWorkflow`), polling gated on realtime
-availability (commit `31d9d49`).
-Remaining: realtime messaging (table is ready), realtime notifications,
-live brand/creator dashboard counters, creator presence broadcast channel.
+Done:
+- Campaign-creator + workflow realtime (`useRealtimeCampaignCreator`),
+  creator presence (`useRealtimePresence`), polling gated on realtime
+  availability (commit `31d9d49`).
+- **Realtime messaging + notifications** — `useRealtimeMessaging.ts`
+  (`useRealtimeConversationList`, `useRealtimeConversationMessages`,
+  `useRealtimeNotifications`). `Messages.tsx` 5s poll and `NotificationBell`
+  30s poll are now gated on `hasRealtime()` — realtime is the primary path,
+  polling only the no-env fallback.
+- **Migration `036`** — adds `messages` / `notifications` / `conversations`
+  to the `supabase_realtime` publication, sets `REPLICA IDENTITY FULL`, and
+  enables SELECT-only RLS so a session receives only its own rows. ⚠️ must
+  be applied before realtime messaging works in prod (manual, like `035`).
+
+Remaining: live brand/creator dashboard counters (campaign/earnings tiles
+still load once per mount). Lower value — defer or wire on demand.
 
 ---
 

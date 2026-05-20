@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Send, User, Loader2, Check, CheckCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
+import { hasRealtime } from "@/lib/supabase";
+import { useRealtimeConversationList, useRealtimeConversationMessages } from "@/hooks/useRealtimeMessaging";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,11 +53,13 @@ export default function Messages() {
   }, []);
 
   useEffect(() => {
-    if (activeConversation) {
-      fetchMessages(activeConversation);
-      const interval = setInterval(() => fetchMessages(activeConversation, true), 5000);
-      return () => clearInterval(interval);
-    }
+    if (!activeConversation) return;
+    fetchMessages(activeConversation);
+    // Realtime delivers new messages instantly — only poll as a fallback
+    // when realtime is unavailable (VITE_SUPABASE_* unset).
+    if (hasRealtime()) return;
+    const interval = setInterval(() => fetchMessages(activeConversation, true), 5000);
+    return () => clearInterval(interval);
   }, [activeConversation]);
 
   useEffect(() => {
@@ -84,6 +88,14 @@ export default function Messages() {
       console.error("Failed to fetch messages:", error);
     }
   };
+
+  // Realtime message + conversation-list updates (migration 036). No-ops
+  // without realtime; the polling fallback above covers that case.
+  useRealtimeConversationList(fetchConversations);
+  useRealtimeConversationMessages(activeConversation, () => {
+    if (activeConversation) fetchMessages(activeConversation, true);
+    fetchConversations();
+  });
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

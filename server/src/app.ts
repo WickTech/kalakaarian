@@ -33,6 +33,10 @@ import feedbackRoutes from './routes/feedback';
 import platformRoutes from './routes/platforms';
 import invoiceRoutes from './routes/invoices';
 import accountRoutes from './routes/account';
+import { registerEventListeners } from './events/listeners';
+
+// Wire domain-event listeners (events -> background jobs). Idempotent.
+registerEventListeners();
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({

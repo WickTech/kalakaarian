@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { autoApproveExpired, syncAllPlatforms } from '../controllers/cronController';
 import { platformIntegrationHealth } from '../controllers/healthController';
+import { processJobs } from '../jobs/controller';
 
 const router = Router();
 
@@ -17,5 +18,8 @@ router.post('/cron/auto-approve', cronAuth, autoApproveExpired);
 router.post('/cron/sync-platforms', cronAuth, syncAllPlatforms);
 router.get('/cron/sync-platforms', cronAuth, syncAllPlatforms);
 router.get('/health/platform-integration', cronAuth, platformIntegrationHealth);
+
+// Background-job worker — driven by pg_cron every minute (migration 035).
+router.post('/jobs/process', cronAuth, processJobs);
 
 export default router;

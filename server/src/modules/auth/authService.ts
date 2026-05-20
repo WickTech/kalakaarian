@@ -1,6 +1,6 @@
 import * as repo from './authRepository';
 import { sendLoginOTP } from './otpService';
-import { sendWelcomeEmail } from '../../services/emailService';
+import { bus } from '../../events/bus';
 import type { RegisterInput, LoginInput, AuthError } from './types';
 
 // Business logic for the register/login concern. No Express types here.
@@ -101,8 +101,10 @@ export async function register(input: RegisterInput): Promise<RegisterResult> {
   if (email) {
     const { data: signIn } = await repo.signInWithPassword(email, password);
     token = signIn?.session?.access_token ?? '';
-    sendWelcomeEmail(email, name, role).catch((e) => console.error('Welcome email failed:', e));
   }
+
+  // Domain event — a listener enqueues the welcome-email job (events/listeners.ts).
+  bus.emit('user.registered', { userId, email: email || null, name, role });
 
   return {
     kind: 'ok',

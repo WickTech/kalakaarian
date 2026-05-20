@@ -10,7 +10,7 @@
 |---|---|---|
 | 1 | Frontend stabilization | ✅ ~95% — bugs fixed (see below) |
 | 2 | Backend modularization | 🟢 ~95% — all 9 modules done; 2 cross-cutting items left |
-| 3 | Event system + jobs (BullMQ/Redis) | ⬜ Not started — needs infra decision |
+| 3 | Event system + jobs (pg_cron queue) | 🟡 Infra done — handler migration ongoing |
 | 4 | Realtime platform | 🟡 Partial — campaign/workflow realtime live (Phase 1B/1C) |
 | 5 | Scale + performance | ⬜ Not started |
 | 6 | Security hardening | ⬜ Not started |
@@ -87,20 +87,40 @@ path + webhook idempotency) before relying on it in production.
 
 ---
 
-## Phase 3 — Event system + jobs ⬜
+## Phase 3 — Event system + jobs 🟡
 
-**Decision required before starting:** Redis hosting. Vercel serverless
-functions are stateless and short-lived — BullMQ workers need a persistent
-process. Options:
-- Upstash Redis + a separate worker (Railway / Fly / Render), or
-- Supabase `pg_cron` + a queue table (no Redis; already used for platform sync).
+**Approach chosen:** Supabase `pg_cron` + a Postgres queue table — no Redis,
+no BullMQ. Fits the Vercel serverless model (the worker is an HTTP endpoint,
+not a persistent process) and reuses the pg_cron pattern already in
+migration `023`.
 
-Do not scaffold BullMQ/Redis until the host is chosen — half-built infra is
-dead code (violates the brief). Once chosen:
-- Internal event bus (typed `EventEmitter` wrapper) in `server/src/events/`
-- Job queues: emails, notifications, invoice generation, analytics sync,
-  upload post-processing, webhook retries
-- Idempotency keys, retry/backoff, dead-letter logging
+### Infra done
+- **Migration `035_job_queue.sql`** — `jobs` table, `claim_jobs()` RPC
+  (`FOR UPDATE SKIP LOCKED` + 10-min stale-`processing` reclaim), pg_cron
+  schedule hitting the worker every minute.
+- **`server/src/jobs/`** — `queue.ts` (`enqueueJob`), `repository.ts` (DAO),
+  `worker.ts` (`processDueJobs` — claim batch, run, retry/fail),
+  `handlers.ts` (type→handler registry), `backoff.ts` (1m→1h exp. backoff),
+  `controller.ts` (worker endpoint).
+- **Worker endpoint** — `POST /api/internal/jobs/process`, cron-secret guarded.
+- **`server/src/events/`** — typed domain-event `bus` + `listeners.ts`
+  wiring events → job enqueues.
+- Idempotency (unique `idempotency_key`), retry/backoff, crash recovery
+  (stale-`processing` reclaim), and failure logging are all in place.
+- **Reference migration:** `user.registered` event → `email.welcome` job
+  (deduped by `idempotency_key`). Replaces the old fire-and-forget welcome
+  email in `authService`.
+- Unit test: `jobs/__tests__/backoff.test.ts`.
+
+### Remaining
+- **Apply `035` to prod** (manual — replace `<SERVER_URL>` / `<CRON_SECRET>`,
+  enable `pg_cron` + `pg_net`). Same manual step as migration `023`.
+- Migrate more async tasks to job handlers: notifications, invoice generation,
+  analytics sync, upload post-processing, webhook retries. The infra +
+  registry make each a small, isolated addition. **Keep latency-sensitive
+  emails (OTP, password-reset) synchronous** — the worker runs once a minute.
+- Optional: a `jobs.test.ts` integration test (needs `035` on the test
+  project) covering enqueue → process → retry.
 
 ---
 

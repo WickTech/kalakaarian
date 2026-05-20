@@ -11,6 +11,7 @@ import { CelebCallbackModal } from "@/components/CelebCallbackModal";
 import { CreatorCard } from "@/components/CreatorCard";
 import { CreatorCardSkeleton } from "@/components/CreatorCardSkeleton";
 import { keys } from '@/lib/queryKeys';
+import { hasRealtime } from '@/lib/supabase';
 import { useRealtimePresence } from '@/hooks/useRealtimeCampaignCreator';
 
 interface MarketplaceProps {
@@ -64,6 +65,9 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
     },
     staleTime: 20_000,
     placeholderData: (prev) => prev,
+    // Realtime presence channel handles live updates; poll only as a
+    // fallback when VITE_SUPABASE_URL/ANON_KEY are unset.
+    refetchInterval: hasRealtime() ? false : 60_000,
   });
 
   const filtered = useMemo(() => {

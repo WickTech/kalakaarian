@@ -47,6 +47,13 @@ export function getSupabase(): SupabaseClient | null {
   return cached;
 }
 
+// True when the realtime client is configured. Query hooks use this to
+// disable refetchInterval polling once live subscriptions are available,
+// keeping the interval only as a fallback when env vars are unset.
+export function hasRealtime(): boolean {
+  return getSupabase() !== null;
+}
+
 // Allow re-authing the realtime socket when the user logs in / out
 // without page reload.
 export function setRealtimeAuth(token: string | null) {

@@ -5,6 +5,7 @@ import { X, ArrowRight, BarChart2 } from 'lucide-react';
 import { api, Campaign, Proposal } from '@/lib/api';
 import { CampaignPhaseTracker } from './CampaignPhaseTracker';
 import { keys } from '@/lib/queryKeys';
+import { hasRealtime } from '@/lib/supabase';
 import { useRealtimeCampaignByCampaign } from '@/hooks/useRealtimeCampaignCreator';
 
 const STAGE_IDX: Record<string, number> = {
@@ -55,6 +56,9 @@ export function CurrentCampaignPopover({ open, onClose, anchorRef }: Props) {
     queryFn: () => api.getCampaignCreatorsForCampaign(current!.id),
     enabled: open && !!current,
     staleTime: 30_000,
+    // Realtime channel handles live updates; poll only as a fallback when
+    // VITE_SUPABASE_URL/ANON_KEY are unset.
+    refetchInterval: hasRealtime() ? false : 60_000,
   });
 
   if (!open) return null;

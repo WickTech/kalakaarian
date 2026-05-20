@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { keys } from '@/lib/queryKeys';
+import { hasRealtime } from '@/lib/supabase';
 import { useRealtimeCampaignCreator } from '@/hooks/useRealtimeCampaignCreator';
 import {
   getWorkflow,
@@ -19,7 +20,7 @@ export function useProposalWorkflow(id: string) {
     queryFn: () => getWorkflow(id),
     enabled: !!id,
     staleTime: 10_000,
-    refetchInterval: 60_000,
+    refetchInterval: hasRealtime() ? false : 60_000,
   });
 }
 
@@ -31,7 +32,7 @@ export function useActivityLog(id: string) {
     queryFn: () => getActivityLog(id),
     enabled: !!id,
     staleTime: 10_000,
-    refetchInterval: 60_000,
+    refetchInterval: hasRealtime() ? false : 60_000,
   });
 }
 

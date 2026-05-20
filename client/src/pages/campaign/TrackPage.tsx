@@ -5,6 +5,7 @@ import { ArrowLeft, ExternalLink, RefreshCw } from 'lucide-react';
 import { api, Proposal } from '@/lib/api';
 import { CampaignProgressTracker } from '@/components/CampaignProgressTracker';
 import { keys } from '@/lib/queryKeys';
+import { hasRealtime } from '@/lib/supabase';
 import { useRealtimeCampaignByCampaign } from '@/hooks/useRealtimeCampaignCreator';
 
 const STAGE_COLOR: Record<string, string> = {
@@ -37,9 +38,9 @@ export default function CampaignTrackPage() {
     queryKey: keys.campaignCreators.byCampaign(id!),
     queryFn: () => api.getCampaignCreatorsForCampaign(id!),
     enabled: !!id,
-    // Realtime channel below handles immediate updates; this is a fallback
-    // for sessions where VITE_SUPABASE_URL/ANON_KEY are missing.
-    refetchInterval: 60_000,
+    // Realtime channel below handles immediate updates; poll only as a
+    // fallback for sessions where VITE_SUPABASE_URL/ANON_KEY are missing.
+    refetchInterval: hasRealtime() ? false : 60_000,
   });
 
   useRealtimeCampaignByCampaign({ campaignId: id, enabled: !!id });

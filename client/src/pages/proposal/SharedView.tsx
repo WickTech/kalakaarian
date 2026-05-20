@@ -6,6 +6,7 @@ import { StageTimeline } from '@/components/workflow/StageTimeline';
 import { STAGE_LABELS, WorkflowStage } from '@/lib/workflow';
 import { formatDistanceToNow } from 'date-fns';
 import { keys } from '@/lib/queryKeys';
+import { hasRealtime } from '@/lib/supabase';
 import { useRealtimeCampaignCreator } from '@/hooks/useRealtimeCampaignCreator';
 
 const ACTION_LABELS: Record<string, string> = {
@@ -30,8 +31,9 @@ export default function SharedWorkflowView() {
     queryKey: keys.workflow.public(id!),
     queryFn: () => getPublicWorkflow(id!),
     enabled: !!id,
-    // Realtime channel handles live updates; this is a fallback only.
-    refetchInterval: 60_000,
+    // Realtime channel handles live updates; poll only as a fallback when
+    // VITE_SUPABASE_URL/ANON_KEY are unset.
+    refetchInterval: hasRealtime() ? false : 60_000,
   });
 
   const stage = data?.proposal.workflow_stage as WorkflowStage | null ?? null;

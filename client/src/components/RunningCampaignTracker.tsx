@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { api, Campaign, Proposal } from "@/lib/api";
 import { CampaignProgressTracker } from "@/components/CampaignProgressTracker";
 import { keys } from '@/lib/queryKeys';
+import { hasRealtime } from '@/lib/supabase';
 import { useRealtimeCampaignByCampaign } from '@/hooks/useRealtimeCampaignCreator';
 
 const STAGE_COLOR: Record<string, string> = {
@@ -37,6 +38,9 @@ function CampaignTrackCard({ campaign }: { campaign: Campaign }) {
     queryFn: () => api.getCampaignCreatorsForCampaign(campaign.id),
     enabled: open,
     staleTime: 60_000,
+    // Realtime channel handles live updates; poll only as a fallback when
+    // VITE_SUPABASE_URL/ANON_KEY are unset.
+    refetchInterval: hasRealtime() ? false : 60_000,
   });
 
   const active = proposals.filter((p) => p.workflow_stage && p.workflow_stage !== "rejected_workflow");

@@ -9,6 +9,7 @@ import { WalletTab, MembershipTab } from "@/components/InfluencerDashboardPanels
 import { InfluencerAnalyticsPanel } from "@/components/InfluencerAnalyticsPanel";
 import { GamificationPanel } from "@/components/GamificationPanel";
 import { keys } from '@/lib/queryKeys';
+import { KpiCardSkeleton, Skeleton } from '@/components/Skeleton';
 
 type Tab = "analytics" | "rewards" | "wallet" | "membership";
 
@@ -82,9 +83,22 @@ export default function InfluencerDashboard() {
 
 
   if (isLoading) return (
-    <div className="min-h-screen bg-obsidian flex items-center justify-center">
-      <div className="w-8 h-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
-    </div>
+    <main className="min-h-screen bg-obsidian px-4 py-8">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div className="bento-card p-5 flex items-start gap-4">
+          <Skeleton className="w-16 h-16 rounded-full shrink-0" />
+          <div className="flex-1 space-y-2 pt-1">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <KpiCardSkeleton />
+          <KpiCardSkeleton />
+        </div>
+      </div>
+    </main>
   );
 
   return (

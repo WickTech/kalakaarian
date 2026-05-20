@@ -35,17 +35,36 @@ export function useActivityLog(id: string) {
   });
 }
 
+const ACTION_STAGE: Record<string, string> = {
+  shortlist: 'shortlisted',
+  accept: 'accepted',
+  start_content: 'content_in_progress',
+  submit_content: 'submitted',
+  approve: 'approved',
+  request_revision: 'submitted',
+  mark_payment_pending: 'payment_pending',
+  release_payment: 'payment_released',
+  reject_workflow: 'rejected_workflow',
+};
+
 export function useWorkflowAction(id: string) {
   const qc = useQueryClient();
   const { toast } = useToast();
 
   return useMutation<WorkflowProposal, Error, { action: string; body?: Record<string, unknown> }>({
     mutationFn: ({ action, body }) => workflowAction(id, action, body),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.workflow.detail(id) });
-      qc.invalidateQueries({ queryKey: keys.workflow.activity(id) });
+    onMutate: async ({ action }) => {
+      const key = keys.workflow.detail(id);
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<WorkflowProposal>(key);
+      const nextStage = ACTION_STAGE[action];
+      if (nextStage && previous) {
+        qc.setQueryData<WorkflowProposal>(key, { ...previous, workflow_stage: nextStage });
+      }
+      return { previous };
     },
-    onError: (err) => {
+    onError: (err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(keys.workflow.detail(id), ctx.previous);
       const status = (err as { status?: number }).status;
       if (status === 409) {
         toast({ title: 'Stage conflict', description: 'Refresh and try again.', variant: 'destructive' });
@@ -54,6 +73,10 @@ export function useWorkflowAction(id: string) {
       } else {
         toast({ title: 'Action failed', description: err.message, variant: 'destructive' });
       }
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: keys.workflow.detail(id) });
+      qc.invalidateQueries({ queryKey: keys.workflow.activity(id) });
     },
   });
 }

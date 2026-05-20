@@ -11,6 +11,7 @@ import { CelebCallbackModal } from "@/components/CelebCallbackModal";
 import { CreatorCard } from "@/components/CreatorCard";
 import { CreatorCardSkeleton } from "@/components/CreatorCardSkeleton";
 import { keys } from '@/lib/queryKeys';
+import { useRealtimePresence } from '@/hooks/useRealtimeCampaignCreator';
 
 interface MarketplaceProps {
   isInCart: (id: string) => boolean;
@@ -36,6 +37,8 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
   const [sortBy, setSortBy] = useState<SortBy>("relevance");
   const [celebModal, setCelebModal] = useState<{ id: string; name: string } | null>(null);
 
+  useRealtimePresence();
+
   const genreKey = selectedGenres.join(',');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -60,7 +63,6 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
       return (Array.isArray(data) ? data : []).map(toInfluencer);
     },
     staleTime: 20_000,
-    refetchInterval: 60_000,
     placeholderData: (prev) => prev,
   });
 

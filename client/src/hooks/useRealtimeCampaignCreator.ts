@@ -9,6 +9,31 @@ interface BaseOptions {
   enabled?: boolean;
 }
 
+// Watches influencer_profiles for presence (isOnline) changes and
+// invalidates all marketplace queries so the grid reflects live status.
+export function useRealtimePresence({ enabled = true }: BaseOptions = {}): void {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!enabled) return;
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const channel = supabase
+      .channel('presence-updates')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'influencer_profiles' },
+        () => {
+          qc.invalidateQueries({ queryKey: ['marketplace'] });
+        },
+      )
+      .subscribe();
+
+    return () => { void supabase.removeChannel(channel); };
+  }, [enabled, qc]);
+}
+
 interface ByCampaignOptions extends BaseOptions {
   campaignId: string | undefined;
 }

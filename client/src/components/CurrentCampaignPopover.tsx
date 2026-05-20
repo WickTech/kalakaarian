@@ -5,6 +5,7 @@ import { X, ArrowRight, BarChart2 } from 'lucide-react';
 import { api, Campaign, Proposal } from '@/lib/api';
 import { CampaignPhaseTracker } from './CampaignPhaseTracker';
 import { keys } from '@/lib/queryKeys';
+import { useRealtimeCampaignByCampaign } from '@/hooks/useRealtimeCampaignCreator';
 
 const STAGE_IDX: Record<string, number> = {
   shortlisted: 1, accepted: 2, content_in_progress: 3, submitted: 3,
@@ -47,12 +48,13 @@ export function CurrentCampaignPopover({ open, onClose, anchorRef }: Props) {
   const active = campaigns.filter((c) => c.status === 'open');
   const current = active[0] ?? null;
 
+  useRealtimeCampaignByCampaign({ campaignId: current?.id, enabled: open && !!current });
+
   const { data: proposals = [] } = useQuery<Proposal[]>({
     queryKey: keys.campaignCreators.byCampaign(current?.id),
     queryFn: () => api.getCampaignCreatorsForCampaign(current!.id),
     enabled: open && !!current,
     staleTime: 30_000,
-    refetchInterval: open ? 20_000 : false,
   });
 
   if (!open) return null;

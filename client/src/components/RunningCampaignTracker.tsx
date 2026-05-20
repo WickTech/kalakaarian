@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { api, Campaign, Proposal } from "@/lib/api";
 import { CampaignProgressTracker } from "@/components/CampaignProgressTracker";
 import { keys } from '@/lib/queryKeys';
+import { useRealtimeCampaignByCampaign } from '@/hooks/useRealtimeCampaignCreator';
 
 const STAGE_COLOR: Record<string, string> = {
   shortlisted: "text-amber-400 border-amber-400/30",
@@ -29,12 +30,13 @@ const STAGE_SHORT: Record<string, string> = {
 function CampaignTrackCard({ campaign }: { campaign: Campaign }) {
   const [open, setOpen] = useState(false);
 
+  useRealtimeCampaignByCampaign({ campaignId: campaign.id, enabled: open });
+
   const { data: proposals = [] } = useQuery<Proposal[]>({
     queryKey: keys.campaignCreators.byCampaign(campaign.id),
     queryFn: () => api.getCampaignCreatorsForCampaign(campaign.id),
     enabled: open,
     staleTime: 60_000,
-    refetchInterval: open ? 30_000 : false,
   });
 
   const active = proposals.filter((p) => p.workflow_stage && p.workflow_stage !== "rejected_workflow");

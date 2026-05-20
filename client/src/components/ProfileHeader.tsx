@@ -79,13 +79,13 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
             <span className="flex items-center gap-1.5 text-sm">
               <Instagram className="w-4 h-4 text-pink-400 shrink-0" />
               {igHandle
-                ? <span className="text-pink-400">@{igHandle}</span>
+                ? <a href={`https://instagram.com/${igHandle}`} target="_blank" rel="noopener noreferrer" className="text-pink-400 hover:text-pink-300 hover:underline transition-colors">@{igHandle}</a>
                 : <span className="text-chalk-faint italic text-xs">not connected</span>}
             </span>
             <span className="flex items-center gap-1.5 text-sm">
               <Youtube className="w-4 h-4 text-red-400 shrink-0" />
               {ytHandle
-                ? <span className="text-red-400">@{ytHandle}</span>
+                ? <a href={`https://youtube.com/@${ytHandle}`} target="_blank" rel="noopener noreferrer" className="text-red-400 hover:text-red-300 hover:underline transition-colors">@{ytHandle}</a>
                 : <span className="text-chalk-faint italic text-xs">not connected</span>}
             </span>
           </div>

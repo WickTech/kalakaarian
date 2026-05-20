@@ -26,8 +26,8 @@ export interface UploadItem {
   error?: { code: string; message: string };
   attempt: number;
   xhr?: XMLHttpRequest;
+  abortController?: AbortController;
   startedAt?: number;
-  onSuccess?: (url: string, item: UploadItem) => void;
 }
 
 interface UploadState {

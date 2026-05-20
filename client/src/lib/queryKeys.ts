@@ -109,6 +109,4 @@ export const keys = {
   },
 } as const;
 
-export type QueryKey = ReturnType<
-  (typeof keys)[keyof typeof keys][keyof (typeof keys)[keyof typeof keys]]
-> extends (...args: never[]) => infer R ? R : never;
+export type QueryKeyFactory = typeof keys;

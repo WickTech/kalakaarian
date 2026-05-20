@@ -69,15 +69,20 @@ export function useUploader(opts: UseUploaderOptions) {
 
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         if (useUploadStore.getState().items[id]?.status === 'canceled') return;
+        // Fresh controller per attempt — aborting it cancels both the presign
+        // request and the in-flight XHR (see uploadFile signal handling).
+        const abortController = new AbortController();
         patch(id, {
           status: 'uploading',
           attempt,
           startedAt: Date.now(),
           loaded: 0,
           total: working.size,
+          abortController,
         });
         try {
           const { fileUrl, key } = await uploadFile(working, opts.purpose, {
+            signal: abortController.signal,
             onProgress: (loaded, total, speedBps, etaSec) =>
               patch(id, { loaded, total, speedBps, etaSec }),
             onXhr: (xhr) => patch(id, { xhr }),
@@ -89,17 +94,15 @@ export function useUploader(opts: UseUploaderOptions) {
             loaded: working.size,
             total: working.size,
             xhr: undefined,
+            abortController: undefined,
           });
           const item = useUploadStore.getState().items[id];
-          if (item) {
-            item.onSuccess?.(fileUrl, item);
-            opts.onItemSuccess?.(fileUrl, item);
-          }
+          if (item) opts.onItemSuccess?.(fileUrl, item);
           return;
         } catch (err) {
           const ue = err as UploadError;
           if (ue.code === 'canceled') {
-            patch(id, { status: 'canceled', xhr: undefined });
+            patch(id, { status: 'canceled', xhr: undefined, abortController: undefined });
             return;
           }
           if (!ue.retryable || attempt === MAX_ATTEMPTS - 1) {
@@ -107,6 +110,7 @@ export function useUploader(opts: UseUploaderOptions) {
               status: 'failed',
               error: { code: ue.code, message: ue.message },
               xhr: undefined,
+              abortController: undefined,
             });
             return;
           }
@@ -137,7 +141,6 @@ export function useUploader(opts: UseUploaderOptions) {
           etaSec: 0,
           attempt: 0,
           error: err ? { code: 'invalid', message: err } : undefined,
-          onSuccess: opts.onItemSuccess,
         };
         add(item);
         ids.push(id);
@@ -151,8 +154,11 @@ export function useUploader(opts: UseUploaderOptions) {
   const cancel = useCallback(
     (id: string) => {
       const item = useUploadStore.getState().items[id];
-      if (item?.xhr) item.xhr.abort();
-      patch(id, { status: 'canceled', xhr: undefined });
+      // Abort the controller (cancels presign + XHR) and the XHR directly as a
+      // fallback for the window before a controller is attached.
+      item?.abortController?.abort();
+      item?.xhr?.abort();
+      patch(id, { status: 'canceled', xhr: undefined, abortController: undefined });
     },
     [patch],
   );

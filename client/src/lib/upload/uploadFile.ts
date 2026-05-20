@@ -37,6 +37,10 @@ export async function uploadFile(
     throw new UploadError('presign_failed', msg, true);
   }
 
+  // Presign cannot be aborted mid-flight; re-check before starting the upload
+  // so a cancel during presign still prevents the XHR from being sent.
+  if (cb.signal?.aborted) throw new UploadError('canceled', 'canceled', false);
+
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     cb.onXhr(xhr);

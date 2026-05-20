@@ -54,7 +54,7 @@ export async function queryInfluencers(
   filter: InfluencerFilter,
   range: { from: number; to: number },
 ): Promise<{ rows: unknown[]; count: number }> {
-  let q = adminClient.from('influencer_profiles').select(SELECT);
+  let q = adminClient.from('influencer_profiles').select(SELECT, { count: 'exact' });
   q = applyFilters(q, filter)
     .order('is_online', { ascending: false })
     .order('last_seen_at', { ascending: false, nullsFirst: false })

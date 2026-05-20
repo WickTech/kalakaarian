@@ -9,7 +9,7 @@ import {
   getCampaignInfluencers,
   getRecommendedCreators,
 } from './controller';
-import { getCampaignCreators } from '../../controllers/campaignCreatorController';
+import { getCampaignCreators } from './campaignCreatorController';
 import { auth } from '../../middleware/auth';
 import { validateBody } from '../../middleware/zodValidate';
 import { createCampaignSchema, updateCampaignSchema } from './validators';

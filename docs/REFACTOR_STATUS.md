@@ -79,11 +79,11 @@ path + webhook idempotency) before relying on it in production.
 - Add `utils/apiResponse.ts` — `ok(res, data)` / `fail(res, status, message)`.
 - Roll out per-module without changing existing JSON shapes (additive).
 
-**2. Module encapsulation cleanup**
-- `modules/campaigns/routes.ts` imports legacy `campaignCreatorController`.
-  Move `campaignCreatorController` + `workflowController` + `workflowActions`
-  into the campaigns module (campaign-creators is part of the campaigns
-  bounded context — no separate module needed).
+**2. Module encapsulation cleanup** — partly done
+- ✅ `campaignCreatorController` moved into `modules/campaigns/`; the campaigns
+  module no longer reaches into legacy `controllers/`.
+- Still optional: fold `workflowController` + `workflowActions` into the
+  campaigns module too (separate route prefixes — lower priority).
 
 ---
 
@@ -115,10 +115,13 @@ migration `023`.
 ### Remaining
 - **Apply `035` to prod** (manual — replace `<SERVER_URL>` / `<CRON_SECRET>`,
   enable `pg_cron` + `pg_net`). Same manual step as migration `023`.
-- Migrate more async tasks to job handlers: notifications, invoice generation,
-  analytics sync, upload post-processing, webhook retries. The infra +
-  registry make each a small, isolated addition. **Keep latency-sensitive
-  emails (OTP, password-reset) synchronous** — the worker runs once a minute.
+- Migrate more async tasks to job handlers as they arise. NOTE: notifications
+  and invoices are **not currently candidates** — nothing inserts into
+  `notifications` server-side yet, and invoices render on-demand (no stored
+  PDF). Building those handlers now would be dead code. Real future
+  candidates: analytics sync, upload post-processing, webhook retries.
+  **Keep latency-sensitive emails (OTP, password-reset) synchronous** — the
+  worker runs once a minute.
 - Optional: a `jobs.test.ts` integration test (needs `035` on the test
   project) covering enqueue → process → retry.
 
@@ -186,11 +189,15 @@ Done:
   (`createRateLimiter`). All 7 limiter sites (auth, upload, platforms,
   feedback, contact, account, campaigns) use it — one place for the
   test-mode gate + the type cast.
+- **EXIF stripping** — `lib/upload/stripExif.ts`. Every image upload is
+  re-encoded through a canvas before leaving the browser, which drops all
+  source metadata (EXIF, incl. GPS). Done client-side at upload, not as a
+  job — a job would leave the metadata-bearing image publicly reachable for
+  up to a minute.
 - Already in place from earlier work: upload MIME allowlist + per-purpose
   check (`routes/upload.ts`), realtime RLS (migration `036`).
 
 Remaining:
-- EXIF stripping on image uploads (best as a job — Phase 3 handler).
 - Upload AV-scan hook (needs an external scanner integration).
 - Security audit-log table + suspicious-activity heuristics (failed logins,
   unusual access). `admin_audit_logs` already covers admin actions.

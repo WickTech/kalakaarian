@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { adminClient } from '../config/supabase';
-import { AuthRequest } from '../middleware/auth';
+import { adminClient } from '../../config/supabase';
+import { AuthRequest } from '../../middleware/auth';
 
 // "campaign_creators" replaces the legacy "proposals" table. A row represents
 // a brand-selected creator attached to a campaign; the brand drives selection

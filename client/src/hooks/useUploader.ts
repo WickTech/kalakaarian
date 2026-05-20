@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useUploadStore, UploadItem, UploadPurpose, selectItems } from '@/stores/uploadStore';
 import { uploadFile, UploadError } from '@/lib/upload/uploadFile';
 import { compressImage } from '@/lib/upload/compressImage';
+import { stripImageMetadata } from '@/lib/upload/stripExif';
 import { videoThumbnail } from '@/lib/upload/videoThumbnail';
 import { backoffDelay, sleep, MAX_ATTEMPTS } from '@/lib/upload/retry';
 
@@ -50,10 +51,12 @@ export function useUploader(opts: UseUploaderOptions) {
       if (!initial) return;
 
       let working = initial.file;
-      if (opts.compressImages && working.type.startsWith('image/')) {
+      if (working.type.startsWith('image/')) {
         patch(id, { status: 'compressing' });
         try {
-          working = await compressImage(working);
+          // Always strip metadata (EXIF — including GPS) from image uploads.
+          working = await stripImageMetadata(working);
+          if (opts.compressImages) working = await compressImage(working);
         } catch {
           /* fall back to original */
         }

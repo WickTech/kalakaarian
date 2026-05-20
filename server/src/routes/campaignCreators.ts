@@ -3,7 +3,7 @@ import {
   getCampaignCreators,
   getCampaignCreatorById,
   getMyCampaignCreators,
-} from '../controllers/campaignCreatorController';
+} from '../modules/campaigns/campaignCreatorController';
 import { submitRating, getCampaignCreatorRating } from '../controllers/ratingController';
 import { auth } from '../middleware/auth';
 

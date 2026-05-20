@@ -41,7 +41,7 @@ export async function compressImage(file: File, opts: CompressOptions = {}): Pro
   }
 }
 
-async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
+export async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
   if (typeof createImageBitmap === 'function') {
     try {
       return await createImageBitmap(file);

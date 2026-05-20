@@ -6,6 +6,14 @@ import { adminClient } from '../../config/supabase';
 export const ALLOWED_GENDERS = ['male', 'female', 'non_binary', 'prefer_not_to_say'] as const;
 const VALID_TIERS = new Set(['nano', 'micro', 'macro', 'celeb']);
 
+// Must stay in sync with client NICHE_OPTIONS — used for niche text search
+const NICHE_OPTIONS = [
+  'Fashion', 'Lifestyle', 'Gaming', 'Tech', 'Fitness', 'Food', 'Travel', 'Comedy',
+  'Education', 'Finance', 'Beauty', 'Automotive', 'Music', 'Art', 'Sports', 'Dance',
+  'Acting', 'Singing', 'Product Review', 'Photography & Videography', 'Art & Creativity',
+  'Automobile & Mobility', 'Spiritual & Motivation', 'Regional & Cultural', 'Pets & Animals',
+];
+
 const SELECT =
   '*, profiles(name, username, phone, avatar_url), influencer_pricing(platform, content_type, price)';
 
@@ -39,7 +47,6 @@ const applyFilters = (q: any, params: InfluencerFilter): any => {
   if (params.platform) {
     q = q.overlaps('platforms', Array.isArray(params.platform) ? params.platform : [params.platform]);
   }
-  if (params.name) q = q.ilike('profiles.name', `%${params.name}%`);
   if (params.q) q = q.textSearch('fts', params.q, { type: 'websearch' });
 
   // Hide creators who explicitly went offline (last_seen_at is set + is_online false).
@@ -55,7 +62,45 @@ export async function queryInfluencers(
   range: { from: number; to: number },
 ): Promise<{ rows: unknown[]; count: number }> {
   let q = adminClient.from('influencer_profiles').select(SELECT, { count: 'exact' });
-  q = applyFilters(q, filter)
+
+  // Text search across name/username (in profiles), city, and niches.
+  // We resolve to a set of influencer IDs first to avoid PostgREST embedded-
+  // resource filter nullifying the profiles join for non-matching rows.
+  if (filter.name) {
+    const term = filter.name.trim();
+    const matchedIds = new Set<string>();
+
+    // 1. Name / username search (profiles table)
+    const { data: profileMatches } = await adminClient
+      .from('profiles')
+      .select('id')
+      .or(`name.ilike.%${term}%,username.ilike.%${term}%`);
+    for (const r of profileMatches ?? []) matchedIds.add(r.id);
+
+    // 2. City search (influencer_profiles table)
+    const { data: cityMatches } = await adminClient
+      .from('influencer_profiles')
+      .select('id')
+      .ilike('city', `%${term}%`);
+    for (const r of cityMatches ?? []) matchedIds.add(r.id);
+
+    // 3. Niche search — match against known niche names (case-insensitive)
+    const matchingNiches = NICHE_OPTIONS.filter(n =>
+      n.toLowerCase().includes(term.toLowerCase()),
+    );
+    if (matchingNiches.length > 0) {
+      const { data: nicheMatches } = await adminClient
+        .from('influencer_profiles')
+        .select('id')
+        .overlaps('niches', matchingNiches);
+      for (const r of nicheMatches ?? []) matchedIds.add(r.id);
+    }
+
+    if (matchedIds.size === 0) return { rows: [], count: 0 };
+    q = q.in('id', [...matchedIds]);
+  }
+
+  q = applyFilters(q, { ...filter, name: undefined })
     .order('is_online', { ascending: false })
     .order('last_seen_at', { ascending: false, nullsFirst: false })
     .order('tier', { ascending: true })

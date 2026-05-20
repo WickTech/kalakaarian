@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CheckSquare, Star, Check } from "lucide-react";
+import { CheckSquare, Star, Check, MapPin, Instagram, Youtube } from "lucide-react";
 import { Influencer } from "@/lib/store";
 
 const TIER_CLASS: Record<string, string> = {
@@ -37,6 +37,8 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
     else onAddToCart();
   };
 
+  const genres = inf.niches && inf.niches.length > 0 ? inf.niches : inf.genre ? [inf.genre] : [];
+
   return (
     <div
       onClick={onToggleSelect}
@@ -44,7 +46,7 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
         selected ? "ring-2 ring-gold ring-offset-1 ring-offset-obsidian" : ""
       }`}
     >
-      {/* Header: photo | name+handle | rating+status */}
+      {/* Header: avatar | name+tier+social | rating+status */}
       <div className="flex items-start gap-2.5">
 
         {/* Avatar */}
@@ -62,18 +64,52 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
           )}
         </div>
 
-        {/* Name + handle */}
+        {/* Name + tier + social icons */}
         <div className="min-w-0 flex-1">
-          <Link
-            to={`/influencer/${inf.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="font-bold text-chalk text-sm hover:text-gold transition-colors truncate block leading-tight"
-          >
-            {inf.name}
-          </Link>
-          <p className="text-xs text-chalk-dim truncate leading-tight mt-0.5">
-            {inf.handle ? `@${inf.handle.replace("@", "")}` : (inf.city || "—")}
-          </p>
+          {/* Name row with tier badge */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Link
+              to={`/influencer/${inf.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="font-bold text-chalk text-sm hover:text-gold transition-colors truncate leading-tight"
+            >
+              {inf.name}
+            </Link>
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${TIER_CLASS[inf.tier] || ""}`}>
+              {(TIER_LABEL[inf.tier] ?? inf.tier).toUpperCase()}
+            </span>
+          </div>
+
+          {/* Social icon links */}
+          <div className="flex items-center gap-2 mt-1">
+            {inf.igHandle ? (
+              <a
+                href={`https://instagram.com/${inf.igHandle.replace("@", "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title={`@${inf.igHandle}`}
+                className="text-chalk-faint hover:text-[#E1306C] transition-colors"
+              >
+                <Instagram className="w-3.5 h-3.5" />
+              </a>
+            ) : null}
+            {inf.ytHandle ? (
+              <a
+                href={`https://youtube.com/@${inf.ytHandle.replace("@", "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                title={`@${inf.ytHandle}`}
+                className="text-chalk-faint hover:text-[#FF0000] transition-colors"
+              >
+                <Youtube className="w-3.5 h-3.5" />
+              </a>
+            ) : null}
+            {!inf.igHandle && !inf.ytHandle && (
+              <span className="text-[10px] text-chalk-faint/50">No socials linked</span>
+            )}
+          </div>
         </div>
 
         {/* Right column: rating (top) + online/offline (below) */}
@@ -84,7 +120,7 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
               <span className="text-xs font-bold text-gold leading-none">{Number(inf.avgRating).toFixed(1)}</span>
             </span>
           ) : (
-            <span className="h-5" /> /* placeholder to keep layout stable */
+            <span className="h-5" />
           )}
           <span className={`flex items-center gap-1 text-[10px] font-semibold ${inf.isOnline ? "text-green-400" : "text-chalk-faint"}`}>
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${inf.isOnline ? "bg-green-400 shadow-[0_0_4px_#4ade80]" : "bg-white/20"}`} />
@@ -93,17 +129,29 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
         </div>
       </div>
 
-      {/* Tier + genre */}
-      <div className="flex items-center gap-1.5">
-        <span className={`text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${TIER_CLASS[inf.tier] || ""}`}>
-          {(TIER_LABEL[inf.tier] ?? inf.tier).toUpperCase()}
-        </span>
-        {inf.genre && (
-          <span className="text-xs text-chalk-faint border border-white/10 px-1.5 py-0.5 rounded-full truncate">
-            {inf.genre}
-          </span>
-        )}
-      </div>
+      {/* Genres */}
+      {genres.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {genres.slice(0, 3).map((n) => (
+            <span key={n} className="text-xs text-chalk-faint border border-white/10 px-1.5 py-0.5 rounded-full">
+              {n}
+            </span>
+          ))}
+          {genres.length > 3 && (
+            <span className="text-xs text-chalk-faint border border-white/10 px-1.5 py-0.5 rounded-full">
+              +{genres.length - 3}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Location */}
+      {(inf.city || inf.state) && (
+        <div className="flex items-center gap-1 text-[11px] text-chalk-faint">
+          <MapPin className="w-3 h-3 shrink-0 text-chalk-dim" />
+          <span className="truncate">{[inf.city, inf.state].filter(Boolean).join(", ")}</span>
+        </div>
+      )}
 
       {/* Stats: 3 cells */}
       <div className="grid grid-cols-3 gap-1">

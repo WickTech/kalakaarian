@@ -4,7 +4,7 @@ import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { UploadProgressUploader } from '@/components/upload';
 
-const MAX_GALLERY = 12;
+const MAX_GALLERY = 6;
 const GALLERY_ACCEPT = ['image/jpeg', 'image/png', 'image/webp'];
 const GALLERY_MAX_BYTES = 10 * 1024 * 1024;
 
@@ -22,6 +22,12 @@ export function ProfileGallery({ images, isOwnProfile, onChange }: Props) {
   const [removing, setRemoving] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
   const list = images ?? [];
+
+  // Batch concurrent uploads: accumulate URLs from parallel uploads and flush once
+  const listRef = useRef<string[]>([]);
+  listRef.current = list;
+  const pendingRef = useRef<string[]>([]);
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   if (!isOwnProfile && list.length === 0) return null;
 

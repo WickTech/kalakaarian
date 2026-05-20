@@ -396,6 +396,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: "An error occurred" }));
+    if (response.status === 401 && window.location.pathname !== '/login') {
+      localStorage.removeItem("kalakariaan_token");
+      localStorage.removeItem("kalakariaan_user");
+      localStorage.removeItem("kalakariaan_view_as");
+      window.location.href = '/login';
+    }
     throw new ApiError(response.status, errorData.message || "Request failed");
   }
 

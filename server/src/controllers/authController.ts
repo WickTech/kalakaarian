@@ -181,7 +181,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const { data: profile } = await adminClient
       .from('profiles')
-      .select('id, email, username, name, role, is_super_admin')
+      .select('id, email, username, name, role, is_super_admin, onboarding_completed')
       .eq('id', data.user.id)
       .single();
 
@@ -196,9 +196,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.json({
       message: 'Login successful',
       user: {
-        ...profile,
+        id: profile?.id,
+        email: profile?.email,
+        username: profile?.username,
+        name: profile?.name,
+        role: profile?.role,
         isAdmin: isSuperAdmin || (data.user.user_metadata?.is_admin ?? false),
         isSuperAdmin,
+        onboardingCompleted: profile?.onboarding_completed ?? true,
       },
       token: data.session.access_token,
     });

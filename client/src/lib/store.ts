@@ -8,7 +8,10 @@ export interface Influencer {
   tier: "nano" | "micro" | "macro" | "celeb";
   genre: string;
   niches?: string[];
+  igHandle?: string;
+  ytHandle?: string;
   city: string;
+  state?: string;
   followers: number;
   activeFollowers: number;
   fakeFollowers: number;

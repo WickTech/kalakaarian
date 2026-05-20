@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api, InfluencerProfile, UpdateInfluencerProfileData } from "@/lib/api";
 import { CommercialsPricingSection } from "@/components/profile/CommercialsPricingSection";
+import { keys } from '@/lib/queryKeys';
 
 const NICHE_OPTIONS = [
   "Fashion", "Lifestyle", "Gaming", "Tech", "Fitness", "Food", "Travel", "Comedy",
@@ -132,8 +133,8 @@ export default function EditInfluencerProfile() {
     setSaving(true);
     try {
       await api.updateInfluencerProfile(updateData);
-      qc.invalidateQueries({ queryKey: ["influencer-profile", user?.id] });
-      qc.invalidateQueries({ queryKey: ["influencer-profile-own"] });
+      qc.invalidateQueries({ queryKey: keys.creators.profile(user?.id) });
+      qc.invalidateQueries({ queryKey: keys.creators.profileOwn() });
       toast({ title: "Profile updated" });
       navigate("/profile");
     } catch {

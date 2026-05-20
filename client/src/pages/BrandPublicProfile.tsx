@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Globe, Briefcase, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { keys } from '@/lib/queryKeys';
 
 interface BrandPublic {
   companyName: string;
@@ -17,7 +18,7 @@ interface BrandPublic {
 export default function BrandPublicProfile() {
   const { id } = useParams<{ id: string }>();
   const { data: brand, isLoading } = useQuery<BrandPublic>({
-    queryKey: ["brand-public", id],
+    queryKey: keys.brand.publicProfile(id),
     queryFn: () => api.getBrandPublicProfile(id!),
     enabled: !!id,
   });

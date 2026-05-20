@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { CartProvider, useCartContext } from "@/contexts/CartContext";
 import { CartDrawer } from "@/components/CartDrawer";
 import { GlobalHeader } from "@/components/GlobalHeader";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Landing from "./pages/Landing";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
@@ -177,6 +178,7 @@ function AppContent() {
     <>
       <GlobalHeader onCartOpen={() => setCartOpen(true)} />
       <main>
+      <ErrorBoundary scope="route">
       <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<SmartHome />} />
@@ -309,6 +311,7 @@ function AppContent() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
+      </ErrorBoundary>
       </main>
       <CartDrawer
         open={cartOpen}
@@ -333,17 +336,19 @@ const App = () => {
   const { dark, toggle } = useTheme();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <BrowserRouter>
-            <CartProvider>
-            <AppContent />
-            </CartProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary scope="root">
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <BrowserRouter>
+              <CartProvider>
+              <AppContent />
+              </CartProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 

@@ -12,6 +12,8 @@ import { BrandTransactionsPanel } from "@/components/BrandTransactionsPanel";
 import { PreviousCampaignsPanel } from "@/components/PreviousCampaignsPanel";
 import { CurrentCampaignPopover } from "@/components/CurrentCampaignPopover";
 import { RunningCampaignTracker } from "@/components/RunningCampaignTracker";
+import { keys } from '@/lib/queryKeys';
+import { KpiCardSkeleton, TableRowSkeleton } from '@/components/Skeleton';
 
 type Tab = "overview" | "campaigns" | "analytics" | "room" | "transactions";
 
@@ -44,17 +46,17 @@ export default function BrandDashboard() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: campaigns = [], isLoading: campaignsLoading } = useQuery<Campaign[]>({
-    queryKey: ["brand-campaigns"],
+    queryKey: keys.campaigns.byBrand(),
     queryFn: () => api.getCampaigns(),
   });
 
   const { data: analytics } = useQuery({
-    queryKey: ["brand-analytics"],
+    queryKey: keys.brand.analytics(),
     queryFn: () => api.getBrandAnalytics(),
   });
 
   const { data: brandProfile } = useQuery({
-    queryKey: ["brand-profile"],
+    queryKey: keys.brand.profile(),
     queryFn: () => api.getBrandProfile().catch(() => null),
     staleTime: 5 * 60_000,
   });
@@ -112,8 +114,23 @@ export default function BrandDashboard() {
         </div>
 
         {campaignsLoading ? (
-          <div className="flex items-center justify-center h-40">
-            <div className="w-8 h-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+          <div className="space-y-6">
+            {tab === "overview" ? (
+              <div className="grid grid-cols-2 gap-4">
+                <KpiCardSkeleton />
+                <KpiCardSkeleton />
+              </div>
+            ) : (
+              <div className="bento-card overflow-hidden">
+                <table className="w-full text-sm">
+                  <tbody>
+                    <TableRowSkeleton />
+                    <TableRowSkeleton />
+                    <TableRowSkeleton />
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         ) : (
           <>

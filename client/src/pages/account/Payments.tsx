@@ -6,6 +6,7 @@ import { WalletTab } from '@/components/WalletTab';
 import { MembershipTab } from '@/components/InfluencerDashboardPanels';
 import { BrandTransactionsPanel } from '@/components/BrandTransactionsPanel';
 import { SectionHeader } from './components/SectionHeader';
+import { keys } from '@/lib/queryKeys';
 
 export default function Payments() {
   const { user, isSuperAdmin, viewAs } = useAuth();
@@ -15,13 +16,13 @@ export default function Payments() {
   useEffect(() => { document.title = 'Payments — Kalakaarian'; }, []);
 
   const { data: analytics } = useQuery({
-    queryKey: ['influencer-analytics'],
+    queryKey: keys.analytics.influencer(),
     queryFn: () => api.getInfluencerAnalytics().catch(() => null),
     enabled: isCreator,
   });
 
   const { data: membershipStatus = null } = useQuery({
-    queryKey: ['membership-status'],
+    queryKey: keys.membership.status(),
     queryFn: () => api.getMembershipStatus().catch(() => null),
     enabled: isCreator,
   });

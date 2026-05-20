@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, MessageSquare, FileText, DollarSign, Info, X } from "lucide-react";
 import { api, AppNotification } from "@/lib/api";
+import { keys } from '@/lib/queryKeys';
 
 const TYPE_ICONS: Record<string, React.ElementType> = {
   proposal: MessageSquare,
@@ -27,24 +28,24 @@ export default function Notifications() {
   useEffect(() => { document.title = "Notifications | Kalakaarian"; }, []);
 
   const { data: notifications = [], isLoading } = useQuery<AppNotification[]>({
-    queryKey: ["notifications"],
+    queryKey: keys.notifications.all(),
     queryFn: () => api.getNotifications(),
     staleTime: 30_000,
   });
 
   const markRead = useMutation({
     mutationFn: (id: string) => api.markNotificationRead(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.notifications.all() }),
   });
 
   const markAll = useMutation({
     mutationFn: () => api.markAllNotificationsRead(),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.notifications.all() }),
   });
 
   const del = useMutation({
     mutationFn: (id: string) => api.deleteNotification(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.notifications.all() }),
   });
 
   const displayed = filter === "unread" ? notifications.filter((n) => !n.read) : notifications;

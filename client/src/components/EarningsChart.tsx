@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { api } from "@/lib/api";
+import { keys } from '@/lib/queryKeys';
 
 export function EarningsChart() {
   const { data, isLoading } = useQuery<{ monthly: Array<{ month: string; earnings: number; proposals: number }> }>({
-    queryKey: ["monthly-analytics"],
+    queryKey: keys.analytics.monthly(),
     queryFn: () => api.getMonthlyAnalytics(),
     staleTime: 5 * 60_000,
   });

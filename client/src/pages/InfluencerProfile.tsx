@@ -15,6 +15,7 @@ import { AnalyticsSection } from '@/components/profile/AnalyticsSection';
 import { ProfileGallery } from '@/components/profile/ProfileGallery';
 import { OwnerActionsBar } from '@/components/profile/OwnerActionsBar';
 import { Influencer } from '@/lib/store';
+import { keys } from '@/lib/queryKeys';
 
 export default function InfluencerProfile() {
   const { id } = useParams<{ id: string }>();
@@ -35,7 +36,7 @@ export default function InfluencerProfile() {
   // Own profile: use authenticated endpoint (no visibility/presence restrictions).
   // Wait for auth to resolve so isOwnProfile is accurate before firing any query.
   const { data: profile, isLoading } = useQuery<InfluencerProfileData>({
-    queryKey: isOwnProfile ? ['influencer-profile-own'] : ['influencer-profile', id],
+    queryKey: isOwnProfile ? keys.creators.profileOwn() : keys.creators.profile(id),
     queryFn: isOwnProfile
       ? () => api.getInfluencerProfile()
       : () => api.getInfluencerById(id!),
@@ -43,7 +44,7 @@ export default function InfluencerProfile() {
   });
 
   const { data: socialStats } = useQuery({
-    queryKey: ['social-stats', id, profile?.userId],
+    queryKey: keys.creators.socialStats(id, profile?.userId),
     queryFn: () => api.getSocialStats(profile?.userId || id!),
     enabled: !!id && !!profile,
   });

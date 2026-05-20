@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
 import { api, InfluencerProfile } from "@/lib/api";
+import { keys } from '@/lib/queryKeys';
 
 export function RisingStarsCarousel() {
   const { data: stars = [] } = useQuery({
-    queryKey: ['rising-stars'],
+    queryKey: keys.creators.risingStars(),
     queryFn: async () => {
       const data = await api.searchInfluencers({ limit: 12 } as Parameters<typeof api.searchInfluencers>[0]);
       return (Array.isArray(data) ? data : [])

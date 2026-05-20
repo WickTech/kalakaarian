@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Download, Filter as FilterIcon, X } from 'lucide-react';
 import { api, BrandTransaction } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { keys } from '@/lib/queryKeys';
 
 const STATUS_STYLE: Record<string, string> = {
   completed: 'text-green-400 border-green-400/30 bg-green-400/5',
@@ -26,13 +27,13 @@ export function BrandTransactionsPanel() {
     [creatorId, campaignId, from, to, status]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['brand-transactions', filters],
+    queryKey: keys.brand.transactions(filters),
     queryFn: () => api.getBrandTransactions(filters),
     staleTime: 30_000,
   });
 
   const { data: filterOpts } = useQuery({
-    queryKey: ['brand-transaction-filters'],
+    queryKey: keys.brand.transactionFilters(),
     queryFn: () => api.getBrandTransactionFilters(),
     staleTime: 5 * 60_000,
   });

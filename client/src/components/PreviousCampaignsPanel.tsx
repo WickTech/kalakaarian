@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, Download, Instagram, Youtube, ExternalLink, FileText } from 'lucide-react';
 import { api, BrandTransaction } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { keys } from '@/lib/queryKeys';
 
 type CampaignVideo = Awaited<ReturnType<typeof api.getCampaignVideosAdmin>>[number];
 
@@ -21,14 +22,14 @@ function CampaignRow({
   const [open, setOpen] = useState(false);
 
   const { data: videos = [] } = useQuery<CampaignVideo[]>({
-    queryKey: ['campaign-videos-admin', campaign.id],
+    queryKey: keys.campaigns.videosAdmin(campaign.id),
     queryFn: () => api.getCampaignVideosAdmin(campaign.id),
     enabled: open,
     staleTime: 60_000,
   });
 
   const { data: txnData } = useQuery({
-    queryKey: ['brand-transactions', { campaignId: campaign.id }],
+    queryKey: keys.brand.transactions({ campaignId: campaign.id }),
     queryFn: () => api.getBrandTransactions({ campaignId: campaign.id }),
     enabled: open,
     staleTime: 60_000,
@@ -162,7 +163,7 @@ function CampaignRow({
 export function PreviousCampaignsPanel() {
   const { toast } = useToast();
   const { data, isLoading } = useQuery({
-    queryKey: ['brand-campaign-history'],
+    queryKey: keys.campaigns.history(),
     queryFn: () => api.getBrandCampaignHistory(),
     staleTime: 60_000,
   });

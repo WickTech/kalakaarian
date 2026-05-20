@@ -5,6 +5,7 @@ import { Inbox, CheckCircle2, Clock, Upload } from "lucide-react";
 import { api, Proposal } from "@/lib/api";
 import { CampaignProgressTracker } from "@/components/CampaignProgressTracker";
 import { CampaignVideoUploadModal } from "@/components/profile/CampaignVideoUploadModal";
+import { keys } from '@/lib/queryKeys';
 
 type TabKey = "running" | "completed";
 
@@ -63,7 +64,7 @@ export default function CreatorCampaigns() {
   const [tab, setTab] = useState<TabKey>(initialTab === "completed" ? "completed" : "running");
 
   const { data: campaigns = [], isLoading } = useQuery<Proposal[]>({
-    queryKey: ["my-proposals"],
+    queryKey: keys.campaignCreators.my(),
     queryFn: () => api.getMyCampaignCreators().catch(() => []),
   });
 
@@ -78,7 +79,7 @@ export default function CreatorCampaigns() {
     return { running, completed };
   }, [campaigns]);
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ["my-proposals"] });
+  const refresh = () => qc.invalidateQueries({ queryKey: keys.campaignCreators.my() });
   const visible = tab === "running" ? running : completed;
   const empty = visible.length === 0;
 

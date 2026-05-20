@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, Settings, Building2, Mail, Phone, Globe, Tag, FileText, LayoutDashboard } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { keys } from '@/lib/queryKeys';
 
 function InfoRow({ icon: Icon, label, value, href }: { icon: React.ElementType; label: string; value: string; href?: string }) {
   return (
@@ -30,13 +31,13 @@ export default function MyProfile() {
   useEffect(() => { document.title = "My Profile — Kalakaarian"; }, []);
 
   const { data: profile, isLoading } = useQuery({
-    queryKey: ["brand-profile"],
+    queryKey: keys.brand.profile(),
     queryFn: () => api.getBrandSettings(),
     staleTime: 5 * 60_000,
   });
 
   const { data: campaigns = [] } = useQuery({
-    queryKey: ["brand-campaigns"],
+    queryKey: keys.campaigns.byBrand(),
     queryFn: () => api.getCampaigns(),
     staleTime: 5 * 60_000,
   });

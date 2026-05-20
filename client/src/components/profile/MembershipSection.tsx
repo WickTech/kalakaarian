@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { MembershipUpgradeCard } from '@/components/MembershipBadge';
 import { openRazorpayCheckout } from '@/lib/razorpay';
+import { keys } from '@/lib/queryKeys';
 
 export function MembershipSection() {
   const { user } = useAuth();
@@ -11,7 +12,7 @@ export function MembershipSection() {
   const qc = useQueryClient();
 
   const { data: membership = { tier: 'regular' } } = useQuery({
-    queryKey: ['membership-status'],
+    queryKey: keys.membership.status(),
     queryFn: () => api.getMembershipStatus(),
   });
 
@@ -20,7 +21,7 @@ export function MembershipSection() {
       const order = await api.createMembershipOrder(tier);
       if (!order.orderId || !order.keyId) {
         await api.purchaseMembership(tier);
-        qc.invalidateQueries({ queryKey: ['membership-status'] });
+        qc.invalidateQueries({ queryKey: keys.membership.status() });
         toast({ title: 'Success', description: `Upgraded to ${tier} membership!` });
         return;
       }
@@ -30,7 +31,7 @@ export function MembershipSection() {
         prefill: { name: user?.name, email: user?.email },
         onSuccess: async (paymentId, orderId, signature) => {
           await api.purchaseMembership(tier, { razorpayOrderId: orderId, razorpayPaymentId: paymentId, razorpaySignature: signature });
-          qc.invalidateQueries({ queryKey: ['membership-status'] });
+          qc.invalidateQueries({ queryKey: keys.membership.status() });
           toast({ title: 'Payment successful!', description: `${tier} membership activated.` });
         },
         onDismiss: () => toast({ title: 'Payment cancelled' }),

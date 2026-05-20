@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { X, Users, Search, ArrowUpDown, Trash2, Instagram, Youtube, Globe } from "lucide-react";
 import { api, CampaignInfluencer } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { keys } from '@/lib/queryKeys';
 
 interface Props {
   campaignId: string;
@@ -31,7 +32,7 @@ export function CampaignInfluencersPanel({ campaignId, campaignTitle, onClose }:
   const [search, setSearch] = useState("");
 
   const { data = [], isLoading } = useQuery<CampaignInfluencer[]>({
-    queryKey: ["campaign-influencers", campaignId],
+    queryKey: keys.campaigns.influencers(campaignId),
     queryFn: () => api.getCampaignInfluencers(campaignId),
     staleTime: 15_000,
   });
@@ -39,8 +40,8 @@ export function CampaignInfluencersPanel({ campaignId, campaignTitle, onClose }:
   const removeMutation = useMutation({
     mutationFn: (id: string) => api.removeFromCart(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["campaign-influencers", campaignId] });
-      qc.invalidateQueries({ queryKey: ["brand-campaigns"] });
+      qc.invalidateQueries({ queryKey: keys.campaigns.influencers(campaignId) });
+      qc.invalidateQueries({ queryKey: keys.campaigns.byBrand() });
       toast({ title: "Creator removed from campaign" });
     },
     onError: () => toast({ title: "Failed to remove creator", variant: "destructive" }),

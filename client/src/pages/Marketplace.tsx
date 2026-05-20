@@ -10,6 +10,7 @@ import { RisingStarsCarousel } from "@/components/RisingStarsCarousel";
 import { CelebCallbackModal } from "@/components/CelebCallbackModal";
 import { CreatorCard } from "@/components/CreatorCard";
 import { CreatorCardSkeleton } from "@/components/CreatorCardSkeleton";
+import { keys } from '@/lib/queryKeys';
 
 interface MarketplaceProps {
   isInCart: (id: string) => boolean;
@@ -46,7 +47,7 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
   }, [search]);
 
   const { data: influencers = [], isLoading: loading } = useQuery({
-    queryKey: ['marketplace', gender, tier, platform, location, genreKey, debouncedSearch],
+    queryKey: keys.creators.marketplace({ gender, tier, platform, location, genreKey, debouncedSearch }),
     queryFn: async () => {
       const data = await api.searchInfluencers({
         gender: gender !== "all" ? gender : undefined,

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Star, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { EarningsChart } from "./EarningsChart";
+import { keys } from '@/lib/queryKeys';
 
 interface Props {
   stats: { earnings: number };
@@ -9,7 +10,7 @@ interface Props {
 
 export function InfluencerAnalyticsPanel({ stats }: Props) {
   const { data: deep } = useQuery({
-    queryKey: ["influencer-deep-analytics"],
+    queryKey: keys.analytics.influencerDeep(),
     queryFn: () => api.getInfluencerDeepAnalytics(),
     staleTime: 60_000,
   });

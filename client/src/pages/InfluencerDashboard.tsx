@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { WalletTab, MembershipTab } from "@/components/InfluencerDashboardPanels";
 import { InfluencerAnalyticsPanel } from "@/components/InfluencerAnalyticsPanel";
 import { GamificationPanel } from "@/components/GamificationPanel";
+import { keys } from '@/lib/queryKeys';
 
 type Tab = "analytics" | "rewards" | "wallet" | "membership";
 
@@ -30,7 +31,7 @@ export default function InfluencerDashboard() {
   const qc = useQueryClient();
 
   const { data: profile, isLoading } = useQuery<InfluencerProfile | null>({
-    queryKey: ["influencer-profile-own"],
+    queryKey: keys.creators.profileOwn(),
     queryFn: () => api.getInfluencerProfile().catch(() => null),
   });
   // Handle OAuth redirect params from IG/YT platform connection
@@ -43,11 +44,11 @@ export default function InfluencerDashboard() {
 
     if (igConnected === "1") {
       toast({ title: "Instagram connected", description: "Your Instagram account is now linked." });
-      qc.invalidateQueries({ queryKey: ["connected-platforms"] });
+      qc.invalidateQueries({ queryKey: keys.platforms.connected() });
     }
     if (ytConnected === "1") {
       toast({ title: "YouTube connected", description: "Your YouTube channel is now linked." });
-      qc.invalidateQueries({ queryKey: ["connected-platforms"] });
+      qc.invalidateQueries({ queryKey: keys.platforms.connected() });
     }
     if (igError) {
       toast({ title: "Instagram connection failed", description: igError, variant: "destructive" });
@@ -64,12 +65,12 @@ export default function InfluencerDashboard() {
   }, []);
 
   const { data: analytics } = useQuery({
-    queryKey: ["influencer-analytics"],
+    queryKey: keys.analytics.influencer(),
     queryFn: () => api.getInfluencerAnalytics().catch(() => null),
   });
 
   const { data: membershipStatus = null } = useQuery<{ tier: string; active?: boolean; endDate?: string } | null>({
-    queryKey: ["membership-status"],
+    queryKey: keys.membership.status(),
     queryFn: () => api.getMembershipStatus().catch(() => null),
   });
 

@@ -2,10 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
 import { api } from "@/lib/api";
+import { keys } from '@/lib/queryKeys';
 
 export function RecommendedCreators() {
   const { data: creators = [] } = useQuery({
-    queryKey: ["recommended-creators"],
+    queryKey: keys.creators.recommended(),
     queryFn: () => api.getRecommendedCreators(),
     staleTime: 5 * 60_000,
   });

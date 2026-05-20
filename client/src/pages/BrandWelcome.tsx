@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
+import { keys } from '@/lib/queryKeys';
 
 type TierKey = "nano" | "micro" | "macro" | "celeb";
 
@@ -19,7 +20,7 @@ export default function BrandWelcome() {
   useEffect(() => { document.title = "Welcome — Kalakaarian"; }, []);
 
   const { data: counts = {} } = useQuery<Record<string, number>>({
-    queryKey: ["tier-counts"],
+    queryKey: keys.campaigns.tierCounts(),
     queryFn: () => api.getTierCounts(),
     staleTime: 5 * 60_000,
   });

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { X, ArrowRight, BarChart2 } from 'lucide-react';
 import { api, Campaign, Proposal } from '@/lib/api';
 import { CampaignPhaseTracker } from './CampaignPhaseTracker';
+import { keys } from '@/lib/queryKeys';
 
 const STAGE_IDX: Record<string, number> = {
   shortlisted: 1, accepted: 2, content_in_progress: 3, submitted: 3,
@@ -37,7 +38,7 @@ export function CurrentCampaignPopover({ open, onClose, anchorRef }: Props) {
   }, [open, onClose, anchorRef]);
 
   const { data: campaigns = [] } = useQuery<Campaign[]>({
-    queryKey: ['brand-campaigns'],
+    queryKey: keys.campaigns.byBrand(),
     queryFn: () => api.getCampaigns(),
     enabled: open,
     staleTime: 30_000,
@@ -47,7 +48,7 @@ export function CurrentCampaignPopover({ open, onClose, anchorRef }: Props) {
   const current = active[0] ?? null;
 
   const { data: proposals = [] } = useQuery<Proposal[]>({
-    queryKey: ['campaign-proposals-track', current?.id],
+    queryKey: keys.campaignCreators.byCampaign(current?.id),
     queryFn: () => api.getCampaignCreatorsForCampaign(current!.id),
     enabled: open && !!current,
     staleTime: 30_000,

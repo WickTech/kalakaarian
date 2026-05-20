@@ -5,6 +5,8 @@ import { getPublicWorkflow, ActivityLogEntry } from '@/lib/api';
 import { StageTimeline } from '@/components/workflow/StageTimeline';
 import { STAGE_LABELS, WorkflowStage } from '@/lib/workflow';
 import { formatDistanceToNow } from 'date-fns';
+import { keys } from '@/lib/queryKeys';
+import { useRealtimeCampaignCreator } from '@/hooks/useRealtimeCampaignCreator';
 
 const ACTION_LABELS: Record<string, string> = {
   shortlist: 'Shortlisted', accept: 'Accepted', reject_workflow: 'Rejected',
@@ -22,11 +24,14 @@ export default function SharedWorkflowView() {
   const { id } = useParams<{ id: string }>();
   const [countdown, setCountdown] = useState('');
 
+  useRealtimeCampaignCreator({ campaignCreatorId: id, enabled: !!id });
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['publicWorkflow', id],
+    queryKey: keys.workflow.public(id!),
     queryFn: () => getPublicWorkflow(id!),
     enabled: !!id,
-    refetchInterval: 15_000,
+    // Realtime channel handles live updates; this is a fallback only.
+    refetchInterval: 60_000,
   });
 
   const stage = data?.proposal.workflow_stage as WorkflowStage | null ?? null;

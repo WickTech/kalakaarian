@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ExternalLink, RefreshCw } from 'lucide-react';
 import { api, Proposal } from '@/lib/api';
 import { CampaignProgressTracker } from '@/components/CampaignProgressTracker';
+import { keys } from '@/lib/queryKeys';
+import { useRealtimeCampaignByCampaign } from '@/hooks/useRealtimeCampaignCreator';
 
 const STAGE_COLOR: Record<string, string> = {
   shortlisted: 'text-amber-400 border-amber-400/30',
@@ -32,11 +34,15 @@ export default function CampaignTrackPage() {
   useEffect(() => { document.title = 'Campaign Tracking · Kalakaarian'; }, []);
 
   const { data: proposals = [], isLoading, dataUpdatedAt, refetch } = useQuery<Proposal[]>({
-    queryKey: ['campaignProposals', id],
+    queryKey: keys.campaignCreators.byCampaign(id!),
     queryFn: () => api.getCampaignCreatorsForCampaign(id!),
     enabled: !!id,
-    refetchInterval: 15_000,
+    // Realtime channel below handles immediate updates; this is a fallback
+    // for sessions where VITE_SUPABASE_URL/ANON_KEY are missing.
+    refetchInterval: 60_000,
   });
+
+  useRealtimeCampaignByCampaign({ campaignId: id, enabled: !!id });
 
   const active = proposals.filter((p) => p.workflow_stage && p.workflow_stage !== 'rejected_workflow');
   const rejected = proposals.filter((p) => p.workflow_stage === 'rejected_workflow');

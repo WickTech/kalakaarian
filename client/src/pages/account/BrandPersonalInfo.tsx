@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { keys } from '@/lib/queryKeys';
 
 const CATEGORIES = ['Fashion','Technology','Food & Beverage','Health & Wellness','Finance','Entertainment','Retail','Education','Travel','Beauty','Other'];
 
@@ -35,7 +36,7 @@ export default function BrandPersonalInfo() {
     setSaving(true);
     try {
       await api.updateBrandProfile({ companyName: bName, email: bEmail, phone: bPhone, industry: bIndustry });
-      qc.invalidateQueries({ queryKey: ['brand-profile'] });
+      qc.invalidateQueries({ queryKey: keys.brand.profile() });
       toast({ title: 'Profile updated' });
     } catch { toast({ title: 'Save failed', variant: 'destructive' }); }
     finally { setSaving(false); }

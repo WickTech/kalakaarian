@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, PlatformKind } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { keys } from '@/lib/queryKeys';
 
 export function usePlatformSync() {
   const qc = useQueryClient();
@@ -9,8 +10,8 @@ export function usePlatformSync() {
     mutationFn: (platform: PlatformKind) => api.syncPlatform(platform),
     onSuccess: (_, platform) => {
       toast({ title: `${platform === 'instagram' ? 'Instagram' : 'YouTube'} synced` });
-      qc.invalidateQueries({ queryKey: ['platform-metrics', platform] });
-      qc.invalidateQueries({ queryKey: ['connected-platforms'] });
+      qc.invalidateQueries({ queryKey: keys.platforms.metrics(platform) });
+      qc.invalidateQueries({ queryKey: keys.platforms.connected() });
     },
     onError: () => {
       toast({ title: 'Sync failed', description: 'Try reconnecting the account.', variant: 'destructive' });
@@ -25,8 +26,8 @@ export function usePlatformDisconnect() {
     mutationFn: (platform: PlatformKind) => api.disconnectPlatform(platform),
     onSuccess: (_, platform) => {
       toast({ title: `${platform === 'instagram' ? 'Instagram' : 'YouTube'} disconnected` });
-      qc.invalidateQueries({ queryKey: ['platform-metrics', platform] });
-      qc.invalidateQueries({ queryKey: ['connected-platforms'] });
+      qc.invalidateQueries({ queryKey: keys.platforms.metrics(platform) });
+      qc.invalidateQueries({ queryKey: keys.platforms.connected() });
     },
   });
 }

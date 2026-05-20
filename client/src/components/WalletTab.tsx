@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { keys } from '@/lib/queryKeys';
 
 interface WalletProps { earnings: number; pendingTotal: number; }
 
@@ -19,7 +20,7 @@ export function WalletTab({ earnings, pendingTotal }: WalletProps) {
   const [upiId, setUpiId] = useState("");
 
   const { data: txData, isError: txError } = useQuery({
-    queryKey: ["wallet-transactions"],
+    queryKey: keys.wallet.transactions(),
     queryFn: () => api.getTransactionHistory(),
     staleTime: 30_000,
   });
@@ -30,7 +31,7 @@ export function WalletTab({ earnings, pendingTotal }: WalletProps) {
       toast({ title: "Request submitted", description: "Processed within 5–7 business days." });
       setShowDrawer(false);
       setUpiId("");
-      qc.invalidateQueries({ queryKey: ["wallet-transactions"] });
+      qc.invalidateQueries({ queryKey: keys.wallet.transactions() });
     },
     onError: () => toast({ title: "Error", description: "Failed to submit request", variant: "destructive" }),
   });

@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { BarChart2, CheckCircle2, TrendingUp, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
+import { keys } from '@/lib/queryKeys';
 
 const STAGE_LABELS: Record<string, string> = {
   shortlisted: "Shortlisted",   accepted: "Accepted",
@@ -29,7 +30,7 @@ const ttStyle = {
 
 export function BrandAnalyticsPanel() {
   const { data, isLoading } = useQuery({
-    queryKey: ["brand-deep-analytics"],
+    queryKey: keys.brand.deepAnalytics(),
     queryFn: () => api.getBrandDeepAnalytics(),
     staleTime: 60_000,
   });

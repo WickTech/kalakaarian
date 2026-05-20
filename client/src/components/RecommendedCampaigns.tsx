@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api } from "@/lib/api";
+import { keys } from '@/lib/queryKeys';
 
 export function RecommendedCampaigns() {
   const { data: campaigns = [] } = useQuery({
-    queryKey: ["recommended-campaigns"],
+    queryKey: keys.brand.recommendedCampaigns(),
     queryFn: () => api.getRecommendedCampaigns(),
     staleTime: 5 * 60_000,
   });

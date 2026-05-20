@@ -1,6 +1,7 @@
 import { Star, ShieldCheck } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { keys } from '@/lib/queryKeys';
 
 interface Props {
   influencerId: string;
@@ -10,7 +11,7 @@ interface Props {
 
 export function InfluencerTrustSection({ influencerId, avgRating, ratingCount = 0 }: Props) {
   const { data } = useQuery({
-    queryKey: ['influencer-ratings', influencerId],
+    queryKey: keys.creators.ratings(influencerId),
     queryFn: () => api.getInfluencerRatings(influencerId),
     staleTime: 60_000,
     enabled: ratingCount > 0,

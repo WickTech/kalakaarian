@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { FormRowSkeleton } from '@/components/Skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { api, InfluencerProfile } from '@/lib/api';
@@ -9,6 +9,7 @@ import { SectionHeader } from './components/SectionHeader';
 import { NICHE_OPTIONS, GENDER_OPTIONS, genderLabel } from './personalInfoFields';
 import BrandPersonalInfo from './BrandPersonalInfo';
 import { CommercialsView } from './CommercialsView';
+import { keys } from '@/lib/queryKeys';
 
 export default function PersonalInfo() {
   const { user, isSuperAdmin, viewAs, loading: authLoading } = useAuth();
@@ -42,12 +43,16 @@ export default function PersonalInfo() {
     </div>
   );
 
-  if (loading || !profile) return <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-purple-400" /></div>;
+  if (loading || !profile) return (
+    <div className="bento-card p-2">
+      {Array.from({ length: 6 }).map((_, i) => <FormRowSkeleton key={i} />)}
+    </div>
+  );
 
   const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ['influencer-profile-own'] });
-    qc.invalidateQueries({ queryKey: ['influencer-profile', user?.id] });
-    qc.invalidateQueries({ queryKey: ['influencers'] });
+    qc.invalidateQueries({ queryKey: keys.creators.profileOwn() });
+    qc.invalidateQueries({ queryKey: keys.creators.profile(user?.id) });
+    qc.invalidateQueries({ queryKey: keys.creators.all });
   };
 
   const save = async (patch: Record<string, unknown>) => {

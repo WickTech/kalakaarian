@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { openRazorpayCheckout } from "@/lib/razorpay";
+import { keys } from '@/lib/queryKeys';
 
 export { WalletTab } from "./WalletTab";
 
@@ -53,7 +54,7 @@ export function MembershipTab({ membershipStatus }: MembershipProps) {
       const order = await api.createMembershipOrder(plan);
       if (!order.orderId || !order.keyId) {
         await api.purchaseMembership(plan);
-        qc.invalidateQueries({ queryKey: ["membership-status"] });
+        qc.invalidateQueries({ queryKey: keys.membership.status() });
         toast({ title: "Success", description: `${plan} membership activated!` }); return;
       }
       await openRazorpayCheckout({
@@ -62,7 +63,7 @@ export function MembershipTab({ membershipStatus }: MembershipProps) {
         prefill: { name: user?.name, email: user?.email },
         onSuccess: async (paymentId, orderId, signature) => {
           await api.purchaseMembership(plan, { razorpayOrderId: orderId, razorpayPaymentId: paymentId, razorpaySignature: signature });
-          qc.invalidateQueries({ queryKey: ["membership-status"] });
+          qc.invalidateQueries({ queryKey: keys.membership.status() });
           toast({ title: "Payment successful!", description: `${plan} membership activated.` });
         },
         onDismiss: () => toast({ title: "Payment cancelled" }),

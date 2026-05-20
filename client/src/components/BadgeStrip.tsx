@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { keys } from '@/lib/queryKeys';
 
 export function BadgeStrip({ influencerId }: { influencerId: string }) {
   const { data } = useQuery({
-    queryKey: ["public-badges", influencerId],
+    queryKey: keys.creators.publicBadges(influencerId),
     queryFn: () => api.getPublicBadges(influencerId),
     staleTime: 5 * 60_000,
   });

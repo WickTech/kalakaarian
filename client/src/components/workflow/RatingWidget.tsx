@@ -3,6 +3,7 @@ import { Star } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { keys } from '@/lib/queryKeys';
 
 interface Props {
   proposalId: string;
@@ -21,14 +22,32 @@ export function RatingWidget({ proposalId, role, stage }: Props) {
   const eligible = role === 'brand' && !!stage && RATABLE.has(stage);
 
   const { data } = useQuery({
-    queryKey: ['campaign-creator-rating', proposalId],
+    queryKey: keys.campaignCreators.rating(proposalId),
     queryFn: () => api.getCampaignCreatorRating(proposalId),
     enabled: eligible,
   });
 
   const mutation = useMutation({
     mutationFn: () => api.submitRating(proposalId, selected, review || undefined),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-creator-rating', proposalId] }),
+    onMutate: async () => {
+      const key = keys.campaignCreators.rating(proposalId);
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData(key);
+      qc.setQueryData(key, {
+        rating: {
+          id: 'optimistic',
+          score: selected,
+          review: review || null,
+          created_at: new Date().toISOString(),
+        },
+      });
+      return { previous, key };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx) qc.setQueryData(ctx.key, ctx.previous);
+    },
+    onSettled: () =>
+      qc.invalidateQueries({ queryKey: keys.campaignCreators.rating(proposalId) }),
   });
 
   if (!eligible) return null;

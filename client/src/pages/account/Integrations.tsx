@@ -4,12 +4,13 @@ import { api } from '@/lib/api';
 import { PlatformConnectCard } from '@/components/PlatformConnectCard';
 import { SectionHeader } from './components/SectionHeader';
 import { CreditCard } from 'lucide-react';
+import { keys } from '@/lib/queryKeys';
 
 export default function Integrations() {
   useEffect(() => { document.title = 'Connected Apps — Kalakaarian'; }, []);
 
   const { data: platforms, isLoading } = useQuery({
-    queryKey: ['connected-platforms'],
+    queryKey: keys.platforms.connected(),
     queryFn: () => api.getConnectedPlatforms(),
     staleTime: 60_000,
   });

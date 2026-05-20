@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 import { api, Campaign, Proposal } from "@/lib/api";
 import { CampaignProgressTracker } from "@/components/CampaignProgressTracker";
+import { keys } from '@/lib/queryKeys';
 
 const STAGE_COLOR: Record<string, string> = {
   shortlisted: "text-amber-400 border-amber-400/30",
@@ -29,7 +30,7 @@ function CampaignTrackCard({ campaign }: { campaign: Campaign }) {
   const [open, setOpen] = useState(false);
 
   const { data: proposals = [] } = useQuery<Proposal[]>({
-    queryKey: ["campaign-proposals-track", campaign.id],
+    queryKey: keys.campaignCreators.byCampaign(campaign.id),
     queryFn: () => api.getCampaignCreatorsForCampaign(campaign.id),
     enabled: open,
     staleTime: 60_000,

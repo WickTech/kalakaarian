@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { keys } from '@/lib/queryKeys';
 
 const BADGE_COLORS: Record<string, string> = {
   rising_star: "text-gold",
@@ -18,7 +19,7 @@ const LEVEL_COLORS: Record<string, string> = {
 
 export function GamificationPanel() {
   const { data, isLoading } = useQuery({
-    queryKey: ["gamification-influencer"],
+    queryKey: keys.gamification.influencer(),
     queryFn: () => api.getGamification(),
     staleTime: 2 * 60_000,
   });

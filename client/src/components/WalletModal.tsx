@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Wallet, ArrowRight } from "lucide-react";
 import { api, InfluencerAnalytics } from "@/lib/api";
+import { keys } from '@/lib/queryKeys';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -15,14 +16,14 @@ export function WalletModal({ open, onClose }: WalletModalProps) {
   const navigate = useNavigate();
 
   const { data: txData } = useQuery({
-    queryKey: ["wallet-transactions"],
+    queryKey: keys.wallet.transactions(),
     queryFn: () => api.getTransactionHistory(),
     staleTime: 30_000,
     enabled: open,
   });
 
   const { data: analytics } = useQuery({
-    queryKey: ["influencer-analytics"],
+    queryKey: keys.analytics.influencer(),
     queryFn: () => api.getInfluencerAnalytics(),
     staleTime: 60_000,
     enabled: open,

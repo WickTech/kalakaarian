@@ -5,6 +5,7 @@ import { ShoppingCart, Check, Star, ChevronLeft, ChevronRight } from "lucide-rea
 import { api, InfluencerProfile } from "@/lib/api";
 import { useCartContext } from "@/contexts/CartContext";
 import { Influencer } from "@/lib/store";
+import { keys } from '@/lib/queryKeys';
 
 const TIER_CLASS: Record<string, string> = {
   nano: "tier-nano", micro: "tier-micro", macro: "tier-macro", celeb: "tier-celebrity",
@@ -165,7 +166,7 @@ export function SimilarProfiles({ currentId }: { currentId: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useQuery<{ influencers: InfluencerProfile[] }>({
-    queryKey: ["similar-influencers", currentId],
+    queryKey: keys.creators.similar(currentId),
     queryFn: () => api.getSimilarInfluencers(currentId),
     staleTime: 5 * 60_000,
   });

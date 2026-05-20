@@ -5,6 +5,7 @@ import { User, ShieldCheck, Plug, Lock, CreditCard, ChevronRight } from 'lucide-
 import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { SectionHeader } from './components/SectionHeader';
+import { keys } from '@/lib/queryKeys';
 
 const QUICK_LINKS = [
   { to: '/account/personal',     label: 'Personal Info',          sub: 'Name, bio, location',        icon: User },
@@ -20,13 +21,13 @@ export default function AccountHome() {
   const isCreator = user?.role === 'influencer';
 
   const { data: profile } = useQuery({
-    queryKey: isCreator ? ['influencer-profile-own'] : ['brand-profile'],
+    queryKey: isCreator ? keys.creators.profileOwn() : keys.brand.profile(),
     queryFn: () => isCreator ? api.getInfluencerProfile() : api.getBrandSettings(),
     staleTime: 5 * 60_000,
   });
 
   const { data: platforms } = useQuery({
-    queryKey: ['connected-platforms'],
+    queryKey: keys.platforms.connected(),
     queryFn: () => api.getConnectedPlatforms(),
     enabled: isCreator,
     staleTime: 5 * 60_000,

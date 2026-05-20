@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
 import { PreferenceToggle } from './components/PreferenceToggle';
 import { SectionHeader } from './components/SectionHeader';
+import { keys } from '@/lib/queryKeys';
 
 export default function Privacy() {
   const { user, isSuperAdmin, viewAs } = useAuth();
@@ -18,7 +19,7 @@ export default function Privacy() {
   useEffect(() => { document.title = 'Data & Privacy — Kalakaarian'; }, []);
 
   const { data: prefs, isLoading } = useQuery({
-    queryKey: ['account-preferences'],
+    queryKey: keys.account.preferences(),
     queryFn: () => api.getPreferences(),
     staleTime: 60_000,
   });
@@ -26,7 +27,7 @@ export default function Privacy() {
   const updateMut = useMutation({
     mutationFn: (data: Parameters<typeof api.updatePreferences>[0]) => api.updatePreferences(data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['account-preferences'] });
+      qc.invalidateQueries({ queryKey: keys.account.preferences() });
       toast({ title: 'Preferences saved' });
     },
     onError: () => toast({ title: 'Save failed', variant: 'destructive' }),

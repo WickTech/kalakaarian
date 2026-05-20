@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/node';
 import express from 'express';
 import helmet from 'helmet';
 import { Request, Response, NextFunction } from 'express';
+import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './routes/auth';
 import influencerRoutes from './routes/influencers';
 import campaignRoutes from './routes/campaigns';
@@ -129,6 +130,16 @@ app.use('/api/account', accountRoutes);
 if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
 }
+
+// 404 for any unmatched API route — keeps the JSON contract consistent
+// instead of returning Express's default HTML page.
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ message: 'Not found' });
+});
+
+// Centralized error handler — last middleware. Any handler that throws (or
+// calls next(err)) lands here with a consistent JSON error response.
+app.use(errorHandler);
 
 if (process.env.LOCAL_LISTEN === '1') {
   const port = Number(process.env.PORT) || 4000;

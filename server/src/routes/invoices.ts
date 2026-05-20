@@ -1,13 +1,3 @@
-import { Router, RequestHandler } from 'express';
-import { auth, AuthRequest } from '../middleware/auth';
-import { getInvoicePdf } from '../controllers/invoiceController';
-
-const router = Router();
-
-router.get(
-  '/:transactionId.pdf',
-  auth as unknown as RequestHandler,
-  ((req, res) => getInvoicePdf(req as AuthRequest, res)) as RequestHandler,
-);
-
-export default router;
+// Moved to modules/payments/invoiceRoutes.ts (Phase 2 modularization).
+// Re-export shim kept for backward compatibility.
+export { default } from '../modules/payments/invoiceRoutes';

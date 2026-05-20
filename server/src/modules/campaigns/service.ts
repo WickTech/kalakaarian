@@ -1,5 +1,6 @@
 import * as repo from './repository';
 import { formatInfluencer } from '../influencers/format';
+import { computeCampaignFit } from '../../services/campaignFitService';
 import type {
   CreateCampaignInput,
   UpdateCampaignInput,
@@ -96,4 +97,37 @@ export async function getCampaignInfluencers(
       paymentStatus: paidMap.has(id) ? 'paid' : 'pending',
     };
   });
+}
+
+// Ranks discoverable creators by campaign-fit score for a single campaign.
+// Returns null when the campaign does not exist.
+export async function recommendCreatorsForCampaign(
+  campaignId: string,
+): Promise<Record<string, unknown>[] | null> {
+  const campaign = await repo.findById(campaignId);
+  if (!campaign) return null;
+
+  const c = campaign as { niches?: string[]; platforms?: string[]; budget?: number | null };
+  const fitCampaign = {
+    niches: c.niches ?? [],
+    platforms: c.platforms ?? [],
+    budget: c.budget ?? null,
+  };
+
+  const candidates = await repo.listCandidateCreators(fitCampaign.niches, fitCampaign.platforms);
+  const scored = candidates.map((row) => {
+    const r = row as {
+      niches?: string[]; platforms?: string[]; min_price?: number | null; avg_rating?: number | string | null;
+    };
+    const fit = computeCampaignFit(fitCampaign, {
+      niches: r.niches ?? [],
+      platforms: r.platforms ?? [],
+      minPrice: r.min_price ?? null,
+      avgRating: r.avg_rating != null ? Number(r.avg_rating) : null,
+    });
+    return { ...formatInfluencer(row), fitScore: fit.score, fitBreakdown: fit.breakdown };
+  });
+
+  scored.sort((a, b) => b.fitScore - a.fitScore);
+  return scored.slice(0, 12);
 }

@@ -7,6 +7,7 @@ import {
   updateCampaign,
   deleteCampaign,
   getCampaignInfluencers,
+  getRecommendedCreators,
 } from './controller';
 import { getCampaignCreators } from '../../controllers/campaignCreatorController';
 import { auth } from '../../middleware/auth';
@@ -30,5 +31,8 @@ router.put('/:id', auth, validateBody(updateCampaignSchema), updateCampaign);
 router.delete('/:id', auth, deleteCampaign);
 
 router.get('/:id/creators', auth, getCampaignCreators);
+
+// Phase 7 — campaign-fit-ranked creator recommendations.
+router.get('/:id/recommended-creators', auth, getRecommendedCreators);
 
 export default router;

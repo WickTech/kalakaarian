@@ -108,3 +108,17 @@ export const getCampaignInfluencers = async (req: AuthRequest, res: Response): P
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const getRecommendedCreators = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const creators = await service.recommendCreatorsForCampaign(req.params.id);
+    if (!creators) {
+      res.status(404).json({ message: 'Campaign not found' });
+      return;
+    }
+    res.json({ creators });
+  } catch (err) {
+    console.error('getRecommendedCreators error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

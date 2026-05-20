@@ -114,3 +114,23 @@ export async function listInfluencerProfiles(ids: string[]): Promise<Record<stri
   if (error) throw error;
   return (data ?? []) as Record<string, unknown>[];
 }
+
+// Candidate pool for campaign-fit recommendations — discoverable creators
+// pre-filtered by niche (or platform) overlap, capped so scoring stays cheap.
+export async function listCandidateCreators(
+  niches: string[],
+  platforms: string[],
+): Promise<Record<string, unknown>[]> {
+  let q = adminClient
+    .from('influencer_profiles')
+    .select('*, profiles(name, avatar_url), influencer_pricing(platform, content_type, price)')
+    .eq('marketplace_visible', true)
+    .eq('is_discoverable', true);
+  if (niches.length > 0) q = q.overlaps('niches', niches);
+  else if (platforms.length > 0) q = q.overlaps('platforms', platforms);
+  const { data, error } = await q
+    .order('avg_rating', { ascending: false, nullsFirst: false })
+    .limit(60);
+  if (error) throw error;
+  return (data ?? []) as Record<string, unknown>[];
+}

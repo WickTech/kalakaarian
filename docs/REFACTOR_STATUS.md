@@ -14,7 +14,7 @@
 | 4 | Realtime platform | 🟢 ~90% — messaging/notifications/presence/campaign live |
 | 5 | Scale + performance | 🟢 ~80% — base schema already indexed; verified |
 | 6 | Security hardening | 🟡 Webhook replay + rate-limit + timing-safe done |
-| 7 | Advanced marketplace systems | ⬜ Not started |
+| 7 | Advanced marketplace systems | 🟡 Campaign-fit scoring + ranked recs done |
 
 ---
 
@@ -196,12 +196,29 @@ Remaining:
   unusual access). `admin_audit_logs` already covers admin actions.
 - Session / device tracking.
 
-## Phase 7 — Advanced marketplace ⬜
-- AI creator recommendation (depends on Phase 5 pgvector)
-- Semantic search, campaign-fit scoring
-- Fraud detection heuristics
-- Escrow payment architecture + automated payouts (depends on Phase 3 jobs)
-- Advanced analytics dashboard
+## Phase 7 — Advanced marketplace 🟡
+
+Done:
+- **Campaign-fit scoring** — `services/campaignFitService.ts`, a pure 0-100
+  heuristic (niche 35% / platform 25% / budget 20% / rating 20%) with a
+  per-component breakdown. 6 unit tests.
+- **Ranked creator recommendations** — `GET /api/campaigns/:id/recommended-creators`
+  pre-filters discoverable creators by niche/platform overlap, scores each
+  with `computeCampaignFit`, and returns the top 12 with `fitScore` +
+  `fitBreakdown`. Wired through the campaigns module
+  (repository → service → controller).
+
+Remaining (each needs a decision/dependency — not safe to build blind):
+- **Semantic search** — needs an embedding model (OpenAI/other) + API key +
+  cost sign-off. pgvector is already enabled (migration `038`); a Phase-7
+  migration adds the `embedding` column once the model/dimension is chosen.
+- **Fraud detection heuristics** — can follow the same pure-scoring shape as
+  campaign-fit; needs the signal set defined (follower spikes, auth score,
+  velocity).
+- **Escrow + automated payouts** — money movement + legal/product decisions
+  + a payout provider (RazorpayX). Out of scope for a code-only pass.
+- **Advanced analytics dashboard** — UI-heavy; depends on the metrics to
+  surface being agreed.
 
 ---
 

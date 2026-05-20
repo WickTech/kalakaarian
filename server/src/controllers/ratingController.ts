@@ -17,27 +17,27 @@ export const submitRating = async (req: AuthRequest, res: Response): Promise<voi
       res.status(400).json({ message: 'review must be a string ≤ 500 chars' }); return;
     }
 
-    const { data: proposal, error: propErr } = await adminClient
+    const { data: campaignCreator, error: ccErr } = await adminClient
       .from('campaign_creators')
       .select('influencer_id, campaign_id, workflow_stage')
       .eq('id', id)
       .single();
-    if (propErr || !proposal) { res.status(404).json({ message: 'Proposal not found' }); return; }
+    if (ccErr || !campaignCreator) { res.status(404).json({ message: 'Campaign creator not found' }); return; }
 
-    if (!RATABLE_STAGES.has(proposal.workflow_stage ?? '')) {
+    if (!RATABLE_STAGES.has(campaignCreator.workflow_stage ?? '')) {
       res.status(422).json({ message: 'Rating only available after content is approved' }); return;
     }
 
     const { data: campaign } = await adminClient
-      .from('campaigns').select('brand_id').eq('id', proposal.campaign_id).single();
+      .from('campaigns').select('brand_id').eq('id', campaignCreator.campaign_id).single();
     if (!campaign) { res.status(404).json({ message: 'Campaign not found' }); return; }
 
     const isBrand = req.user.role === 'brand' && campaign.brand_id === req.user.userId;
-    const isInfluencer = req.user.role === 'influencer' && proposal.influencer_id === req.user.userId;
-    if (!isBrand && !isInfluencer) { res.status(403).json({ message: 'Not a participant on this proposal' }); return; }
+    const isInfluencer = req.user.role === 'influencer' && campaignCreator.influencer_id === req.user.userId;
+    if (!isBrand && !isInfluencer) { res.status(403).json({ message: 'Not a participant on this campaign' }); return; }
 
     const raterRole = isBrand ? 'brand' : 'influencer';
-    const rateeId   = isBrand ? proposal.influencer_id : campaign.brand_id;
+    const rateeId   = isBrand ? campaignCreator.influencer_id : campaign.brand_id;
 
     const { data: rating, error } = await adminClient
       .from('ratings')
@@ -56,7 +56,7 @@ export const submitRating = async (req: AuthRequest, res: Response): Promise<voi
   }
 };
 
-export const getProposalRating = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getCampaignCreatorRating = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.user) { res.status(401).json({ message: 'Unauthorized' }); return; }
     const { data } = await adminClient
@@ -67,7 +67,7 @@ export const getProposalRating = async (req: AuthRequest, res: Response): Promis
       .maybeSingle();
     res.json({ rating: data ?? null });
   } catch (err) {
-    console.error('Get proposal rating error:', err);
+    console.error('Get rating error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };

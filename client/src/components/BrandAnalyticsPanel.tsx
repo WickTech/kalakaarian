@@ -84,7 +84,7 @@ export function BrandAnalyticsPanel() {
       label: "Accept Rate",
       value: `${acceptRate}%`,
       icon: <BarChart2 className="w-4 h-4 text-blue-400" />,
-      sub: "proposals accepted",
+      sub: "creators accepted",
     },
   ];
 
@@ -150,16 +150,16 @@ export function BrandAnalyticsPanel() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-chalk truncate">{c.title}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] text-chalk-faint">{c.proposalCount} proposals</span>
+                    <span className="text-[10px] text-chalk-faint">{c.creatorCount} creators</span>
                     {c.workflowCount > 0 && (
                       <span className="text-[10px] text-purple-400">{c.workflowCount} active</span>
                     )}
                   </div>
-                  {c.proposalCount > 0 && (
+                  {c.creatorCount > 0 && (
                     <div className="h-1 rounded-full bg-white/5 mt-2 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-purple-500/60 transition-all"
-                        style={{ width: `${Math.round((c.workflowCount / c.proposalCount) * 100)}%` }}
+                        style={{ width: `${Math.round((c.workflowCount / c.creatorCount) * 100)}%` }}
                       />
                     </div>
                   )}

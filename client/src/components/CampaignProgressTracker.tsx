@@ -43,7 +43,7 @@ export function CampaignProgressTracker({ currentStage, updatedAt, compact = fal
   if (rejected) return (
     <div className="flex items-center gap-2 text-xs text-red-400 font-medium py-1">
       <XCircle className="w-4 h-4 shrink-0" />
-      Proposal rejected
+      Campaign rejected
     </div>
   );
 

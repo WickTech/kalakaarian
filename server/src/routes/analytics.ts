@@ -90,13 +90,13 @@ router.get('/brand/deep', auth, async (req: AuthRequest, res: Response): Promise
     const all = proposals || [];
 
     const stageCounts: Record<string, number> = {};
-    const campaignStats: Record<string, { id: string; title: string; proposalCount: number; workflowCount: number }> = {};
+    const campaignStats: Record<string, { id: string; title: string; creatorCount: number; workflowCount: number }> = {};
     all.forEach((p: any) => {
       if (p.workflow_stage) stageCounts[p.workflow_stage] = (stageCounts[p.workflow_stage] || 0) + 1;
       if (!campaignStats[p.campaign_id]) {
-        campaignStats[p.campaign_id] = { id: p.campaign_id, title: titleMap[p.campaign_id] || 'Unknown', proposalCount: 0, workflowCount: 0 };
+        campaignStats[p.campaign_id] = { id: p.campaign_id, title: titleMap[p.campaign_id] || 'Unknown', creatorCount: 0, workflowCount: 0 };
       }
-      campaignStats[p.campaign_id].proposalCount++;
+      campaignStats[p.campaign_id].creatorCount++;
       if (p.workflow_stage) campaignStats[p.campaign_id].workflowCount++;
     });
 
@@ -107,7 +107,7 @@ router.get('/brand/deep', auth, async (req: AuthRequest, res: Response): Promise
 
     res.json({
       stageBreakdown: Object.entries(stageCounts).map(([stage, count]) => ({ stage, count })),
-      topCampaigns: Object.values(campaignStats).sort((a, b) => b.proposalCount - a.proposalCount).slice(0, 5),
+      topCampaigns: Object.values(campaignStats).sort((a, b) => b.creatorCount - a.creatorCount).slice(0, 5),
       avgBid,
       completedCount: all.filter((p: any) => p.workflow_stage === 'payment_released').length,
     });

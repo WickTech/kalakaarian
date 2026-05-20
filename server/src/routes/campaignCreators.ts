@@ -4,7 +4,7 @@ import {
   getCampaignCreatorById,
   getMyCampaignCreators,
 } from '../controllers/campaignCreatorController';
-import { submitRating, getProposalRating } from '../controllers/ratingController';
+import { submitRating, getCampaignCreatorRating } from '../controllers/ratingController';
 import { auth } from '../middleware/auth';
 
 const router = Router();
@@ -13,7 +13,7 @@ router.get('/my', auth, getMyCampaignCreators);
 router.get('/', auth, getCampaignCreators);
 router.get('/:id', auth, getCampaignCreatorById);
 
-router.get('/:id/rating', auth, getProposalRating);
+router.get('/:id/rating', auth, getCampaignCreatorRating);
 router.post('/:id/rate', auth, submitRating);
 
 export default router;

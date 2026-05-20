@@ -18,7 +18,7 @@ export async function getWorkflow(req: AuthRequest, res: Response): Promise<void
   const { id } = req.params;
 
   const parties = await getProposalParties(id);
-  if (!parties) { res.status(404).json({ message: 'Proposal not found' }); return; }
+  if (!parties) { res.status(404).json({ message: 'Campaign creator not found' }); return; }
   if (userId !== parties.influencer_id && userId !== parties.brand_id) {
     res.status(403).json({ message: 'Forbidden' }); return;
   }
@@ -29,7 +29,7 @@ export async function getWorkflow(req: AuthRequest, res: Response): Promise<void
     .eq('id', id)
     .single();
 
-  if (error || !data) { res.status(404).json({ message: 'Proposal not found' }); return; }
+  if (error || !data) { res.status(404).json({ message: 'Campaign creator not found' }); return; }
   res.json({ proposal: data });
 }
 
@@ -40,7 +40,7 @@ export async function getActivityLog(req: AuthRequest, res: Response): Promise<v
   const offset = Number(req.query.offset) || 0;
 
   const parties = await getProposalParties(id);
-  if (!parties) { res.status(404).json({ message: 'Proposal not found' }); return; }
+  if (!parties) { res.status(404).json({ message: 'Campaign creator not found' }); return; }
   if (userId !== parties.influencer_id && userId !== parties.brand_id) {
     res.status(403).json({ message: 'Forbidden' }); return;
   }

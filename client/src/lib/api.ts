@@ -887,7 +887,7 @@ export const api = {
   submitRating: async (proposalId: string, score: number, review?: string): Promise<{ rating: { id: string; score: number; review?: string | null; created_at: string } }> =>
     request(`/api/campaign-creators/${proposalId}/rate`, { method: 'POST', body: JSON.stringify({ score, review }) }),
 
-  getProposalRating: async (proposalId: string): Promise<{ rating: { id: string; score: number; review?: string | null; created_at: string } | null }> =>
+  getCampaignCreatorRating: async (proposalId: string): Promise<{ rating: { id: string; score: number; review?: string | null; created_at: string } | null }> =>
     request(`/api/campaign-creators/${proposalId}/rating`),
 
   getInfluencerRatings: async (influencerId: string): Promise<{ ratings: Array<{ id: string; score: number; review?: string | null; created_at: string }>; avg: number | null; count: number }> =>
@@ -941,7 +941,7 @@ export const api = {
   // Deep Analytics
   getBrandDeepAnalytics: async (): Promise<{
     stageBreakdown: Array<{ stage: string; count: number }>;
-    topCampaigns: Array<{ id: string; title: string; proposalCount: number; workflowCount: number }>;
+    topCampaigns: Array<{ id: string; title: string; creatorCount: number; workflowCount: number }>;
     avgBid: number;
     completedCount: number;
   }> => request('/api/analytics/brand/deep'),

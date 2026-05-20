@@ -24,7 +24,7 @@ export function StageTimeline({ currentStage }: StageTimelineProps) {
       {isRejected && (
         <div className="flex items-center gap-2 mb-4 text-red-400 text-sm font-medium">
           <XCircle className="w-4 h-4" />
-          Proposal rejected
+          Campaign rejected
         </div>
       )}
       <div className="flex items-start gap-0 overflow-x-auto pb-2">

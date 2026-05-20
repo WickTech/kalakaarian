@@ -6,7 +6,7 @@ const router = Router();
 
 const BADGES = [
   { id: 'rising_star',       name: 'Rising Star',        description: 'First accepted campaign',         emoji: '⭐' },
-  { id: 'power_performer',   name: 'Power Performer',     description: '10+ active proposals',            emoji: '⚡' },
+  { id: 'power_performer',   name: 'Power Performer',     description: '10+ active campaigns',            emoji: '⚡' },
   { id: 'campaign_champion', name: 'Campaign Champion',   description: '5+ completed campaigns',          emoji: '🏆' },
   { id: 'trusted_creator',   name: 'Trusted Creator',     description: 'Avg rating ≥ 4.0 (3+ reviews)',   emoji: '🛡️' },
   { id: 'top_rated',         name: 'Top Rated',           description: 'Avg rating ≥ 4.5 (5+ reviews)',   emoji: '💎' },

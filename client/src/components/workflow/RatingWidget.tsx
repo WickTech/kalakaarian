@@ -21,14 +21,14 @@ export function RatingWidget({ proposalId, role, stage }: Props) {
   const eligible = role === 'brand' && !!stage && RATABLE.has(stage);
 
   const { data } = useQuery({
-    queryKey: ['proposal-rating', proposalId],
-    queryFn: () => api.getProposalRating(proposalId),
+    queryKey: ['campaign-creator-rating', proposalId],
+    queryFn: () => api.getCampaignCreatorRating(proposalId),
     enabled: eligible,
   });
 
   const mutation = useMutation({
     mutationFn: () => api.submitRating(proposalId, selected, review || undefined),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['proposal-rating', proposalId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-creator-rating', proposalId] }),
   });
 
   if (!eligible) return null;

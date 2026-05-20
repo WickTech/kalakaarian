@@ -13,7 +13,7 @@
 | 3 | Event system + jobs (pg_cron queue) | 🟡 Infra done — handler migration ongoing |
 | 4 | Realtime platform | 🟢 ~90% — messaging/notifications/presence/campaign live |
 | 5 | Scale + performance | ⬜ Not started |
-| 6 | Security hardening | ⬜ Not started |
+| 6 | Security hardening | 🟡 Webhook replay + rate-limit + timing-safe done |
 | 7 | Advanced marketplace systems | ⬜ Not started |
 
 ---
@@ -152,12 +152,29 @@ still load once per mount). Lower value — defer or wire on demand.
 - Media: CDN-ready Supabase image transforms, responsive variants
 - Prep `pgvector` for semantic creator search (Phase 7 dependency)
 
-## Phase 6 — Security hardening ⬜
-- Upload: MIME sniffing, EXIF stripping, size caps server-side, AV-scan hook
-- Audit log table + suspicious-activity heuristics
-- Webhook replay protection (timestamp + nonce) — ties into Phase 3
-- Rate-limit standardization (shared limiter factory)
-- Session/device tracking
+## Phase 6 — Security hardening 🟡
+
+Done:
+- **Webhook replay protection** — migration `037_webhook_events.sql` +
+  `recordWebhookEvent()`. The Razorpay webhook records each provider event
+  id (`x-razorpay-event-id`) and acknowledges replays without re-processing.
+  Fails open if the table is missing — the `cart_orders.status` check stays
+  the primary idempotency guard.
+- **Timing-safe signatures** — `verifySignature` + `verifyWebhookSignature`
+  now use `crypto.timingSafeEqual` instead of `===`.
+- **Rate-limit standardization** — `middleware/rateLimit.ts`
+  (`createRateLimiter`). All 7 limiter sites (auth, upload, platforms,
+  feedback, contact, account, campaigns) use it — one place for the
+  test-mode gate + the type cast.
+- Already in place from earlier work: upload MIME allowlist + per-purpose
+  check (`routes/upload.ts`), realtime RLS (migration `036`).
+
+Remaining:
+- EXIF stripping on image uploads (best as a job — Phase 3 handler).
+- Upload AV-scan hook (needs an external scanner integration).
+- Security audit-log table + suspicious-activity heuristics (failed logins,
+  unusual access). `admin_audit_logs` already covers admin actions.
+- Session / device tracking.
 
 ## Phase 7 — Advanced marketplace ⬜
 - AI creator recommendation (depends on Phase 5 pgvector)

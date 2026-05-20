@@ -110,10 +110,18 @@ export type WebhookResult =
   | { kind: 'received' };
 
 export async function handleWebhook(
-  rawBody: string, signature: string | undefined,
+  rawBody: string, signature: string | undefined, eventId: string | undefined,
 ): Promise<WebhookResult> {
   if (!signature || !verifyWebhookSignature(rawBody, signature)) {
     return { kind: 'bad', status: 400, message: 'Invalid signature' };
+  }
+
+  // Replay protection — a valid HMAC signature never expires, so a captured
+  // request can be re-sent. A repeated provider event id is acknowledged
+  // without re-processing.
+  if (eventId) {
+    const fresh = await repo.recordWebhookEvent(eventId);
+    if (!fresh) return { kind: 'received' };
   }
 
   let event: Record<string, unknown>;

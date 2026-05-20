@@ -1,5 +1,5 @@
 import { Router, RequestHandler } from 'express';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../../middleware/rateLimit';
 import { register, login } from './authController';
 import { sendOTP, verifyOTP } from './otpController';
 import { googleLogin, completeGoogleOnboarding } from './oauthController';
@@ -16,21 +16,11 @@ import {
 
 const router = Router();
 
-// Rate limiters are disabled only under NODE_ENV=test so the integration suite
-// can exercise these endpoints without tripping production throttles. They are
-// always active outside test. The `as unknown as RequestHandler` cast works
-// around an @types/express-serve-static-core version mismatch between the root
-// and server node_modules.
-const testMode = process.env.NODE_ENV === 'test';
-const passthrough: RequestHandler = (_req, _res, next) => next();
-const limiter = (opts: Parameters<typeof rateLimit>[0]): RequestHandler =>
-  testMode ? passthrough : (rateLimit(opts) as unknown as RequestHandler);
-
-const authLimiter = limiter({ windowMs: 15 * 60 * 1000, max: 20 });
-const forgotLimiter = limiter({ windowMs: 60 * 60 * 1000, max: 10 });
-const validateTokenLimiter = limiter({ windowMs: 60 * 60 * 1000, max: 30 });
-const resetLimiter = limiter({ windowMs: 60 * 60 * 1000, max: 10 });
-const otpLimiter = limiter({
+const authLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 20 });
+const forgotLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10 });
+const validateTokenLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 30 });
+const resetLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 10 });
+const otpLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 5,
   keyGenerator: (r: any) => (r.body?.phone as string) || r.ip || 'unknown',

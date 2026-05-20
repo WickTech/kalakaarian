@@ -1,5 +1,5 @@
-import { Router, Response, RequestHandler } from 'express';
-import rateLimit from 'express-rate-limit';
+import { Router, Response } from 'express';
+import { createRateLimiter } from '../middleware/rateLimit';
 import { auth, AuthRequest } from '../middleware/auth';
 import { getPresignedUploadUrl } from '../services/storageService';
 import crypto from 'crypto';
@@ -16,12 +16,12 @@ const ALLOWED_TYPES: Record<string, string[]> = {
   'video/webm':      ['video'],
 };
 
-const presignLimiter = rateLimit({
+const presignLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-}) as unknown as RequestHandler;
+});
 
 router.post('/presign', presignLimiter, auth, async (req: AuthRequest, res: Response) => {
   try {

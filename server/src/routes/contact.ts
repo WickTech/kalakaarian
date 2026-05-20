@@ -1,6 +1,6 @@
-import { Router, Request, Response, RequestHandler } from 'express';
+import { Router, Request, Response } from 'express';
 import { body } from 'express-validator';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../middleware/rateLimit';
 import { adminClient } from '../config/supabase';
 import { validate } from '../middleware/validate';
 import { auth } from '../middleware/auth';
@@ -8,11 +8,11 @@ import { requireAdmin } from '../middleware/admin';
 
 const router = Router();
 
-const contactLimiter = rateLimit({
+const contactLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 5,
   message: { message: 'Too many contact submissions. Please try again later.' },
-}) as unknown as RequestHandler;
+});
 
 router.post(
   '/',

@@ -1,6 +1,14 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
+// Constant-time hex-string comparison — prevents timing side channels when
+// checking HMAC signatures.
+const safeEqualHex = (a: string, b: string): boolean => {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);
+};
+
 let client: Razorpay | null = null;
 
 function getClient(): Razorpay | null {
@@ -32,14 +40,14 @@ export const verifySignature = (
     .createHmac('sha256', secret)
     .update(`${razorpayOrderId}|${razorpayPaymentId}`)
     .digest('hex');
-  return expected === signature;
+  return safeEqualHex(expected, signature);
 };
 
 export const verifyWebhookSignature = (body: string, signature: string): boolean => {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
   if (!secret) return false;
   const expected = crypto.createHmac('sha256', secret).update(body).digest('hex');
-  return expected === signature;
+  return safeEqualHex(expected, signature);
 };
 
 export const TIER_PRICES_PAISE: Record<string, number> = {

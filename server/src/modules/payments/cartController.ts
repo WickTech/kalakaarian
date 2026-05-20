@@ -88,8 +88,9 @@ export const checkout = async (req: AuthRequest, res: Response): Promise<void> =
 
 export const handleCartWebhook = async (req: Request, res: Response): Promise<void> => {
   const signature = req.headers['x-razorpay-signature'] as string | undefined;
+  const eventId = req.headers['x-razorpay-event-id'] as string | undefined;
   const rawBody = Buffer.isBuffer(req.body) ? req.body.toString() : JSON.stringify(req.body);
-  const result = await service.handleWebhook(rawBody, signature);
+  const result = await service.handleWebhook(rawBody, signature, eventId);
   if (result.kind === 'bad') {
     res.status(result.status).json({ message: result.message });
     return;

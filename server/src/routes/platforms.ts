@@ -1,5 +1,5 @@
-import { Router, RequestHandler } from 'express';
-import rateLimit from 'express-rate-limit';
+import { Router } from 'express';
+import { createRateLimiter } from '../middleware/rateLimit';
 import { auth, AuthRequest } from '../middleware/auth';
 import {
   getConnectedPlatforms,
@@ -13,14 +13,14 @@ import { getYouTubeAuthUrl, handleYouTubeCallback, getYouTubeConnectionStatus } 
 const router = Router();
 
 // 10 sync requests per hour per user
-const syncLimiter = rateLimit({
+const syncLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 10,
   keyGenerator: (req: unknown) => {
     const r = req as AuthRequest;
     return r.user?.userId ?? r.ip ?? 'unknown';
   },
-}) as unknown as RequestHandler;
+});
 
 // Unified status + metrics
 router.get('/', auth, (req, res) => getConnectedPlatforms(req as AuthRequest, res));

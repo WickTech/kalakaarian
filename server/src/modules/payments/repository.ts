@@ -96,6 +96,18 @@ export async function markCartOrderPaid(id: string, paymentId: string): Promise<
     .eq('id', id);
 }
 
+// Records a provider webhook event id for replay protection. Returns false
+// when the id was already recorded (a replay). Fails open on any other error
+// (e.g. table missing) — the cart_order status check is the primary
+// idempotency guard.
+export async function recordWebhookEvent(eventId: string): Promise<boolean> {
+  const { error } = await adminClient.from('webhook_events').insert({ event_id: eventId });
+  if (!error) return true;
+  if ((error as { code?: string }).code === '23505') return false;
+  console.error('recordWebhookEvent insert error (continuing):', error);
+  return true;
+}
+
 // ---- transactions / workflow ----------------------------------------------
 
 export async function insertTransaction(row: Record<string, unknown>): Promise<void> {

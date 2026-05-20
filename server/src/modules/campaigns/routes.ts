@@ -1,5 +1,5 @@
-import { Router, RequestHandler } from 'express';
-import rateLimit from 'express-rate-limit';
+import { Router } from 'express';
+import { createRateLimiter } from '../../middleware/rateLimit';
 import {
   getCampaigns,
   getCampaignById,
@@ -15,10 +15,10 @@ import { createCampaignSchema, updateCampaignSchema } from './validators';
 
 const router = Router();
 
-const campaignCreateLimiter = rateLimit({
+const campaignCreateLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 10,
-}) as unknown as RequestHandler;
+});
 
 router.get('/', auth, getCampaigns);
 router.get('/:id', auth, getCampaignById);

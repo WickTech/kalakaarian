@@ -1,17 +1,17 @@
-import { Router, Request, Response, RequestHandler } from 'express';
+import { Router, Request, Response } from 'express';
 import { body } from 'express-validator';
-import rateLimit from 'express-rate-limit';
+import { createRateLimiter } from '../middleware/rateLimit';
 import { adminClient } from '../config/supabase';
 import { validate } from '../middleware/validate';
 import { AuthRequest, auth } from '../middleware/auth';
 
 const router = Router();
 
-const feedbackLimiter = rateLimit({
+const feedbackLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 10,
   keyGenerator: (r: any) => r.ip || 'unknown',
-}) as unknown as RequestHandler;
+});
 
 router.post(
   '/app-rating',

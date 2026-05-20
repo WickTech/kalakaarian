@@ -1,58 +1,125 @@
 -- 034_rename_proposals_to_campaign_creators.sql
 -- Per product decision (2026-05-20): creators no longer bid on campaigns.
 -- Brand-only selection flow: marketplace pick -> cart -> checkout -> campaign_creators row.
--- Rename mechanical: same data, same workflow, new identifiers.
 --
--- DEPLOY ORDER (zero-downtime is NOT possible — schedule a short window):
---   1. Deploy app code that references the new names (this PR).
---   2. Apply this migration.
--- If the migration is applied BEFORE the new code lands, the old serverless function
--- will 404 on /api/proposals/* until the new code deploys.
+-- IDEMPOTENT / consolidated: prod skipped earlier workflow migrations (015 etc.),
+-- so this also adds the workflow_stage columns, activity log, cron_runs table,
+-- and transition_workflow_stage RPC. Safe to re-run.
+--
+-- Start state (prod, observed 2026-05-20):
+--   - proposals(id, campaign_id, influencer_id, bid_amount, message, status,
+--               created_at, updated_at)
+--   - ratings(... proposal_id FK to proposals)
+--   - workflow_events(... proposal_id FK to proposals)
+--   - missing: proposal_activity_log, cron_runs, transition_workflow_stage RPC,
+--              workflow_stage columns
+-- End state:
+--   - campaign_creators (renamed, with workflow columns)
+--   - campaign_creator_activity_log
+--   - cron_runs
+--   - ratings/workflow_events with campaign_creator_id FK
+--   - transition_workflow_stage(p_campaign_creator_id, ...) RPC
 
 BEGIN;
 
--- 1. Drop the proposal-submitted brand-notification trigger (no longer relevant —
---    rows are now created by the brand themselves at checkout, not by creators).
+-- 1. Drop legacy notify trigger (created by v2 base 010_email_triggers.sql).
+--    Rows are now created by the brand at checkout, not the creator.
 DROP TRIGGER  IF EXISTS trg_notify_brand_proposal     ON proposals;
 DROP FUNCTION IF EXISTS _notify_brand_on_proposal();
 
--- 2. Drop the workflow RPC so it can be recreated against the renamed table.
+-- 2. Drop any older RPC variants so we can recreate cleanly.
 DROP FUNCTION IF EXISTS transition_workflow_stage(UUID, UUID, TEXT, TEXT, TEXT, TEXT, JSONB, INT);
+DROP FUNCTION IF EXISTS transition_workflow_stage(UUID, UUID, TEXT, TEXT, TEXT, TEXT, JSONB);
 
--- 3. Drop RLS policies that reference the renamed columns/tables (recreated below).
-DROP POLICY IF EXISTS "activity_log_select"           ON proposal_activity_log;
-DROP POLICY IF EXISTS "activity_log_no_client_write"  ON proposal_activity_log;
+-- 3. Add workflow_* columns to proposals (from migration 015 which never landed in prod).
+ALTER TABLE proposals
+  ADD COLUMN IF NOT EXISTS workflow_stage TEXT
+    CHECK (workflow_stage IN (
+      'shortlisted','accepted','content_in_progress','submitted',
+      'under_review','approved','payment_pending','payment_released',
+      'rejected_workflow'
+    )),
+  ADD COLUMN IF NOT EXISTS workflow_stage_updated_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS auto_approve_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS current_submission JSONB,
+  ADD COLUMN IF NOT EXISTS transaction_ref TEXT;
 
--- 4. Rename tables.
-ALTER TABLE proposals               RENAME TO campaign_creators;
-ALTER TABLE proposal_activity_log   RENAME TO campaign_creator_activity_log;
+-- 4. Rename proposals -> campaign_creators.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+              WHERE table_schema='public' AND table_name='proposals')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.tables
+                      WHERE table_schema='public' AND table_name='campaign_creators') THEN
+    EXECUTE 'ALTER TABLE proposals RENAME TO campaign_creators';
+  END IF;
+END $$;
 
--- 5. Rename the price column — "bid_amount" implied creator bidding; the value
---    is now the brand-paid agreed price.
-ALTER TABLE campaign_creators
-  RENAME COLUMN bid_amount TO agreed_price;
+-- 5. Rename bid_amount -> agreed_price.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_schema='public'
+                AND table_name='campaign_creators'
+                AND column_name='bid_amount') THEN
+    EXECUTE 'ALTER TABLE campaign_creators RENAME COLUMN bid_amount TO agreed_price';
+  END IF;
+END $$;
 
 -- 6. Rename FK columns on dependent tables.
-ALTER TABLE campaign_creator_activity_log
-  RENAME COLUMN proposal_id TO campaign_creator_id;
-ALTER TABLE ratings
-  RENAME COLUMN proposal_id TO campaign_creator_id;
-ALTER TABLE workflow_events
-  RENAME COLUMN proposal_id TO campaign_creator_id;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_schema='public'
+                AND table_name='ratings' AND column_name='proposal_id') THEN
+    EXECUTE 'ALTER TABLE ratings RENAME COLUMN proposal_id TO campaign_creator_id';
+  END IF;
 
--- 7. Rename indexes for clarity.
-ALTER INDEX IF EXISTS idx_proposals_campaign_id        RENAME TO idx_campaign_creators_campaign_id;
-ALTER INDEX IF EXISTS idx_proposals_influencer_id      RENAME TO idx_campaign_creators_influencer_id;
-ALTER INDEX IF EXISTS idx_activity_log_proposal_created
-  RENAME TO idx_campaign_creator_activity_log_created;
-ALTER INDEX IF EXISTS idx_ratings_proposal             RENAME TO idx_ratings_campaign_creator;
-ALTER INDEX IF EXISTS idx_workflow_events_proposal_id  RENAME TO idx_workflow_events_campaign_creator_id;
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_schema='public'
+                AND table_name='workflow_events' AND column_name='proposal_id') THEN
+    EXECUTE 'ALTER TABLE workflow_events RENAME COLUMN proposal_id TO campaign_creator_id';
+  END IF;
+END $$;
 
--- 8. Rename the updated_at trigger to match the new table name.
-ALTER TRIGGER trg_proposals_updated_at ON campaign_creators
-  RENAME TO trg_campaign_creators_updated_at;
+-- 7. Rename indexes (no-op if names don't exist).
+ALTER INDEX IF EXISTS idx_proposals_campaign_id       RENAME TO idx_campaign_creators_campaign_id;
+ALTER INDEX IF EXISTS idx_proposals_influencer_id     RENAME TO idx_campaign_creators_influencer_id;
+ALTER INDEX IF EXISTS idx_ratings_proposal            RENAME TO idx_ratings_campaign_creator;
+ALTER INDEX IF EXISTS idx_workflow_events_proposal_id RENAME TO idx_workflow_events_campaign_creator_id;
 
--- 9. Recreate RLS policies on the renamed activity log.
+-- 8. Rename updated_at trigger if it was on the old name.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_trigger
+              WHERE tgname='trg_proposals_updated_at'
+                AND tgrelid='public.campaign_creators'::regclass) THEN
+    EXECUTE 'ALTER TRIGGER trg_proposals_updated_at ON campaign_creators '
+            'RENAME TO trg_campaign_creators_updated_at';
+  END IF;
+END $$;
+
+-- 9. Create the activity log table (renamed from proposal_activity_log).
+CREATE TABLE IF NOT EXISTS campaign_creator_activity_log (
+  id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  campaign_creator_id UUID        NOT NULL REFERENCES campaign_creators(id) ON DELETE CASCADE,
+  actor_id            UUID        REFERENCES profiles(id),
+  actor_role          TEXT,
+  action              TEXT        NOT NULL,
+  from_stage          TEXT,
+  to_stage            TEXT,
+  details             JSONB,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_campaign_creator_activity_log_created
+  ON campaign_creator_activity_log (campaign_creator_id, created_at DESC);
+
+ALTER TABLE campaign_creator_activity_log ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "activity_log_select"           ON campaign_creator_activity_log;
+DROP POLICY IF EXISTS "activity_log_no_client_write"  ON campaign_creator_activity_log;
+
 CREATE POLICY "activity_log_select" ON campaign_creator_activity_log
   FOR SELECT USING (
     auth.uid() IN (
@@ -67,7 +134,17 @@ CREATE POLICY "activity_log_select" ON campaign_creator_activity_log
 CREATE POLICY "activity_log_no_client_write" ON campaign_creator_activity_log
   FOR INSERT WITH CHECK (FALSE);
 
--- 10. Recreate the workflow-stage transition RPC against the renamed table.
+-- 10. Cron heartbeat table (from 015).
+CREATE TABLE IF NOT EXISTS cron_runs (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  job         TEXT        NOT NULL,
+  started_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  finished_at TIMESTAMPTZ,
+  processed   INT,
+  error       TEXT
+);
+
+-- 11. Workflow-stage transition RPC.
 CREATE OR REPLACE FUNCTION transition_workflow_stage(
   p_campaign_creator_id UUID,
   p_actor_id            UUID,
@@ -97,7 +174,6 @@ BEGIN
       USING ERRCODE = 'P0002';
   END IF;
 
-  -- Optimistic-lock check.
   IF p_expected_stage IS NULL THEN
     IF v_row.workflow_stage IS NOT NULL THEN
       RAISE EXCEPTION 'Stage conflict: expected NULL but found %', v_row.workflow_stage
@@ -111,9 +187,6 @@ BEGIN
     END IF;
   END IF;
 
-  -- Transition table. 'system' is permitted alongside 'admin' for payment
-  -- transitions so the cart checkout (webhook + free-checkout path) can advance
-  -- to payment_pending / payment_released without an admin in the loop.
   v_allowed := CASE
     WHEN v_row.workflow_stage IS NULL
          AND p_to_stage = 'shortlisted'
@@ -207,7 +280,6 @@ BEGIN
 END;
 $$;
 
--- 11. Pin search_path on the recreated function (matches 012_security_hardening pattern).
 ALTER FUNCTION transition_workflow_stage(UUID, UUID, TEXT, TEXT, TEXT, TEXT, JSONB, INT)
   SET search_path = public;
 

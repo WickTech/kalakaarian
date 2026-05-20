@@ -61,7 +61,9 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
         genre: selectedGenres.length === 1 ? selectedGenres[0] : undefined,
         name: debouncedSearch || undefined,
       });
-      return (Array.isArray(data) ? data : []).map(toInfluencer);
+      return (Array.isArray(data) ? data : [])
+        .map(toInfluencer)
+        .filter((i) => i.name.trim() !== "");
     },
     staleTime: 20_000,
     placeholderData: (prev) => prev,

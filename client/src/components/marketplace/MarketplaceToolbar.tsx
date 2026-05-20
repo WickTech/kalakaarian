@@ -1,4 +1,16 @@
 import { ArrowUpDown, Instagram, Youtube, Search, SlidersHorizontal, ShoppingCart, X, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+
+const PLACEHOLDERS = ["Search Kalakaar...", "Search Location...", "Search Genre..."];
+
+function useCyclingPlaceholder() {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setIdx((i) => (i + 1) % PLACEHOLDERS.length), 2500);
+    return () => clearInterval(id);
+  }, []);
+  return PLACEHOLDERS[idx];
+}
 
 const TIERS = ["all", "nano", "micro", "macro", "celeb"] as const;
 type Tier = (typeof TIERS)[number];
@@ -39,6 +51,7 @@ const selCls = "bg-charcoal/80 border border-white/15 rounded-lg px-3 py-1.5 tex
 const chipBase = "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all shrink-0 whitespace-nowrap";
 
 export function MarketplaceToolbar(p: Props) {
+  const placeholder = useCyclingPlaceholder();
   return (
     <div className="sticky top-14 z-30 bg-obsidian/95 backdrop-blur-md border-b border-white/8 px-4 py-3 space-y-3">
 
@@ -74,13 +87,13 @@ export function MarketplaceToolbar(p: Props) {
 
         {/* Search — grows to fill first line */}
         <div className="relative flex-1 min-w-[140px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-chalk-faint pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-orange-400 pointer-events-none" />
           <input
             type="text"
             value={p.search}
             onChange={(e) => p.setSearch(e.target.value)}
-            placeholder="Search Kalakaars…"
-            className="w-full bg-charcoal/60 border border-white/10 rounded-lg pl-9 pr-3 py-1.5 text-sm text-chalk placeholder:text-chalk-faint focus:outline-none focus:border-gold/50 transition-colors"
+            placeholder={placeholder}
+            className="w-full bg-charcoal/60 border border-orange-500/70 rounded-lg pl-9 pr-3 py-1.5 text-sm text-chalk placeholder:text-white placeholder:font-medium focus:outline-none focus:border-orange-400 transition-colors"
           />
         </div>
 

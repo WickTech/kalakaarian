@@ -1,5 +1,5 @@
 import * as repo from './repository';
-import { formatInfluencer } from '../../controllers/influencerController';
+import { formatInfluencer } from '../influencers/format';
 import type {
   CreateCampaignInput,
   UpdateCampaignInput,

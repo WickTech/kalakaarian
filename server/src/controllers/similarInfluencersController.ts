@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { adminClient } from '../config/supabase';
 import { AuthRequest } from '../middleware/auth';
-import { formatInfluencer } from './influencerController';
+import { formatInfluencer } from '../modules/influencers/format';
 
 export const getSimilarInfluencers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {

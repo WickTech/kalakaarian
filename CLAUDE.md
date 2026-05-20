@@ -56,28 +56,34 @@ npm run test:e2e     # client playwright suite
 - **Cron secret**: `process.env.CRON_SECRET` must be a long random hex string. `/api/internal/cron/*` routes return **404** (not 401) on missing/wrong header to avoid signaling endpoint existence.
 - **Password reset tokens**: `password_reset_tokens` table stores only `SHA-256(token || RESET_TOKEN_PEPPER)` — never plaintext. 20-minute expiry, single-use (`used_at` set atomically). `/api/auth/forgot-password` returns the same generic 200 body for both found and unknown emails (with timing jitter on the miss path). `RESET_TOKEN_PEPPER` must be ≥32 chars; `CLIENT_URL` is used to build the reset link. Password rotation via `auth.admin.updateUserById({password})` — Supabase invalidates all refresh tokens server-side on password change.
 
-## Controller / Service Split Map
+## Architecture — domain modules (Phase 2 refactor, 2026-05-20)
+Backend is organized into **domain modules** under `server/src/modules/<domain>/`,
+each split `repository.ts` (Supabase DAO) / `service.ts` (business logic) /
+`controller.ts` (thin HTTP) / `routes.ts` (+ `validators.ts`, `types.ts`).
+`routes/<name>.ts` files are **re-export shims** pointing at `modules/<name>/routes`.
+Full status + remaining work: `docs/REFACTOR_STATUS.md`.
+
+| Module | Owns |
+|---|---|
+| `modules/auth/` | register, login, OTP, Google OAuth, password reset (split per-concern) |
+| `modules/campaigns/` | campaign CRUD + `campaignCreatorController` (campaign_creators reads) |
+| `modules/influencers/` | influencer reads, search, presence, gender/tier filters — the "creators" domain; `format.ts` holds `formatInfluencer` |
+| `modules/messaging/` | conversations + messages |
+| `modules/notifications/` | notification reads / mark / delete |
+| `modules/wallet/` | brand + creator transactions, withdrawals |
+| `modules/admin/` | super-admin: stats, user mgmt, feature flags, audit log |
+| `modules/payments/` | cart, checkout, Razorpay webhook (`paymentFinalizer.ts`), invoice PDF |
+
+Cross-cutting (still in `controllers/` or `services/`):
 | File | Responsibility |
 |---|---|
-| `controllers/authController.ts` | register, login, googleLogin |
-| `controllers/otpController.ts` | sendOTP, verifyOTP, sendLoginOTP |
-| `controllers/profileController.ts` | getProfile, updateProfile |
-| `controllers/influencerController.ts` | influencer reads, search, presence update, gender/tier filters |
-| `controllers/campaignController.ts` | campaign CRUD, open-listing |
-| `controllers/proposalController.ts` | reads + createProposal + submitProposal |
-| `controllers/proposalActions.ts` | updateProposal, deleteProposal, respondToProposal, updateProposalStatus |
-| `services/instagramService.ts` | Instagram public-API helpers (handle-based) + mock |
-| `services/youtubeService.ts` | YouTube public-API helpers (channel-id based) + mock |
-| `services/socialMediaService.ts` | re-export barrel only |
-| `services/platformAccountService.ts` | DAO over `creator_platform_accounts` (upsert, list, soft-delete, token decrypt) |
-| `services/platformMetricsService.ts` | DAO over `creator_platform_metrics` + `creator_platform_metric_history` |
-| `services/instagramSyncService.ts` | `syncInstagram()` — fetches Graph API insights + media, persists metrics |
-| `services/youtubeSyncService.ts` | `syncYouTube()` — refreshes token, fetches YT Data + Analytics, persists metrics |
-| `services/authenticityScoreService.ts` | `computeAuthenticityScore()` pure 0-100 formula |
-| `controllers/platformsController.ts` | unified `GET /api/platforms`, `:platform/metrics`, `:platform/sync`, `:platform DELETE` |
-| `controllers/instagramOAuthController.ts` | IG-specific OAuth URL builder + Facebook callback |
-| `controllers/youtubeOAuthController.ts` | YT-specific OAuth URL builder + Google callback |
-| `controllers/cronController.ts` | `autoApproveExpired`, `syncAllPlatforms` — both header-secret guarded via `routes/internal.ts` |
+| `services/instagram*Service.ts`, `youtube*Service.ts` | platform public-API + sync |
+| `services/platformAccountService.ts` / `platformMetricsService.ts` | DAO over `creator_platform_*` |
+| `services/authenticityScoreService.ts` | `computeAuthenticityScore()` pure 0-100 |
+| `services/campaignFitService.ts` | `computeCampaignFit()` pure 0-100 (Phase 7) |
+| `controllers/platformsController.ts`, `*OAuthController.ts`, `cronController.ts`, `workflow*` | platform OAuth, cron, workflow |
+| `jobs/` + `events/` | pg_cron job queue + typed event bus (Phase 3) |
+| `middleware/rateLimit.ts` | `createRateLimiter()` shared limiter factory |
 | `utils/tokenCrypto.ts` | `encryptToken()` / `decryptToken()` — AES-256-GCM |
 | `utils/oauthState.ts` | `buildOAuthState()` / `verifyOAuthState()` — HMAC CSRF |
 | `utils/pricing.ts` | `PLATFORM_MARGIN_RATE` (5%), `PLATFORM_FEE_RATE` (8%), `applyPlatformMargin(pricing)` |

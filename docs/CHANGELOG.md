@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Session 15: 7-Phase Refactor (2026-05-20)
+
+Large modularization + scalability refactor. Full status: `docs/REFACTOR_STATUS.md`.
+
+### Changed
+- **Backend modularized** — all domains moved into `server/src/modules/<domain>/`
+  (auth, campaigns, influencers, messaging, notifications, wallet, admin,
+  payments), each a repository/service/controller split. Old `controllers/*`
+  for those domains deleted; `routes/*.ts` are re-export shims. No API paths
+  or behavior changed.
+- **Rate limiters** unified behind `middleware/rateLimit.ts` (`createRateLimiter`).
+- **`errorHandler`** middleware + JSON 404 fallback now wired in `app.ts`.
+
+### Added
+- **Background jobs** — Postgres job queue + `claim_jobs()` RPC, worker at
+  `POST /api/internal/jobs/process`, typed event bus (`server/src/events/`).
+  pg_cron-driven, no Redis. Migration `035`.
+- **Realtime** — messaging + notifications over Supabase Realtime
+  (`useRealtimeMessaging.ts`); interval polling now a fallback only.
+  Migration `036` (publication + SELECT-only RLS for DM privacy).
+- **Webhook replay protection** — `webhook_events` table (migration `037`),
+  timing-safe HMAC comparison.
+- **EXIF stripping** — image uploads re-encoded client-side (`lib/upload/stripExif.ts`).
+- **Campaign-fit scoring** — `services/campaignFitService.ts` +
+  `GET /api/campaigns/:id/recommended-creators` (Phase 7).
+- **Auth integration test suite** — `server/src/__tests__/integration/`
+  (opt-in via `SUPABASE_TEST_*`).
+- Migration `038` — auto-approve cron index + `vector` extension (pgvector prep).
+
+### Notes
+- Migrations `035`–`038` applied to prod; `035`'s `process-jobs` pg_cron
+  schedule is pending the deploy URL.
+
 ## [Unreleased] — Session 14: Forgot/Reset Password (2026-05-19)
 
 ### Added

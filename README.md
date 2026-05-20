@@ -301,12 +301,18 @@ kalakaarian/
 ├── server/
 │   └── src/                 # ✅ ONLY this folder is deployed to Vercel
 │       ├── config/          # Supabase adminClient (service role, bypasses RLS)
-│       ├── controllers/     # 14 controller files, ≤200 lines each (accountController added)
-│       ├── middleware/       # auth.ts, requireAdmin.ts, validate.ts
-│       ├── routes/          # 20 route files (account.ts added)
-│       ├── services/        # Instagram, YouTube, Razorpay, Resend, social media
+│       ├── modules/         # domain modules — repository/service/controller split
+│       │                    #   auth, campaigns, influencers, messaging,
+│       │                    #   notifications, wallet, admin, payments
+│       ├── jobs/            # pg_cron-driven background-job queue + worker
+│       ├── events/          # typed internal domain-event bus
+│       ├── controllers/     # cross-cutting controllers (platforms, OAuth, cron, workflow)
+│       ├── middleware/      # auth.ts, rateLimit.ts, errorHandler.ts, validate.ts
+│       ├── routes/          # route files — domain ones are re-export shims for modules/
+│       ├── services/        # Instagram, YouTube, Razorpay, Resend, scoring services
 │       ├── types/           # TypeScript interfaces (AuthRequest, etc.)
 │       ├── utils/           # pricing.ts (PLATFORM_MARGIN_RATE, PLATFORM_FEE_RATE)
+│       ├── __tests__/       # unit + opt-in integration suite
 │       └── app.ts           # serverless entrypoint — no app.listen()
 │
 ├── supabase/
@@ -503,6 +509,7 @@ See [docs/API.md](./docs/API.md) for the full endpoint list.
 | Doc | Contents |
 |---|---|
 | [docs/API.md](./docs/API.md) | Full API endpoint reference |
+| [docs/REFACTOR_STATUS.md](./docs/REFACTOR_STATUS.md) | 7-phase modularization/scalability refactor — status + remaining work |
 | [docs/DEPLOYMENT_CHECKLIST.md](./docs/DEPLOYMENT_CHECKLIST.md) | Step-by-step deploy guide |
 | [docs/GOOGLE_OAUTH_SETUP.md](./docs/GOOGLE_OAUTH_SETUP.md) | Google OAuth config |
 | [docs/SECURITY_REVIEW.md](./docs/SECURITY_REVIEW.md) | Security audit findings |

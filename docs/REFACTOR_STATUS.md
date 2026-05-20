@@ -9,7 +9,7 @@
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Frontend stabilization | ✅ ~95% — bugs fixed (see below) |
-| 2 | Backend modularization | 🟡 ~80% — 7 of 9 modules done |
+| 2 | Backend modularization | 🟡 ~90% — 8 of 9 modules done |
 | 3 | Event system + jobs (BullMQ/Redis) | ⬜ Not started — needs infra decision |
 | 4 | Realtime platform | 🟡 Partial — campaign/workflow realtime live (Phase 1B/1C) |
 | 5 | Scale + performance | ⬜ Not started |
@@ -43,7 +43,7 @@ Remaining (minor, optional):
 Target: `server/src/modules/<domain>/` each with
 `routes / controller / service / repository / validators / types`.
 
-### Done (7 modules)
+### Done (8 modules)
 | Module | Layers | Notes |
 |---|---|---|
 | `campaigns` | full split + zod | reference implementation |
@@ -52,6 +52,7 @@ Target: `server/src/modules/<domain>/` each with
 | `notifications` | full split | |
 | `wallet` | full split + zod | folded in brand-transactions controller |
 | `auth` | split by concern | register/login, OTP, OAuth, password-reset |
+| `admin` | full split | audit logging in repo; super-admin guarded |
 | `creators` | — | satisfied by `influencers` module; rename deferred (low value) |
 
 `auth` module layout: per-concern `repository`/`service`/`controller` trios
@@ -63,7 +64,7 @@ paths unchanged, `routes/auth.ts` is now a re-export shim. Integration suite
 Cross-cutting done:
 - `errorHandler` middleware wired in `app.ts` + JSON 404 fallback
 - Dead code removed: `campaignController.ts`, `brandTransactionsController`
-  shim, the 4 old auth controllers
+  shim, the 4 old auth controllers, the 3 old admin controllers
 
 ### Remaining Phase 2 work
 
@@ -76,15 +77,11 @@ Source: `cartController` (298 lines — worst 200-line violator),
   (checkout, fee math via `utils/pricing.ts`, webhook handling), `controller.ts`,
   zod validators. Needs a checkout smoke test before merge.
 
-**2. `admin` module** (lower risk)
-Source: `adminController`, `adminUsersController`, `adminPlatformController`.
-- Plan: standard full split. Guarded by `auth` + `requireAdmin` — keep guards.
-
-**3. Standardized API responses**
+**2. Standardized API responses**
 - Add `utils/apiResponse.ts` — `ok(res, data)` / `fail(res, status, message)`.
 - Roll out per-module without changing existing JSON shapes (additive).
 
-**4. Module encapsulation cleanup**
+**3. Module encapsulation cleanup**
 - `modules/campaigns/routes.ts` imports legacy `campaignCreatorController`.
   Move `campaignCreatorController` + `workflowController` + `workflowActions`
   into the campaigns module (campaign-creators is part of the campaigns

@@ -31,6 +31,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Notifications mapping** — `mapNotification` read `message`/`link` but the
   prod table has `body`/`data` (jsonb); notification text was always blank.
   Now maps `body -> message`, `data.link -> link`.
+- **Campaign brief upload looked empty in the cart** — `campaign_files` rows
+  are snake_cased but the client `CampaignFile` contract is camelCase and
+  `request()` does no transform; uploaded briefs rendered with blank names,
+  dead links and `key=undefined`. `routes/campaignFiles.ts` now maps every
+  POST/GET response through `mapFile()`.
+- **`.doc`/`.docx` briefs rejected** — `routes/upload.ts` `ALLOWED_TYPES` had
+  no Word MIME types, so presign 400'd silently. Added `application/msword`
+  + the `.docx` OOXML type for the `campaign` purpose.
+- **Migration `040`** — records the `campaign-files` storage bucket (created
+  out-of-band, previously untracked) and adds the two Word MIME types to its
+  `allowed_mime_types`. Applied to prod; idempotent via `ON CONFLICT`.
 
 ## [Unreleased] — Session 15: 7-Phase Refactor (2026-05-20)
 

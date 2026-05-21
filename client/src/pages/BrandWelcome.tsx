@@ -26,10 +26,10 @@ export default function BrandWelcome() {
   });
 
   return (
-    <div className="min-h-screen bg-obsidian flex flex-col items-center justify-center px-6 py-20 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(212,168,67,0.08),transparent_50%)] pointer-events-none" />
+    <div className="min-h-screen bg-orange-500 flex flex-col items-center justify-start px-6 pt-12 pb-20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(0,0,0,0.12),transparent_55%)] pointer-events-none" />
       <div className="w-full max-w-6xl relative">
-        <div className="text-center mb-16 fade-up">
+        <div className="text-center mb-10 fade-up">
           <p className="text-chalk text-xl md:text-2xl font-bold max-w-xl mx-auto">
             Browse by tier to match your campaign goals and budget.
           </p>
@@ -49,11 +49,11 @@ export default function BrandWelcome() {
 
                 <div className="flex-1 flex flex-col items-center justify-center gap-5">
                   <div className="text-center">
-                    <p className="text-xs tracking-[0.18em] uppercase text-chalk-faint mb-1.5">Followers</p>
+                    <p className="text-xs tracking-[0.18em] uppercase text-chalk mb-1.5">Followers</p>
                     <p className="text-2xl font-bold text-chalk">{tier.range}</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs tracking-[0.18em] uppercase text-chalk-faint mb-1.5">Kalakaars</p>
+                    <p className="text-xs tracking-[0.18em] uppercase text-chalk mb-1.5">Kalakaars</p>
                     <p className="text-2xl font-bold text-chalk">{inventory > 0 ? inventory : "—"}</p>
                   </div>
                 </div>

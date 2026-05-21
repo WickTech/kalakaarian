@@ -82,7 +82,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <img src="/k-logo-no-bg.png" alt="Kalakaarian" className="h-8 w-auto" />
-          <span className="font-mono text-xs uppercase tracking-[0.3em] font-bold hidden sm:block text-chalk">
+          <span className="font-oswald text-base uppercase tracking-[0.3em] font-bold hidden sm:block text-chalk">
             KALAKAARIAN
           </span>
         </Link>
@@ -254,7 +254,7 @@ export function GlobalHeader({ onCartOpen }: GlobalHeaderProps) {
                 <div className="px-4 py-4 border-b border-border">
                   <Link to="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
                     <img src="/k-logo-no-bg.png" alt="Kalakaarian" className="h-7 w-auto" />
-                    <span className="font-mono text-xs uppercase tracking-[0.25em] font-bold">KALAKAARIAN</span>
+                    <span className="font-oswald text-base uppercase tracking-[0.25em] font-bold">KALAKAARIAN</span>
                   </Link>
                 </div>
                 <nav className="flex flex-col gap-0.5 p-3 flex-1 overflow-y-auto">

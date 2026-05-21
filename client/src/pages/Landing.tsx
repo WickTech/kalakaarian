@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Users, Target, TrendingUp, Sparkles } from "lucide-react";
 import { HeroText } from "@/components/HeroText";
 import { BrandCarousel } from "@/components/BrandCarousel";
+import { Globe } from "@/components/Globe";
 
 export default function Landing() {
   const whyKalakaarian = [
@@ -20,6 +21,9 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-fuchsia-600/10 to-pink-600/10" />
         <div className="absolute top-10 left-10 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl" />
         <div className="absolute bottom-10 right-10 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl" />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+          <Globe />
+        </div>
 
         <div className="relative max-w-6xl mx-auto text-center space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-medium mb-16">

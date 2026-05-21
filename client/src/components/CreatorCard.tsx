@@ -24,13 +24,14 @@ interface Props {
   inf: Influencer;
   selected: boolean;
   inCart: boolean;
+  platform: "all" | "instagram" | "youtube";
   onToggleSelect: () => void;
   onAddToCart: () => void;
   onRemoveFromCart: () => void;
   onGetInTouch: () => void;
 }
 
-export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart, onRemoveFromCart, onGetInTouch }: Props) {
+export function CreatorCard({ inf, selected, inCart, platform, onToggleSelect, onAddToCart, onRemoveFromCart, onGetInTouch }: Props) {
   const handleCartClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (inCart) onRemoveFromCart();
@@ -38,6 +39,13 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
   };
 
   const genres = inf.niches && inf.niches.length > 0 ? inf.niches : inf.genre ? [inf.genre] : [];
+
+  // Cost cells follow the marketplace platform toggle: a specific platform
+  // shows just that cost; "all" shows every connected platform's cost.
+  const costPlatforms: Array<"instagram" | "youtube"> =
+    platform === "instagram" ? ["instagram"]
+      : platform === "youtube" ? ["youtube"]
+        : (inf.connectedPlatforms ?? []);
 
   return (
     <div
@@ -153,12 +161,11 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
         </div>
       )}
 
-      {/* Stats: 3 cells */}
-      <div className="grid grid-cols-3 gap-1">
+      {/* Stats: followers + ER% */}
+      <div className="grid grid-cols-2 gap-1">
         {[
           { label: "Followers", value: inf.followers ? fmt(inf.followers) : "—" },
           { label: "ER%",       value: inf.engagementRate != null ? `${inf.engagementRate}%` : "—" },
-          { label: "Cost",      value: inf.price ? fmtPrice(inf.price) : "—" },
         ].map(({ label, value }) => (
           <div key={label} className="bento-card-dark rounded-lg p-2 text-center">
             <p className="text-[10px] text-chalk-faint leading-none mb-1">{label}</p>
@@ -166,6 +173,19 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
           </div>
         ))}
       </div>
+
+      {/* Per-platform campaign cost — Reel+Story (IG) / Video+Shorts (YT) */}
+      {costPlatforms.length > 0 && (
+        <div className={`grid gap-1 ${costPlatforms.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+          {costPlatforms.map((p) => (
+            <CostCell
+              key={p}
+              platform={p}
+              value={p === "instagram" ? inf.igPrice ?? null : inf.ytPrice ?? null}
+            />
+          ))}
+        </div>
+      )}
 
       {/* CTA */}
       {inf.tier === "celeb" ? (
@@ -187,6 +207,20 @@ export function CreatorCard({ inf, selected, inCart, onToggleSelect, onAddToCart
           {inCart ? <><Check className="w-4 h-4" /> Selected</> : <>Select</>}
         </button>
       )}
+    </div>
+  );
+}
+
+function CostCell({ platform, value }: { platform: "instagram" | "youtube"; value: number | null }) {
+  const Icon = platform === "instagram" ? Instagram : Youtube;
+  const tone = platform === "instagram" ? "text-pink-400" : "text-red-500";
+  const label = platform === "instagram" ? "Instagram" : "YouTube";
+  return (
+    <div className="bento-card-dark rounded-lg p-2 text-center">
+      <p className="text-[10px] text-chalk-faint leading-none mb-1 flex items-center justify-center gap-1">
+        <Icon className={`w-3 h-3 ${tone}`} /> {label}
+      </p>
+      <p className="text-xs font-bold text-chalk leading-none">{value ? fmtPrice(value) : "—"}</p>
     </div>
   );
 }

@@ -23,9 +23,12 @@ const fmtNum = (n: number): string => {
 
 const fmtPrice = (n: number): string => `₹${n.toLocaleString("en-IN")}`;
 
+// Per-platform campaign cost. The creator delivers BOTH content formats for a
+// campaign, so the platform cost is the SUM: Instagram = Reel + Story,
+// YouTube = Video + Shorts. Values are margin-inclusive (5% applied server-side).
 function pricePerPlatform(pricing: Record<string, number> | undefined): Record<Platform, number> {
   const p = pricing ?? {};
-  const ig = (p.reel || 0) + (p.story || 0) + (p.post || 0);
+  const ig = (p.reel || 0) + (p.story || 0);
   const yt = (p.video || 0) + (p.shorts || 0);
   return { instagram: ig, youtube: yt };
 }
@@ -167,7 +170,10 @@ function PlatformCard({ platform, handle, followers, engagementRate, price, chec
       <div className="grid grid-cols-3 gap-2">
         <Stat label="Followers" value={followers ? fmtNum(followers) : "—"} />
         <Stat label="ER%" value={engagementRate != null ? `${engagementRate}%` : "—"} />
-        <Stat label="Price" value={price > 0 ? fmtPrice(price) : "—"} />
+        <Stat
+          label={platform === "instagram" ? "Reel + Story" : "Video + Shorts"}
+          value={price > 0 ? fmtPrice(price) : "—"}
+        />
       </div>
 
       {handle && (

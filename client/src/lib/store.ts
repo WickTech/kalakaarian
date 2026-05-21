@@ -19,6 +19,8 @@ export interface Influencer {
   avgLikes: number;
   genderSplit: { male: number; female: number; other: number };
   price: number | null; // null = "Get in Touch"
+  igPrice?: number | null; // Instagram campaign cost = Reel + Story (margin-inclusive)
+  ytPrice?: number | null; // YouTube campaign cost = Video + Shorts (margin-inclusive)
   isOnline?: boolean;
   lastSeenAt?: string;
   avgRating?: number | null;

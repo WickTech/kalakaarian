@@ -18,6 +18,14 @@ export const toInfluencer = (inf: InfluencerProfile): Influencer => {
   if (inf.socialHandles?.youtube) connected.push("youtube");
   const primary: "instagram" | "youtube" =
     connected[0] ?? ((inf.platform?.[0] as "instagram" | "youtube") || "instagram");
+
+  // Per-platform campaign cost: creator delivers BOTH formats per campaign.
+  // IG = Reel + Story, YT = Video + Shorts. API pricing already includes the
+  // 5% platform margin (applied server-side per content_type).
+  const pr = inf.pricing ?? {};
+  const igPrice = ((pr.reel || 0) + (pr.story || 0)) || null;
+  const ytPrice = ((pr.video || 0) + (pr.shorts || 0)) || null;
+
   return {
     id: inf.id ?? inf._id ?? "",
     name: inf.username || inf.name || "",
@@ -36,6 +44,7 @@ export const toInfluencer = (inf: InfluencerProfile): Influencer => {
     avgViews: 0, avgLikes: 0,
     genderSplit: { male: 45, female: 52, other: 3 },
     price: inf.pricing ? (Math.min(...Object.values(inf.pricing).filter(v => v > 0)) || null) : null,
+    igPrice, ytPrice,
     isOnline: inf.isOnline, lastSeenAt: inf.lastSeenAt,
     avgRating: inf.avgRating ?? null, ratingCount: inf.ratingCount ?? 0,
   };

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, Link } from "react-router-dom";
 import { api } from "@/lib/api";
@@ -72,6 +72,16 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
     refetchInterval: hasRealtime() ? false : 60_000,
   });
 
+  // Cost shown / sorted / added to cart follows the platform toggle.
+  // Specific platform → that platform's campaign cost; "all" → IG + YT summed
+  // (the creator delivers on both platforms for the campaign).
+  const effectivePrice = useCallback((i: Influencer): number | null => {
+    if (platform === "instagram") return i.igPrice ?? null;
+    if (platform === "youtube") return i.ytPrice ?? null;
+    const sum = (i.igPrice ?? 0) + (i.ytPrice ?? 0);
+    return sum > 0 ? sum : null;
+  }, [platform]);
+
   const filtered = useMemo(() => {
     let r = influencers;
     if (search.trim() && search.trim() !== debouncedSearch) {
@@ -83,20 +93,25 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
       i.niches?.some(n => selectedGenres.includes(n)) || selectedGenres.includes(i.genre)
     );
     if (location) r = r.filter((i) => i.city?.toLowerCase().includes(location.toLowerCase()));
-    if (priceMin) r = r.filter((i) => i.price != null && i.price >= parseInt(priceMin));
-    if (priceMax) r = r.filter((i) => i.price != null && i.price <= parseInt(priceMax));
+    if (priceMin) r = r.filter((i) => { const p = effectivePrice(i); return p != null && p >= parseInt(priceMin); });
+    if (priceMax) r = r.filter((i) => { const p = effectivePrice(i); return p != null && p <= parseInt(priceMax); });
     if (sortBy === "followers_desc") r = [...r].sort((a, b) => (b.followers ?? 0) - (a.followers ?? 0));
     else if (sortBy === "er_desc") r = [...r].sort((a, b) => (b.engagementRate ?? 0) - (a.engagementRate ?? 0));
-    else if (sortBy === "price_asc") r = [...r].sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
-    else if (sortBy === "price_desc") r = [...r].sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+    else if (sortBy === "price_asc") r = [...r].sort((a, b) => (effectivePrice(a) ?? 0) - (effectivePrice(b) ?? 0));
+    else if (sortBy === "price_desc") r = [...r].sort((a, b) => (effectivePrice(b) ?? 0) - (effectivePrice(a) ?? 0));
     else if (sortBy === "rating_desc") r = [...r].sort((a, b) => (b.avgRating ?? 0) - (a.avgRating ?? 0));
     return r;
-  }, [influencers, search, debouncedSearch, platform, selectedGenres, location, priceMin, priceMax, sortBy]);
+  }, [influencers, search, debouncedSearch, platform, selectedGenres, location, priceMin, priceMax, sortBy, effectivePrice]);
 
   const toggleGenre = (g: string) => setSelectedGenres((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
   const toggleSelect = (id: string) => setSelectedIds((prev) => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s; });
   const clearSelection = () => setSelectedIds(new Set());
-  const addSelectedToCart = () => { filtered.filter((i) => selectedIds.has(i.id) && !isInCart(i.id)).forEach(addToCart); clearSelection(); };
+  const addSelectedToCart = () => {
+    filtered
+      .filter((i) => selectedIds.has(i.id) && !isInCart(i.id))
+      .forEach((i) => addToCart({ ...i, price: effectivePrice(i) }));
+    clearSelection();
+  };
 
   const handleSelectCount = (val: string) => {
     if (val === "all") setSelectedIds(new Set(filtered.map((i) => i.id)));
@@ -154,10 +169,10 @@ export default function Marketplace({ isInCart, addToCart, removeFromCart }: Mar
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
             {filtered.map((inf) => (
               <CreatorCard
-                key={inf.id} inf={inf}
+                key={inf.id} inf={inf} platform={platform}
                 selected={selectedIds.has(inf.id)} inCart={isInCart(inf.id)}
                 onToggleSelect={() => toggleSelect(inf.id)}
-                onAddToCart={() => { if (!isInCart(inf.id)) addToCart(inf); }}
+                onAddToCart={() => { if (!isInCart(inf.id)) addToCart({ ...inf, price: effectivePrice(inf) }); }}
                 onRemoveFromCart={() => removeFromCart(inf.id)}
                 onGetInTouch={() => setCelebModal({ id: inf.id, name: inf.name })}
               />

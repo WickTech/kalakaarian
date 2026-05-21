@@ -66,6 +66,7 @@ export async function register(input: RegisterInput): Promise<RegisterResult> {
   if (role === 'brand') {
     const ok = await repo.insertBrandProfile({
       id: userId, company_name: input.companyName || name, industry: input.industry || '',
+      website: typeof input.website === 'string' && input.website.trim() ? input.website.trim() : null,
     });
     if (!ok) {
       await rollback('brand_profiles', 'insert failed');

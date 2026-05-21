@@ -7,12 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api } from "@/lib/api";
+import { BRAND_INDUSTRIES } from "@/lib/industries";
 import { DeleteAccountModal } from "@/components/DeleteAccountModal";
-
-const CATEGORIES = [
-  "Fashion", "Technology", "Food & Beverage", "Health & Wellness",
-  "Finance", "Entertainment", "Retail", "Education", "Travel", "Beauty", "Other",
-];
 
 interface PwForm { current: string; next: string; confirm: string }
 
@@ -150,7 +146,12 @@ export default function EditBrandProfile() {
             <Label className="text-xs text-chalk-dim">Brand Category</Label>
             <Select value={industry} onValueChange={setIndustry}>
               <SelectTrigger className={field + " flex"}><SelectValue placeholder="Select category" /></SelectTrigger>
-              <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                {(industry && !(BRAND_INDUSTRIES as readonly string[]).includes(industry)
+                  ? [...BRAND_INDUSTRIES, industry]
+                  : BRAND_INDUSTRIES
+                ).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
           <Button type="submit" disabled={saving} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-medium">

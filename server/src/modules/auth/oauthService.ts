@@ -106,9 +106,13 @@ export async function completeOnboarding(
   }
 
   if (role === 'brand') {
-    await repo.upsertBrandProfile({
+    const brandRow: Record<string, unknown> = {
       id: userId, company_name: input.companyName || profile.name || '', industry: input.industry || '',
-    });
+    };
+    if (typeof input.website === 'string' && input.website.trim()) {
+      brandRow.website = input.website.trim();
+    }
+    await repo.upsertBrandProfile(brandRow);
   } else {
     const safeTier = VALID_TIERS.includes(input.tier ?? '') ? input.tier : 'micro';
     const safeGender = ALLOWED_GENDERS.includes(input.gender ?? '') ? input.gender : null;

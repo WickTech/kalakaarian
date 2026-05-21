@@ -79,7 +79,7 @@ export default function BrandDashboard() {
               </Link>
             )}
             <div className="min-w-0">
-              <h1 className="font-display text-2xl font-bold text-chalk truncate">{user?.brandName || user?.name || "My Brand"}</h1>
+              <h1 className="font-display text-2xl font-bold text-chalk truncate">{brandProfile?.companyName || user?.brandName || user?.name || "My Brand"}</h1>
               <p className="text-chalk-dim text-xs mt-0.5">Welcome, {user?.name || "Team"}</p>
             </div>
           </div>

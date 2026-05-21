@@ -7,8 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { keys } from '@/lib/queryKeys';
-
-const CATEGORIES = ['Fashion','Technology','Food & Beverage','Health & Wellness','Finance','Entertainment','Retail','Education','Travel','Beauty','Other'];
+import { BRAND_INDUSTRIES } from '@/lib/industries';
 
 export default function BrandPersonalInfo() {
   const { toast } = useToast();
@@ -60,7 +59,12 @@ export default function BrandPersonalInfo() {
           <Label className="text-xs text-chalk-dim">Brand Category</Label>
           <Select value={bIndustry} onValueChange={setBIndustry}>
             <SelectTrigger className={field + ' flex'}><SelectValue placeholder="Select category" /></SelectTrigger>
-            <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            <SelectContent>
+              {(bIndustry && !(BRAND_INDUSTRIES as readonly string[]).includes(bIndustry)
+                ? [...BRAND_INDUSTRIES, bIndustry]
+                : BRAND_INDUSTRIES
+              ).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
           </Select>
         </div>
       </div>

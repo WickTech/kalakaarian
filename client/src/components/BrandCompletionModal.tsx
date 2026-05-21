@@ -1,12 +1,8 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { emailWarning } from "@/lib/emailValidation";
+import { BRAND_INDUSTRIES } from "@/lib/industries";
 import { AlertTriangle, X } from "lucide-react";
-
-const INDUSTRIES = [
-  "Fashion", "Technology", "Food & Beverage", "Health & Wellness",
-  "Finance", "Entertainment", "Retail", "Education", "Other",
-];
 
 interface Props {
   email?: string;
@@ -16,6 +12,8 @@ interface Props {
 export function BrandCompletionModal({ email, onComplete }: Props) {
   const [companyName, setCompanyName] = useState("");
   const [industry, setIndustry] = useState("");
+  const [customIndustry, setCustomIndustry] = useState("");
+  const [website, setWebsite] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,12 +25,17 @@ export function BrandCompletionModal({ email, onComplete }: Props) {
       setError("All fields are required.");
       return;
     }
+    if (industry === "Other" && !customIndustry.trim()) {
+      setError("Please enter your industry.");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
       await api.updateBrandProfile({
         companyName: companyName.trim(),
-        industry,
+        industry: industry === "Other" ? customIndustry.trim() : industry,
+        website: website.trim() || undefined,
         phone: whatsapp.replace(/\D/g, ""),
       });
       onComplete();
@@ -75,8 +78,26 @@ export function BrandCompletionModal({ email, onComplete }: Props) {
             <label className="block text-sm text-chalk-dim mb-1.5">Industry *</label>
             <select value={industry} onChange={(e) => setIndustry(e.target.value)} className="dark-select w-full px-4 py-3 text-sm">
               <option value="">Select industry</option>
-              {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
+              {BRAND_INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
             </select>
+            {industry === "Other" && (
+              <input
+                value={customIndustry}
+                onChange={(e) => setCustomIndustry(e.target.value)}
+                className="dark-input w-full px-4 py-3 text-sm mt-2"
+                placeholder="Type your industry"
+              />
+            )}
+          </div>
+          <div>
+            <label className="block text-sm text-chalk-dim mb-1.5">Brand Website</label>
+            <input
+              type="url"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              className="dark-input w-full px-4 py-3 text-sm"
+              placeholder="https://acme.com"
+            />
           </div>
           <div>
             <label className="block text-sm text-chalk-dim mb-1.5">WhatsApp Number *</label>

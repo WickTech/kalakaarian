@@ -345,6 +345,7 @@ export interface RegisterData {
   role: "brand" | "influencer";
   companyName?: string;
   industry?: string;
+  website?: string;
   city?: string;
   niches?: string[];
   platform?: string[];
@@ -582,6 +583,7 @@ export const api = {
     role: string;
     companyName?: string;
     industry?: string;
+    website?: string;
     city?: string;
     state?: string;
     niches?: string[];

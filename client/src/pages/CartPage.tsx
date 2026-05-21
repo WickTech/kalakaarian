@@ -4,9 +4,7 @@ import { X, Upload, FileText, ShoppingCart, Plus, Loader2, Check } from "lucide-
 import { useCartContext } from "@/contexts/CartContext";
 import { api, CampaignFile } from "@/lib/api";
 
-function fmt(n: number) {
-  return `₹${n.toLocaleString("en-IN")}`;
-}
+const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -23,7 +21,7 @@ export default function CartPage() {
   }, [campaignId]);
 
   const handleCreateCampaign = async () => {
-    if (!newTitle.trim()) return;
+    if (!newTitle.trim() || !newDesc.trim()) return;
     setCreating(true);
     try {
       const camp = await api.createCampaign({ title: newTitle, description: newDesc });
@@ -59,6 +57,11 @@ export default function CartPage() {
   const platformFee = Math.round(total * 0.08);
   const gst = Math.round((total + platformFee) * 0.18);
   const grand = total + platformFee + gst;
+
+  // Gated on a created campaign (name + description enforced at creation) + brief file.
+  const canCheckout = items.length > 0 && !!campaignId && files.length > 0;
+  const checkoutHint = !campaignId ? "Create a campaign (name + description) to continue"
+    : files.length === 0 ? "Upload at least one campaign brief file" : "";
 
   if (items.length === 0) {
     return (
@@ -122,9 +125,9 @@ export default function CartPage() {
                 placeholder="Campaign name *"
                 className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card focus:outline-none focus:border-primary" />
               <textarea value={newDesc} onChange={e => setNewDesc(e.target.value)}
-                placeholder="Campaign instructions or brief (optional)" rows={3}
+                placeholder="Campaign description / brief *" rows={3}
                 className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-card focus:outline-none focus:border-primary resize-none" />
-              <button onClick={handleCreateCampaign} disabled={!newTitle.trim() || creating}
+              <button onClick={handleCreateCampaign} disabled={!newTitle.trim() || !newDesc.trim() || creating}
                 className="purple-pill px-4 py-1.5 text-xs font-bold disabled:opacity-40 flex items-center gap-1.5">
                 {creating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
                 Create Campaign
@@ -175,14 +178,19 @@ export default function CartPage() {
 
       {/* Sticky checkout bar */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border">
-        <div className="max-w-2xl mx-auto flex gap-3">
-          <button onClick={() => navigate("/marketplace")} className="btn-outline flex-1 py-2.5 text-sm">
-            + Add Kalakaars
-          </button>
-          <button onClick={() => navigate("/checkout")} disabled={items.length === 0}
-            className="purple-pill py-2.5 text-sm font-bold px-8 disabled:opacity-40">
-            Checkout · {fmt(grand)} →
-          </button>
+        <div className="max-w-2xl mx-auto space-y-2">
+          {checkoutHint && (
+            <p className="text-xs text-amber-500 text-center">{checkoutHint}</p>
+          )}
+          <div className="flex gap-3">
+            <button onClick={() => navigate("/marketplace")} className="btn-outline flex-1 py-2.5 text-sm">
+              + Add Kalakaars
+            </button>
+            <button onClick={() => navigate("/checkout")} disabled={!canCheckout}
+              className="purple-pill py-2.5 text-sm font-bold px-8 disabled:opacity-40 disabled:cursor-not-allowed">
+              Checkout · {fmt(grand)} →
+            </button>
+          </div>
         </div>
       </div>
     </div>

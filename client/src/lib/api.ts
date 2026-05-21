@@ -87,6 +87,10 @@ export interface Campaign {
   deliverables?: string;
   platform?: string;
   brandName?: string;
+  // Delivery window — stamped at checkout. getCampaignById returns the raw
+  // row, so these arrive snake_cased.
+  delivery_started_at?: string | null;
+  delivery_due_at?: string | null;
 }
 
 export interface CampaignInfluencer {
@@ -477,10 +481,12 @@ export const api = {
   },
 
   createCampaign: async (data: Partial<Campaign>): Promise<Campaign> => {
-    return request<Campaign>("/api/campaigns", {
+    // Server wraps the row as { campaign }, like getCampaignById.
+    const res = await request<{ campaign: Campaign }>("/api/campaigns", {
       method: "POST",
       body: JSON.stringify(data),
     });
+    return res.campaign;
   },
 
   getInfluencerProfile: async (): Promise<InfluencerProfile> => {

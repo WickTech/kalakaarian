@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, FileText, CheckCircle2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ShoppingCart, FileText, CheckCircle2, Paperclip } from "lucide-react";
 import { useCartContext } from "@/contexts/CartContext";
 import { api } from "@/lib/api";
 import { openRazorpayCheckout } from "@/lib/razorpay";
@@ -18,6 +19,13 @@ export default function CheckoutPage() {
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [paid, setPaid] = useState(false);
   const [showRating, setShowRating] = useState(false);
+
+  const { data: briefFiles = [] } = useQuery({
+    queryKey: ["campaign-files", campaignId],
+    queryFn: () => api.getCampaignFiles(campaignId),
+    enabled: !!campaignId,
+  });
+  const checkoutReady = !!campaignId && briefFiles.length > 0;
 
   const platformFee = Math.round(total * 0.08);
   const subtotalWithFee = total + platformFee;
@@ -97,6 +105,24 @@ export default function CheckoutPage() {
           )}
         </div>
 
+        {/* Campaign Brief */}
+        <div className="border border-border rounded-xl p-4 space-y-2">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium mb-1">
+            <Paperclip className="w-4 h-4" /> Campaign Brief
+          </div>
+          {briefFiles.length > 0 ? (
+            briefFiles.map((f) => (
+              <a key={f._id} href={f.fileUrl} target="_blank" rel="noreferrer"
+                className="flex items-center gap-2 text-sm text-primary hover:underline">
+                <FileText className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{f.fileName}</span>
+              </a>
+            ))
+          ) : (
+            <p className="text-sm text-amber-500">No brief uploaded — add one in your cart before checkout.</p>
+          )}
+        </div>
+
         <div className="border border-border rounded-xl p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
             <ShoppingCart className="w-4 h-4" /> Selected Creators ({items.length})
@@ -136,7 +162,13 @@ export default function CheckoutPage() {
           </span>
         </label>
 
-        <button onClick={handlePay} disabled={items.length === 0 || processing || !termsAgreed}
+        {!checkoutReady && (
+          <p className="text-xs text-amber-500 text-center">
+            A campaign with an uploaded brief is required before payment.
+          </p>
+        )}
+
+        <button onClick={handlePay} disabled={items.length === 0 || processing || !termsAgreed || !checkoutReady}
           className="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-opacity">
           {processing ? "Processing..." : `Pay ${formatPrice(grand)}`}
         </button>

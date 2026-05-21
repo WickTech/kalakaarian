@@ -8,9 +8,10 @@ const mapNotification = (n: Record<string, unknown>): NotificationDTO => ({
   userId: n.user_id,
   type: n.type,
   title: n.title,
-  message: n.message,
+  // DB columns are `body` + `data` (jsonb); the client DTO uses message + link.
+  message: n.body ?? '',
   read: n.is_read,
-  link: n.link ?? undefined,
+  link: (n.data as { link?: string } | null)?.link ?? undefined,
   createdAt: n.created_at,
 });
 

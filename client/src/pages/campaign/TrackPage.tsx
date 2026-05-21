@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, ExternalLink, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ExternalLink, RefreshCw, Clock } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { api, Proposal } from '@/lib/api';
 import { CampaignProgressTracker } from '@/components/CampaignProgressTracker';
 import { keys } from '@/lib/queryKeys';
@@ -44,6 +45,14 @@ export default function CampaignTrackPage() {
   });
 
   useRealtimeCampaignByCampaign({ campaignId: id, enabled: !!id });
+
+  const { data: campaign } = useQuery({
+    queryKey: keys.campaigns.detail(id!),
+    queryFn: () => api.getCampaignById(id!),
+    enabled: !!id,
+  });
+  const startedAt = campaign?.delivery_started_at ? new Date(campaign.delivery_started_at) : null;
+  const dueAt = campaign?.delivery_due_at ? new Date(campaign.delivery_due_at) : null;
 
   const active = proposals.filter((p) => p.workflow_stage && p.workflow_stage !== 'rejected_workflow');
   const rejected = proposals.filter((p) => p.workflow_stage === 'rejected_workflow');
@@ -90,6 +99,9 @@ export default function CampaignTrackPage() {
           ))}
         </div>
 
+        {/* Delivery timeline */}
+        {startedAt && dueAt && <DeliveryTimeline startedAt={startedAt} dueAt={dueAt} />}
+
         {/* Creator cards */}
         {isLoading ? (
           <div className="flex justify-center py-16">
@@ -135,5 +147,36 @@ export default function CampaignTrackPage() {
         )}
       </div>
     </main>
+  );
+}
+
+function DeliveryTimeline({ startedAt, dueAt }: { startedAt: Date; dueAt: Date }) {
+  const now = Date.now();
+  const span = dueAt.getTime() - startedAt.getTime();
+  const pct = Math.max(0, Math.min(100, span > 0 ? ((now - startedAt.getTime()) / span) * 100 : 100));
+  const overdue = now > dueAt.getTime();
+  return (
+    <div className="rounded-xl border border-white/8 bg-white/[0.03] p-4 mb-6">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-semibold flex items-center gap-1.5 text-chalk">
+          <Clock className="w-4 h-4 text-purple-400" /> Delivery Timeline
+        </p>
+        <span className={`text-xs font-medium ${overdue ? 'text-red-400' : 'text-emerald-400'}`}>
+          {overdue ? 'Delivery window passed' : `Due ${formatDistanceToNow(dueAt, { addSuffix: true })}`}
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-700 ease-out ${
+            overdue ? 'bg-red-500' : 'bg-gradient-to-r from-purple-500 to-purple-400'
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="flex justify-between mt-1.5 text-[10px] text-chalk-dim">
+        <span>Started {startedAt.toLocaleDateString()}</span>
+        <span>Due {dueAt.toLocaleDateString()}</span>
+      </div>
+    </div>
   );
 }

@@ -11,6 +11,8 @@ const ALLOWED_TYPES: Record<string, string[]> = {
   'image/png':  ['profile', 'campaign', 'gallery', 'video'],
   'image/webp': ['profile', 'campaign', 'gallery', 'video'],
   'application/pdf': ['campaign'],
+  'application/msword': ['campaign'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['campaign'],
   'video/mp4':       ['video'],
   'video/quicktime': ['video'],
   'video/webm':      ['video'],

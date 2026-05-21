@@ -4,6 +4,26 @@ import { auth, AuthRequest } from '../middleware/auth';
 
 const router = Router({ mergeParams: true });
 
+// DB rows are snake_cased; the client `CampaignFile` contract is camelCase.
+// Map every response through this so uploaded briefs render with names/links.
+type CampaignFileRow = {
+  id: string;
+  file_url: string;
+  file_name: string;
+  file_type: string;
+  uploader_id: string;
+  created_at: string;
+  profiles?: { name?: string } | null;
+};
+const mapFile = (r: CampaignFileRow) => ({
+  _id: r.id,
+  fileUrl: r.file_url,
+  fileName: r.file_name,
+  fileType: r.file_type,
+  uploadedBy: r.profiles?.name || r.uploader_id,
+  createdAt: r.created_at,
+});
+
 router.post('/:campaignId/files', auth, async (req: AuthRequest, res: Response) => {
   try {
     const { fileUrl, fileType, fileName } = req.body;
@@ -24,7 +44,7 @@ router.post('/:campaignId/files', auth, async (req: AuthRequest, res: Response) 
       file_name: fileName || 'Untitled',
     }).select().single();
     if (error || !data) { res.status(500).json({ message: 'Error uploading file' }); return; }
-    res.json(data);
+    res.json(mapFile(data as CampaignFileRow));
   } catch { res.status(500).json({ message: 'Error uploading file' }); }
 });
 
@@ -46,7 +66,7 @@ router.get('/:campaignId/files', auth, async (req: AuthRequest, res: Response) =
     const { data } = await adminClient.from('campaign_files')
       .select('*, profiles!campaign_files_uploader_id_fkey(name)')
       .eq('campaign_id', campaignId);
-    res.json(data ?? []);
+    res.json((data ?? []).map((r) => mapFile(r as unknown as CampaignFileRow)));
   } catch { res.status(500).json({ message: 'Error fetching files' }); }
 });
 

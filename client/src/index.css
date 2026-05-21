@@ -101,6 +101,12 @@
     @apply border-border;
   }
 
+  /* Reserve scrollbar gutter so route transitions (loading spinners with no
+     overflow) don't widen the viewport and shift centered content sideways. */
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }

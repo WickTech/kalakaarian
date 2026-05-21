@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { Search, Users, BarChart2, Wallet } from "lucide-react";
+import { Search, Users, BarChart2, Wallet, FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { api, Campaign } from "@/lib/api";

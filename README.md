@@ -55,7 +55,7 @@ Kalakaarian is a two-sided marketplace for influencer marketing in India. Brands
 - Role toggle on login page (Creator / Brand tabs)
 - Password visibility toggle (eye icon)
 - Back-to-home button on login
-- Brand registration — company name, industry, Indian state, confirm password, T&C modal
+- Brand registration — company name, **brand website** (optional), industry, confirm password, T&C modal. **Industry** is a 15-option canonical list (Fashion & Apparel, Beauty & Skincare, Technology & AI, …, Sports & Fitness) plus **Other**, which reveals a free-form input; options live in shared `client/src/lib/industries.ts` (`BRAND_INDUSTRIES`) and are reused across email register, Google onboarding, and brand profile edit screens
 - **Influencer registration — 6-step wizard:** basic info → profile (username + avatar upload) → genre → platforms → rates → location; T&C modal with age + terms checkboxes before final submit
 - **Shared step components** (`client/src/components/creator-onboarding/`) drive both `/influencer-register` (email path) and `/register/complete` (Google path) — Google mode skips email/password steps and pre-fills name from the Google profile
 - **Generic gender avatars** (4 inline SVGs at `client/public/avatars/`) replace external DiceBear dependency

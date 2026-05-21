@@ -5,11 +5,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/hooks/useAuth";
 import { TermsModal } from "@/components/TermsModal";
 import { emailWarning } from "@/lib/emailValidation";
-
-const INDUSTRIES = [
-  "Fashion", "Technology", "Food & Beverage", "Health & Wellness",
-  "Finance", "Entertainment", "Retail", "Education", "Beauty", "Travel", "Other",
-];
+import { BRAND_INDUSTRIES } from "@/lib/industries";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 const showGoogle = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "your-google-client-id.apps.googleusercontent.com";
@@ -22,6 +18,8 @@ interface BrandForm {
   password: string;
   confirmPassword: string;
   industry: string;
+  customIndustry: string;
+  website: string;
 }
 
 export default function BrandRegisterPage() {
@@ -29,7 +27,7 @@ export default function BrandRegisterPage() {
   const { register, loginWithGoogle } = useAuth();
   const [form, setForm] = useState<BrandForm>({
     companyName: "", contactName: "", email: "", phone: "",
-    password: "", confirmPassword: "", industry: "",
+    password: "", confirmPassword: "", industry: "", customIndustry: "", website: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,9 +38,12 @@ export default function BrandRegisterPage() {
       setForm((p) => ({ ...p, [key]: e.target.value }));
 
   const validate = () => {
-    const { companyName, contactName, email, phone, password, confirmPassword, industry } = form;
+    const { companyName, contactName, email, phone, password, confirmPassword, industry, customIndustry } = form;
     if (!companyName || !contactName || !email || !phone || !password || !confirmPassword || !industry) {
       setError("All fields are required."); return false;
+    }
+    if (industry === "Other" && !customIndustry.trim()) {
+      setError("Please enter your industry."); return false;
     }
     if (password.length < 8) { setError("Password must be at least 8 characters."); return false; }
     if (password !== confirmPassword) { setError("Passwords do not match."); return false; }
@@ -55,10 +56,15 @@ export default function BrandRegisterPage() {
   };
 
   const doRegister = async () => {
-    const { companyName, contactName, email, phone, password, industry } = form;
+    const { companyName, contactName, email, phone, password, industry, customIndustry, website } = form;
+    const finalIndustry = industry === "Other" ? customIndustry.trim() : industry;
     setLoading(true);
     try {
-      await register({ email, phone, password, name: contactName, role: "brand", companyName, industry, termsAccepted: true });
+      await register({
+        email, phone, password, name: contactName, role: "brand",
+        companyName, industry: finalIndustry, website: website.trim() || undefined,
+        termsAccepted: true,
+      });
       navigate("/brand/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
@@ -130,12 +136,15 @@ export default function BrandRegisterPage() {
             {([
               { key: "contactName", label: "Your Full Name", type: "text", ph: "Jane Doe" },
               { key: "companyName", label: "Brand / Company Name", type: "text", ph: "Acme Corp" },
+              { key: "website", label: "Brand Website", type: "url", ph: "https://acme.com", opt: true },
               { key: "phone", label: "WhatsApp Number", type: "tel", ph: "+91 9876543210" },
               { key: "password", label: "Password", type: "password", ph: "Min 8 characters" },
               { key: "confirmPassword", label: "Confirm Password", type: "password", ph: "Re-enter password" },
-            ] as const).map(({ key, label, type, ph }) => (
+            ] as const).map(({ key, label, type, ph, ...rest }) => (
               <div key={key}>
-                <label className="block text-sm text-chalk-dim mb-1.5">{label} *</label>
+                <label className="block text-sm text-chalk-dim mb-1.5">
+                  {label}{("opt" in rest && rest.opt) ? "" : " *"}
+                </label>
                 <input type={type} value={form[key]} onChange={set(key)}
                   className="dark-input w-full px-4 py-3 text-sm" placeholder={ph} />
               </div>
@@ -154,8 +163,12 @@ export default function BrandRegisterPage() {
               <label className="block text-sm text-chalk-dim mb-1.5">Industry *</label>
               <select value={form.industry} onChange={set("industry")} className="dark-select w-full px-4 py-3 text-sm">
                 <option value="">Select your industry</option>
-                {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
+                {BRAND_INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
               </select>
+              {form.industry === "Other" && (
+                <input type="text" value={form.customIndustry} onChange={set("customIndustry")}
+                  className="dark-input w-full px-4 py-3 text-sm mt-2" placeholder="Type your industry" />
+              )}
             </div>
 
             {error && <p className="text-red-400 text-sm">{error}</p>}

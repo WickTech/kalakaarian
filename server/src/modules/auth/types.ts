@@ -9,6 +9,7 @@ export interface RegisterInput {
   role?: string;
   companyName?: string;
   industry?: string;
+  website?: string;
   city?: string;
   state?: string;
   niches?: string[];
@@ -34,6 +35,7 @@ export interface OnboardingInput {
   role?: string;
   companyName?: string;
   industry?: string;
+  website?: string;
   city?: string;
   state?: string;
   niches?: unknown;

@@ -12,8 +12,8 @@ import StepLocation from '@/components/creator-onboarding/StepLocation';
 import { useCreatorForm } from '@/components/creator-onboarding/useCreatorForm';
 import { STEPS } from '@/components/creator-onboarding/types';
 import { avatarForGender } from '@/components/creator-onboarding/genericAvatars';
+import { BRAND_INDUSTRIES } from '@/lib/industries';
 
-const INDUSTRIES = ['Fashion', 'Technology', 'Food & Beverage', 'Health & Wellness', 'Finance', 'Entertainment', 'Retail', 'Education', 'Beauty', 'Travel', 'Other'];
 const USER_KEY = 'kalakariaan_user';
 
 export default function GoogleOnboarding() {
@@ -24,6 +24,8 @@ export default function GoogleOnboarding() {
   // Brand state
   const [companyName, setCompanyName] = useState('');
   const [industry, setIndustry] = useState('');
+  const [customIndustry, setCustomIndustry] = useState('');
+  const [website, setWebsite] = useState('');
 
   // Creator state (uses shared step components)
   const { form, setField, onInput, toggleGenre, validateStep } = useCreatorForm({
@@ -55,10 +57,14 @@ export default function GoogleOnboarding() {
     e.preventDefault();
     setError('');
     if (!companyName.trim() || !industry) { setError('Company name and industry are required.'); return; }
+    if (industry === 'Other' && !customIndustry.trim()) { setError('Please enter your industry.'); return; }
     setSubmitting(true);
     try {
       const response = await api.completeGoogleOnboarding({
-        role: 'brand', companyName: companyName.trim(), industry,
+        role: 'brand',
+        companyName: companyName.trim(),
+        industry: industry === 'Other' ? customIndustry.trim() : industry,
+        website: website.trim() || undefined,
       });
       localStorage.setItem(USER_KEY, JSON.stringify(response.user));
       window.location.href = '/brand/welcome';
@@ -147,8 +153,17 @@ export default function GoogleOnboarding() {
               <label className="block text-sm text-chalk-dim mb-1.5">Industry *</label>
               <select value={industry} onChange={e => setIndustry(e.target.value)} className="dark-select w-full px-4 py-3 text-sm">
                 <option value="">Select your industry</option>
-                {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+                {BRAND_INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
               </select>
+              {industry === 'Other' && (
+                <input value={customIndustry} onChange={e => setCustomIndustry(e.target.value)}
+                  className="dark-input w-full px-4 py-3 text-sm mt-2" placeholder="Type your industry" />
+              )}
+            </div>
+            <div>
+              <label className="block text-sm text-chalk-dim mb-1.5">Brand Website</label>
+              <input type="url" value={website} onChange={e => setWebsite(e.target.value)}
+                className="dark-input w-full px-4 py-3 text-sm" placeholder="https://acme.com" />
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button type="submit" disabled={submitting} className="purple-pill w-full py-3 text-sm disabled:opacity-50">

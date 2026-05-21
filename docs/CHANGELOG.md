@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Campaign checkout, escrow & delivery timeline (2026-05-21)
+
+### Added
+- **Migration `039`** — `campaigns.delivery_started_at` + `delivery_due_at`
+  (both nullable, applied to prod). Stamped at checkout; 48h delivery window.
+- **Brand TrackPage delivery timeline** — progress bar + due countdown +
+  overdue state.
+- **Creator notifications on selection** — checkout finalizer inserts a
+  `campaign` notification (links to My Campaigns) for every selected creator.
+
+### Changed
+- **Escrow model** — checkout finalizer now lands creators at
+  `campaign_creators.workflow_stage = 'accepted'` (was instant
+  `payment_released`). Creators appear under "Running" and can start content;
+  payout stays escrowed until the brand approves the work.
+- **Gated checkout** — campaign description required at creation; checkout is
+  blocked until a campaign exists with at least one uploaded brief file
+  (CartPage + CheckoutPage).
+
+### Fixed
+- **`api.createCampaign`** never unwrapped the `{ campaign }` response —
+  `camp.id`/`camp.title` were `undefined`, silently breaking the cart→campaign
+  link.
+- **Notifications mapping** — `mapNotification` read `message`/`link` but the
+  prod table has `body`/`data` (jsonb); notification text was always blank.
+  Now maps `body -> message`, `data.link -> link`.
+
 ## [Unreleased] — Session 15: 7-Phase Refactor (2026-05-20)
 
 Large modularization + scalability refactor. Full status: `docs/REFACTOR_STATUS.md`.

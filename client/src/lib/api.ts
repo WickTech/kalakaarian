@@ -181,6 +181,7 @@ export interface CampaignCreator {
   campaignId: string;
   influencerId: string;
   campaignTitle: string;
+  campaignDescription?: string;
   influencerName: string;
   status: "submitted" | "accepted" | "rejected";
   agreedPrice: number;

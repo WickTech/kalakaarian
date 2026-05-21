@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { Inbox, CheckCircle2, Clock, Upload } from "lucide-react";
+import { Inbox, CheckCircle2, Clock, Upload, FileText } from "lucide-react";
 import { api, Proposal } from "@/lib/api";
 import { CampaignProgressTracker } from "@/components/CampaignProgressTracker";
 import { CampaignVideoUploadModal } from "@/components/profile/CampaignVideoUploadModal";
@@ -26,6 +26,16 @@ function CampaignCard({ proposal, onRefresh }: { proposal: Proposal; onRefresh: 
   const canUpload = UPLOAD_STAGES.includes(stage);
   const [uploadOpen, setUploadOpen] = useState(false);
 
+  // Brief files the brand uploaded for this campaign. The server only allows
+  // creators with an 'accepted' campaign_creators row to read them.
+  const { data: briefFiles = [] } = useQuery({
+    queryKey: ["campaign-files", proposal.campaignId],
+    queryFn: () => api.getCampaignFiles(proposal.campaignId).catch(() => []),
+    enabled: !!proposal.campaignId,
+  });
+
+  const hasBrief = !!proposal.campaignDescription || briefFiles.length > 0;
+
   return (
     <div className="bento-card p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
@@ -44,6 +54,33 @@ function CampaignCard({ proposal, onRefresh }: { proposal: Proposal; onRefresh: 
           </button>
         )}
       </div>
+
+      {hasBrief && (
+        <div className="rounded-lg border border-white/8 bg-white/[0.02] p-3 space-y-2">
+          <p className="text-[11px] uppercase tracking-wider text-chalk-faint flex items-center gap-1.5">
+            <FileText className="w-3 h-3" /> Campaign Brief
+          </p>
+          {proposal.campaignDescription && (
+            <p className="text-xs text-chalk-dim whitespace-pre-wrap">{proposal.campaignDescription}</p>
+          )}
+          {briefFiles.length > 0 && (
+            <div className="space-y-1">
+              {briefFiles.map((f) => (
+                <a
+                  key={f._id}
+                  href={f.fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 text-xs text-purple-300 hover:text-purple-200"
+                >
+                  <FileText className="w-3 h-3 shrink-0" />
+                  <span className="truncate">{f.fileName}</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <CampaignProgressTracker currentStage={stage} updatedAt={proposal.workflow_stage_updated_at} compact />
 

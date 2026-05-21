@@ -10,13 +10,14 @@ import { AuthRequest } from '../../middleware/auth';
 // influencerName, agreedPrice) but the on-the-wire shape no longer implies
 // a creator-initiated proposal.
 
-const SELECT = '*, campaigns!campaign_creators_campaign_id_fkey(title, brand_id, budget, status), profiles!campaign_creators_influencer_id_fkey(name, email)';
+const SELECT = '*, campaigns!campaign_creators_campaign_id_fkey(title, description, brand_id, budget, status), profiles!campaign_creators_influencer_id_fkey(name, email)';
 
 const formatRow = (row: any) => ({
   _id: row.id,
   campaignId: row.campaign_id,
   influencerId: row.influencer_id,
   campaignTitle: (row.campaigns as any)?.title ?? '',
+  campaignDescription: (row.campaigns as any)?.description ?? '',
   influencerName: (row.profiles as any)?.name ?? '',
   status: row.status,
   agreedPrice: row.agreed_price ?? 0,
